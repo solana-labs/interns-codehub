@@ -43,4 +43,13 @@ pub enum CompressedNftVoterError {
 
     #[msg("Cast Vote Is Not Allowed")]
     CastVoteIsNotAllowed,
+
+    #[msg("Invalid Vote Record Account")]
+    InvalidVoteRecordAccount,
+
+    #[msg("Vote Record Must Be Withdrawn")]
+    VoteRecordMustBeWithdrawn,
+
+    #[msg("Voter Weight Record Must Be Expired")]
+    VoterWeightRecordMustBeExpired,
 }

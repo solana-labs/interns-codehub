@@ -36,6 +36,11 @@ pub mod cnft_voter {
         log_version();
         instructions::update_voter_weight_record(ctx, voter_weight_action)
     }
+
+    pub fn relinquish_nft_vote(ctx: Context<RelinquishNftVote>) -> Result<()> {
+        log_version();
+        instructions::relinquish_nft_vote(ctx)
+    }
 }
 
 fn log_version() {

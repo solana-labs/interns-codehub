@@ -9,3 +9,6 @@ mod create_max_voter_weight_record;
 
 pub use update_voter_weight_record::*;
 mod update_voter_weight_record;
+
+pub use relinquish_nft_vote::*;
+mod relinquish_nft_vote;
