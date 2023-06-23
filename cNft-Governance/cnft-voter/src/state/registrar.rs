@@ -1,25 +1,16 @@
 use crate::{
     error::CompressedNftVoterError,
     id,
-    state::{
-        CollectionConfig,
-        VoterWeightRecord,
-    },
+    state::{CollectionConfig, VoterWeightRecord},
     utils::constant::DISCRIMINATOR_SIZE,
-    utils::spl_token::{
-        get_spl_token_amount,
-        get_token_metadata_for_mint,
-    },
+    utils::spl_token::{get_spl_token_amount, get_token_metadata_for_mint},
 };
 use anchor_lang::prelude::*;
 use solana_program::pubkey::PUBKEY_BYTES;
-use spl_governance::
-    {
-        state::token_owner_record,
-        tools::spl_token::{get_spl_token_mint, get_spl_token_owner},
-    };
-
-
+use spl_governance::{
+    state::token_owner_record,
+    tools::spl_token::{get_spl_token_mint, get_spl_token_owner},
+};
 
 // Registrar which store cNFT voting configuration for the given Realm.
 #[account]
@@ -38,19 +29,27 @@ pub struct Registrar {
     pub governing_token_mint: Pubkey,
 
     // MPL collection used for voting
-    pub collection_config: Vec<CollectionConfig>,
+    pub collection_configs: Vec<CollectionConfig>,
 
     pub reserved: [u8; 128],
 }
 
 impl Registrar {
     pub fn get_space(max_collections: u8) -> usize {
-        DISCRIMINATOR_SIZE + PUBKEY_BYTES * 3 + 4 + (max_collections as usize) * (PUBKEY_BYTES + 4 + 8 + 8) + 128
+        DISCRIMINATOR_SIZE
+            + PUBKEY_BYTES * 3
+            + 4
+            + (max_collections as usize) * (PUBKEY_BYTES + 4 + 8 + 8)
+            + 128
         // discriminator di + (3 pubkeys) + 4 bytes(Vec)) + max_collections * (pubkey + 4 bytes + 8 bytes + 8 bytes) + reserved
     }
 
-    pub fn get_collection_config(&self, collection: Pubkey) -> Result<&CollectionConfig> { // using a Result to wrap the return value, its because the return value might be error
-        self.collection_config.iter().find(|c| c.collection == collection).ok_or_else(|| CompressedNftVoterError::CollectionNotFound.into())
+    pub fn get_collection_config(&self, collection: Pubkey) -> Result<&CollectionConfig> {
+        // using a Result to wrap the return value, its because the return value might be error
+        self.collection_configs
+            .iter()
+            .find(|c| c.collection == collection)
+            .ok_or_else(|| CompressedNftVoterError::CollectionNotFound.into())
     }
 }
 
@@ -59,7 +58,8 @@ pub fn get_registrar_address(realm: &Pubkey, governing_token_mint: &Pubkey) -> P
     Pubkey::find_program_address(
         &[b"registrar", realm.as_ref(), governing_token_mint.as_ref()],
         &id(),
-    ).0
+    )
+    .0
 }
 
 pub fn resolve_governing_token_owner(
@@ -68,7 +68,7 @@ pub fn resolve_governing_token_owner(
     voter_authority_info: &AccountInfo,
     voter_weight_record: &VoterWeightRecord,
 ) -> Result<Pubkey> {
-    let voter_token_owner_record = 
+    let voter_token_owner_record =
         token_owner_record::get_token_owner_record_data_for_realm_and_governing_mint(
             &registrar.governance_program_id,
             voter_token_owner_record_info,
@@ -89,7 +89,7 @@ pub fn resolve_governing_token_owner(
 
 /// TODO: modify this
 /// 1. get nft Owner, and assert its same as the voter
-/// 2. 
+/// 2.
 pub fn resolve_nft_vote_weight_and_mint(
     registrar: &Registrar,
     governing_token_owner: &Pubkey,
@@ -116,11 +116,14 @@ pub fn resolve_nft_vote_weight_and_mint(
 
     let nft_metadata = get_token_metadata_for_mint(nft_metadata_info, &nft_mint)?;
 
-    let collection = nft_metadata.collection.ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
-    require!(collection.verified, CompressedNftVoterError::CollectionMustBeVerified);
+    let collection = nft_metadata
+        .collection
+        .ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
+    require!(
+        collection.verified,
+        CompressedNftVoterError::CollectionMustBeVerified
+    );
 
     let collection_config = registrar.get_collection_config(collection.key)?;
     Ok((collection_config.weight, nft_mint))
 }
-
-

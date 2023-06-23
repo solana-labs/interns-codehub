@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use spl_governance::state::{token_owner_record, vote_record, realm, proposal};
+use spl_governance::state::{token_owner_record, vote_record};
 
 pub fn get_vote_record_address(
     program_id: &Pubkey,

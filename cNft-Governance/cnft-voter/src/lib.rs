@@ -9,7 +9,6 @@ pub mod state;
 
 pub mod utils;
 
-
 use crate::state::*;
 
 declare_id!("GnftV5kLjd67tvHpNGyodwWveEKivz3ZWvvE3Z4xi2iw");
@@ -22,7 +21,10 @@ pub mod cnft_voter {
         instructions::create_registrar(ctx, max_collections)
     }
 
-    pub fn create_voter_weight_record(ctx: Context<CreateVoterWeightRecord>, governing_token_owner: Pubkey) -> Result<()> {
+    pub fn create_voter_weight_record(
+        ctx: Context<CreateVoterWeightRecord>,
+        governing_token_owner: Pubkey,
+    ) -> Result<()> {
         log_version();
         instructions::create_voter_weight_record(ctx, governing_token_owner)
     }
@@ -32,7 +34,10 @@ pub mod cnft_voter {
         instructions::create_max_voter_weight_record(ctx)
     }
 
-    pub fn update_voter_weight_record(ctx: Context<UpdateVoterWeightRecord>, voter_weight_action: VoterWeightAction) -> Result<()> {
+    pub fn update_voter_weight_record(
+        ctx: Context<UpdateVoterWeightRecord>,
+        voter_weight_action: VoterWeightAction,
+    ) -> Result<()> {
         log_version();
         instructions::update_voter_weight_record(ctx, voter_weight_action)
     }
@@ -40,6 +45,23 @@ pub mod cnft_voter {
     pub fn relinquish_nft_vote(ctx: Context<RelinquishNftVote>) -> Result<()> {
         log_version();
         instructions::relinquish_nft_vote(ctx)
+    }
+
+    pub fn configure_collection(
+        ctx: Context<ConfigureCollection>,
+        weight: u64,
+        size: u32,
+    ) -> Result<()> {
+        log_version();
+        instructions::configure_collection(ctx, weight, size)
+    }
+
+    pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CastNftVote<'info>>,
+        proposal: Pubkey,
+    ) -> Result<()> {
+        log_version();
+        instructions::cast_nft_vote(ctx, proposal)
     }
 }
 

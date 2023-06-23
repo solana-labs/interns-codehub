@@ -12,12 +12,12 @@ pub struct CollectionConfig {
     pub weight: u64,
 
     /// reserved for future upgrades,
-    pub reserve: [u8; 8], // what is this for
+    pub reserved: [u8; 8], // what is this for
 }
 
 impl CollectionConfig {
     pub fn get_max_weight(&self) -> u64 {
-        let max_weight:u64 = (self.size as u64).checked_mul(self.weight).unwrap();
+        let max_weight: u64 = (self.size as u64).checked_mul(self.weight).unwrap();
         max_weight
     }
 }

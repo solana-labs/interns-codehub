@@ -52,4 +52,25 @@ pub enum CompressedNftVoterError {
 
     #[msg("Voter Weight Record Must Be Expired")]
     VoterWeightRecordMustBeExpired,
+
+    #[msg("Invalid Proposal For NFT Vote Record")]
+    InvalidProposalForNftVoteRecord,
+
+    #[msg("Invalid Token Owner For NFT Vote Record")]
+    InvalidTokenOwnerForNftVoteRecord,
+
+    #[msg("Invalid Realm For Registrar")]
+    InvalidRealmForRegistrar,
+
+    #[msg("Invalid Max Voter Weight Record Realm")]
+    InvalidMaxVoterWeightRecordRealm,
+
+    #[msg("Invalid Max Voter Weight Record Mint")]
+    InvalidMaxVoterWeightRecordMint,
+
+    #[msg("Invalid Collection Size")]
+    InvalidCollectionSize,
+
+    #[msg("NFT Already Voted")]
+    NftAlreadyVoted,
 }
