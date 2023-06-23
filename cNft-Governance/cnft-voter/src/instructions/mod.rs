@@ -18,3 +18,6 @@ mod configure_collection;
 
 pub use cast_nft_vote::*;
 mod cast_nft_vote;
+
+pub use cast_cnft_vote::*;
+mod cast_cnft_vote;
