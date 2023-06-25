@@ -1,6 +1,8 @@
 # cNFT Gonvernance
-
 Reference(fork): [nft-voter](https://github.com/solana-labs/governance-program-library/tree/master/programs/nft-voter)
+
+### Question
+1. how to get cNFT' collenction.verifird from ReadAPI?
 
 ### Steps to create a goverance (from governance-ui)
 1. Prepare realm configs: ./tools/governance/prepareRealmCreation.ts
