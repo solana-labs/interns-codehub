@@ -3,9 +3,11 @@ use crate::{
     id,
     state::{CollectionConfig, VoterWeightRecord},
     utils::constant::DISCRIMINATOR_SIZE,
+    utils::helper::*,
     utils::spl_token::{get_spl_token_amount, get_token_metadata_for_mint},
 };
 use anchor_lang::prelude::*;
+use mpl_bubblegum::utils::get_asset_id;
 use solana_program::pubkey::PUBKEY_BYTES;
 use spl_governance::{
     state::token_owner_record,
@@ -126,4 +128,50 @@ pub fn resolve_nft_vote_weight_and_mint(
 
     let collection_config = registrar.get_collection_config(collection.key)?;
     Ok((collection_config.weight, nft_mint))
+}
+
+pub fn resolve_cnft_vote_weight<'info>(
+    registrar: &Registrar,
+    governing_token_owner: &Pubkey,
+    merkle_tree: &UncheckedAccount<'info>,
+    leaf_owner: &Pubkey,
+    leaf_delegate: &Pubkey,
+    params: &VerifyParams,
+    proofs: Vec<AccountInfo<'info>>,
+    compression_program: &AccountInfo<'info>,
+    unique_asset_ids: &mut Vec<Pubkey>,
+) -> Result<(u64, Pubkey)> {
+    let asset_id = get_asset_id(&merkle_tree.key(), params.nonce);
+
+    require_eq!(
+        *governing_token_owner,
+        *leaf_owner,
+        CompressedNftVoterError::LeafOwnerMustBeTokenOwner
+    );
+
+    verify_cnft(
+        &merkle_tree.to_account_info(),
+        &asset_id,
+        &leaf_owner.key(),
+        &leaf_delegate.key(),
+        params,
+        proofs,
+        compression_program,
+    )?;
+
+    // let collection = nft_metadata
+    //     .collection
+    //     .ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
+    // require!(
+    //     collection.verified,
+    //     CompressedNftVoterError::CollectionMustBeVerified
+    // );
+
+    if unique_asset_ids.contains(&asset_id) {
+        return Err(CompressedNftVoterError::DuplicatedNftDetected.into());
+    }
+    unique_asset_ids.push(asset_id);
+
+    let collection_config = registrar.get_collection_config(collection.key)?;
+    Ok((collection_config.weight, asset_id))
 }

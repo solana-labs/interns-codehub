@@ -13,7 +13,7 @@ pub struct CompressedNftVoteRecord {
     pub account_discriminator: [u8; 8],
 
     pub proposal: Pubkey,
-    pub cnft_asset_id: Pubkey,
+    pub asset_id: Pubkey,
 
     pub governing_token_owner: Pubkey,
 
@@ -35,13 +35,15 @@ impl IsInitialized for CompressedNftVoteRecord {
 
 pub fn get_nft_vote_record_address(proposal: &Pubkey, nft_mint: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
-        &[b"nft-vote-record", proposal.as_ref(), nft_mint.as_ref()],
+        &[b"cnft-vote-record", proposal.as_ref(), nft_mint.as_ref()],
         &crate::id(),
     )
     .0
 }
 
-pub fn get_nft_vote_record_data(nft_vote_record_info: &AccountInfo) -> Result<CompressedNftVoteRecord> {
+pub fn get_nft_vote_record_data(
+    nft_vote_record_info: &AccountInfo,
+) -> Result<CompressedNftVoteRecord> {
     Ok(get_account_data::<CompressedNftVoteRecord>(
         &id(),
         nft_vote_record_info,

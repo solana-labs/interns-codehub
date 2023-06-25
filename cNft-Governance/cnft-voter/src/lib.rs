@@ -1,14 +1,10 @@
 use anchor_lang::prelude::*;
-
+use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 pub mod error;
-
 mod instructions;
 use instructions::*;
-
 pub mod state;
-
 pub mod utils;
-
 use crate::state::*;
 
 declare_id!("GnftV5kLjd67tvHpNGyodwWveEKivz3ZWvvE3Z4xi2iw");
@@ -62,6 +58,16 @@ pub mod cnft_voter {
     ) -> Result<()> {
         log_version();
         instructions::cast_nft_vote(ctx, proposal)
+    }
+
+    pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
+        proposal: Pubkey,
+        // cnft_metadata: MetadataArgs,
+        params: utils::helper::VerifyParams,
+    ) -> Result<()> {
+        log_version();
+        instructions::cast_cnft_vote(ctx, proposal, &params)
     }
 }
 

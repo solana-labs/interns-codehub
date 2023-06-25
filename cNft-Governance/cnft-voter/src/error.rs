@@ -73,4 +73,10 @@ pub enum CompressedNftVoterError {
 
     #[msg("NFT Already Voted")]
     NftAlreadyVoted,
+
+    #[msg("Leaf Owner Must Be Payer")]
+    LeafOwnerMustBePayer,
+
+    #[msg("Leaf Owner Must Be Token Owner")]
+    LeafOwnerMustBeTokenOwner,
 }
