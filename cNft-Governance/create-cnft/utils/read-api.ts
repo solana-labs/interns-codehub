@@ -2,9 +2,11 @@
 import {
     GetAssetProofRpcInput,
     GetAssetProofRpcResponse,
+    GetAssetRpcInput,
     GetAssetsByGroupRpcInput,
     GetAssetsByOwnerRpcInput,
     MetaplexError,
+    ReadApiAsset,
     ReadApiAssetList,
 } from "@metaplex-foundation/js";
 import { Connection, PublicKey } from "@solana/web3.js";
@@ -46,6 +48,22 @@ const callReadApi = async <ReadApiMethodParams, ReadApiJsonOutput>(
 
     return await response.json();
 };
+
+export async function getAsset(
+    connection: Connection,
+    assetId: PublicKey,
+): Promise<ReadApiAsset> {
+    const { result: asset } = await callReadApi<GetAssetRpcInput, ReadApiAsset>(connection, {
+        method: "getAsset",
+        params: {
+            id: assetId.toBase58(),
+        },
+    });
+
+    if (!asset) throw new ReadApiError("No asset returned");
+
+    return asset;
+}
 
 export async function getAssetProof(
     connection: Connection,
