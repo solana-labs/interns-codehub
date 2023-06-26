@@ -34,7 +34,7 @@ impl Default for MaxVoterWeightRecord {
     }
 }
 
-pub fn get_max_boter_weight_record_address(realm: &Pubkey, governing_token_mint: &Pubkey) -> Pubkey {
+pub fn get_max_voter_weight_record_address(realm: &Pubkey, governing_token_mint: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[
             b"max-voter-weight-record",

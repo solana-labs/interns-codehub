@@ -88,10 +88,10 @@ impl GovernanceTest {
     #[allow(dead_code)]
     pub async fn with_realm(&mut self) -> Result<RealmCookie, TransportError> {
         let realm_authority = Keypair::new();
-
+        
         let community_mint_cookie = self.bench.with_mint().await?;
         let council_mint_cookie = self.bench.with_mint().await?;
-
+        
         self.next_id += 1;
         let realm_name = format!("Realm #{}", self.next_id).to_string();
 

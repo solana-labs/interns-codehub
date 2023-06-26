@@ -1,5 +1,5 @@
 use anchor_lang::prelude::ERROR_CODE_OFFSET;
-use gpl_nft_voter::error::NftVoterError;
+use cnft_voter::error::{CompressedNftVoterError, NftVoterError};
 use solana_program::instruction::InstructionError;
 use solana_program_test::BanksClientError;
 use solana_sdk::{signature::Keypair, transaction::TransactionError, transport::TransportError};
@@ -22,6 +22,22 @@ pub fn assert_nft_voter_err(banks_client_error: BanksClientError, nft_locker_err
         TransactionError::InstructionError(_, instruction_error) => match instruction_error {
             InstructionError::Custom(e) => {
                 assert_eq!(e, nft_locker_error as u32 + ERROR_CODE_OFFSET)
+            }
+            _ => panic!("{:?} Is not InstructionError::Custom()", instruction_error),
+        },
+        _ => panic!("{:?} Is not InstructionError", tx_error),
+    };
+}
+
+// cnft <-> voter assertion
+#[allow(dead_code)]
+pub fn assert_cnft_voter_err(banks_client_error: BanksClientError, cnft_locker_error: CompressedNftVoterError) {
+    let tx_error = banks_client_error.unwrap();
+
+    match tx_error {
+        TransactionError::InstructionError(_, instruction_error) => match instruction_error {
+            InstructionError::Custom(e) => {
+                assert_eq!(e, cnft_locker_error as u32 + ERROR_CODE_OFFSET)
             }
             _ => panic!("{:?} Is not InstructionError::Custom()", instruction_error),
         },

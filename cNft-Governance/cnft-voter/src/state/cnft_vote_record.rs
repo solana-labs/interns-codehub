@@ -21,9 +21,10 @@ pub struct CompressedNftVoteRecord {
 }
 
 impl CompressedNftVoteRecord {
-    /// sha256("account:CompressedNftVoteRecord")[..8]
-    pub const ACCOUNT_DISCRIMINATOR: [u8; 8] = [137, 6, 55, 139, 251, 126, 254, 99];
+    /// sha256("account:CompressedNftVoteRecord")
+    pub const ACCOUNT_DISCRIMINATOR: [u8; 8] = [78, 251, 13, 96, 198, 207, 234, 216];
 }
+
 
 impl AccountMaxSize for CompressedNftVoteRecord {}
 
@@ -33,7 +34,7 @@ impl IsInitialized for CompressedNftVoteRecord {
     }
 }
 
-pub fn get_nft_vote_record_address(proposal: &Pubkey, nft_mint: &Pubkey) -> Pubkey {
+pub fn get_cnft_vote_record_address(proposal: &Pubkey, nft_mint: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[b"cnft-vote-record", proposal.as_ref(), nft_mint.as_ref()],
         &crate::id(),
@@ -41,31 +42,31 @@ pub fn get_nft_vote_record_address(proposal: &Pubkey, nft_mint: &Pubkey) -> Pubk
     .0
 }
 
-pub fn get_nft_vote_record_data(
-    nft_vote_record_info: &AccountInfo,
+pub fn get_cnft_vote_record_data(
+    cnft_vote_record_info: &AccountInfo,
 ) -> Result<CompressedNftVoteRecord> {
     Ok(get_account_data::<CompressedNftVoteRecord>(
         &id(),
-        nft_vote_record_info,
+        cnft_vote_record_info,
     )?)
 }
 
-pub fn get_nft_vote_record_data_for_proposal_and_token_owner(
-    nft_vote_record_info: &AccountInfo,
+pub fn get_cnft_vote_record_data_for_proposal_and_token_owner(
+    cnft_vote_record_info: &AccountInfo,
     proposal: &Pubkey,
     governing_token_owner: &Pubkey,
 ) -> Result<CompressedNftVoteRecord> {
-    let nft_vote_record_data = get_nft_vote_record_data(nft_vote_record_info)?;
+    let cnft_vote_record_data = get_cnft_vote_record_data(cnft_vote_record_info)?;
 
     require!(
-        nft_vote_record_data.proposal == *proposal,
+        cnft_vote_record_data.proposal == *proposal,
         CompressedNftVoterError::InvalidProposalForNftVoteRecord
     );
 
     require!(
-        nft_vote_record_data.governing_token_owner == *governing_token_owner,
+        cnft_vote_record_data.governing_token_owner == *governing_token_owner,
         CompressedNftVoterError::InvalidTokenOwnerForNftVoteRecord
     );
 
-    Ok(nft_vote_record_data)
+    Ok(cnft_vote_record_data)
 }

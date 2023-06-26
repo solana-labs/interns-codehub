@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 pub mod error;
 mod instructions;
 use instructions::*;
@@ -25,7 +24,7 @@ pub mod cnft_voter {
         instructions::create_voter_weight_record(ctx, governing_token_owner)
     }
 
-    pub fn create_max_boter_weight_record(ctx: Context<CreateMaxVoterWeightRecord>) -> Result<()> {
+    pub fn create_max_voter_weight_record(ctx: Context<CreateMaxVoterWeightRecord>) -> Result<()> {
         log_version();
         instructions::create_max_voter_weight_record(ctx)
     }

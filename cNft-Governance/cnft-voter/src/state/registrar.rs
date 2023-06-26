@@ -223,3 +223,34 @@ pub fn resolve_cnft_vote_weight2<'info>(
     let collection_config = registrar.get_collection_config(collection.key)?;
     Ok((collection_config.weight, asset_id))
 }
+
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_get_space() {
+        // Arrange
+        let expected_space = Registrar::get_space(3);
+
+        let registrar = Registrar {
+            governance_program_id: Pubkey::default(),
+            realm: Pubkey::default(),
+            governing_token_mint: Pubkey::default(),
+            collection_configs: vec![
+                CollectionConfig::default(),
+                CollectionConfig::default(),
+                CollectionConfig::default(),
+            ],
+            reserved: [0; 128],
+        };
+
+        // Act
+        let actual_space = DISCRIMINATOR_SIZE + registrar.try_to_vec().unwrap().len();
+
+        // Assert
+        assert_eq!(expected_space, actual_space);
+    }
+}

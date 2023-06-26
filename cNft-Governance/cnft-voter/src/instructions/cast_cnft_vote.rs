@@ -89,9 +89,9 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
     )?;
 
     voter_weight = voter_weight.checked_add(nft_vote_weight as u64).unwrap();
-    let rent = Rent::get()?;
-
-    let nft_vote_record = CompressedNftVoteRecord {
+    let _rent = Rent::get()?;
+    let _program_id = id();
+    let _nft_vote_record = CompressedNftVoteRecord {
         account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
         proposal,
         asset_id,

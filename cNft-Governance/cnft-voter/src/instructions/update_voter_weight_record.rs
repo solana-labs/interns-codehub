@@ -14,7 +14,6 @@ pub struct UpdateVoterWeightRecord<'info> {
         constraint = voter_weight_record.governing_token_mint == registrar.governing_token_mint @ CompressedNftVoterError::InvalidVoterWeightRecordMint,
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
-    pub system_program: Program<'info, System>,
 }
 
 // to be modify
