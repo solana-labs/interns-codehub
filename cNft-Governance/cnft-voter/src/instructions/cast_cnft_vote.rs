@@ -58,6 +58,7 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
     let merkle_tree = &ctx.accounts.merkle_tree;
     let leaf_owner = &ctx.accounts.leaf_owner;
     let leaf_delegate = &ctx.accounts.leaf_delegate;
+    let collection = &ctx.accounts.collection_mint;
     let mut voter_weight = 0u64;
     let mut unique_asset_ids: Vec<Pubkey> = vec![];
 
@@ -76,6 +77,7 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
 
     let (nft_vote_weight, asset_id) = resolve_cnft_vote_weight(
         &registrar,
+        &collection.key(),
         &governing_token_owner,
         &merkle_tree,
         &leaf_owner.key(),
@@ -90,7 +92,7 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
     let rent = Rent::get()?;
 
     let nft_vote_record = CompressedNftVoteRecord {
-        account_discriminator: NftVoteRecord::ACCOUNT_DISCRIMINATOR,
+        account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
         proposal,
         asset_id,
         governing_token_owner,

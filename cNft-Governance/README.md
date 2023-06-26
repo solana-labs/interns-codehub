@@ -37,7 +37,7 @@ Input:
 8. tree_root
 
 ### Function to be modify
-1. ./cnft-voter/src/state/registrar.rs - resolve_nft_vote_weight_and_mint
+1. [o]./cnft-voter/src/state/registrar.rs - resolve_nft_vote_weight_and_mint
     - we need nft_owner, nft_owner == governing_token_owner
     - nft_mint_address not in unique_nft_mint, maybe change it to asset_id
     - check nft belongs to collection and is verified
@@ -45,9 +45,8 @@ Input:
     - use "create_and_serialize_account_signed" to create vote for that nft
 2. ./cnft-voter/src/instructions/update_voter_weight_record.rs - update_voter_weight_record
 3. ./cnft-voter/src/instructions/relinquish_nft_vote.rs - relinquish_nft_vote
-4. ./cnft-voter/src/state/nft_vote_record.rs
-5. ./cnft-voter/src/instructions/configure_collection.rs - configure_collection
-6. ./cnft-voter/src/instructions/cast-nft-voter.rs - cast-nft-voter
+4. [v]./cnft-voter/src/state/nft_vote_record.rs -> cnft_vote_record
+5. [o]./cnft-voter/src/instructions/cast-nft-voter.rs - cast-nft-voter
     - reference governance_ui/utils/uiTypes/VotePlugin.ts (line 472)
     - the "resolve_nft_weight_and_mint" function will also be involved
     - remaining_accounts: nfts mint

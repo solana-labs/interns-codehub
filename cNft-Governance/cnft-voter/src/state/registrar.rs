@@ -132,6 +132,7 @@ pub fn resolve_nft_vote_weight_and_mint(
 
 pub fn resolve_cnft_vote_weight<'info>(
     registrar: &Registrar,
+    collection: &Pubkey,
     governing_token_owner: &Pubkey,
     merkle_tree: &UncheckedAccount<'info>,
     leaf_owner: &Pubkey,
@@ -167,6 +168,53 @@ pub fn resolve_cnft_vote_weight<'info>(
     //     CompressedNftVoterError::CollectionMustBeVerified
     // );
 
+    if unique_asset_ids.contains(&asset_id) {
+        return Err(CompressedNftVoterError::DuplicatedNftDetected.into());
+    }
+    unique_asset_ids.push(asset_id);
+
+    let collection_config = registrar.get_collection_config(*collection)?;
+    Ok((collection_config.weight, asset_id))
+}
+
+pub fn resolve_cnft_vote_weight2<'info>(
+    registrar: &Registrar,
+    governing_token_owner: &Pubkey,
+    merkle_tree: &UncheckedAccount<'info>,
+    leaf_owner: &Pubkey,
+    leaf_delegate: &Pubkey,
+    params: &VerifyParams2,
+    proofs: Vec<AccountInfo<'info>>,
+    compression_program: &AccountInfo<'info>,
+    unique_asset_ids: &mut Vec<Pubkey>,
+) -> Result<(u64, Pubkey)> {
+    let asset_id = get_asset_id(&merkle_tree.key(), params.nonce);
+
+    require_eq!(
+        *governing_token_owner,
+        *leaf_owner,
+        CompressedNftVoterError::LeafOwnerMustBeTokenOwner
+    );
+
+    verify_cnft2(
+        &merkle_tree.to_account_info(),
+        &asset_id,
+        &leaf_owner.key(),
+        &leaf_delegate.key(),
+        params,
+        proofs,
+        compression_program,
+    )?;
+
+    let collection = params
+        .metadata
+        .collection
+        .as_ref()
+        .ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
+    require!(
+        collection.verified,
+        CompressedNftVoterError::CollectionMustBeVerified
+    );
     if unique_asset_ids.contains(&asset_id) {
         return Err(CompressedNftVoterError::DuplicatedNftDetected.into());
     }

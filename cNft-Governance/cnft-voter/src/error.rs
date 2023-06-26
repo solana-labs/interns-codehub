@@ -79,4 +79,7 @@ pub enum CompressedNftVoterError {
 
     #[msg("Leaf Owner Must Be Token Owner")]
     LeafOwnerMustBeTokenOwner,
+
+    #[msg("Invalid Metadata")]
+    InvalidMetadata,
 }

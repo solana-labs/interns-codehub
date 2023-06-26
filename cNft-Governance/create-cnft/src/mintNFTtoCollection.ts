@@ -17,6 +17,19 @@ import { mintCompressedNft } from "@/utils/mint-cnft";
 import dotenv from "dotenv";
 dotenv.config();
 
+import {
+    CreateMetadataAccountArgsV3,
+    PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
+    createCreateMasterEditionV3Instruction,
+    createCreateMetadataAccountV3Instruction,
+    createSetCollectionSizeInstruction,
+} from "@metaplex-foundation/mpl-token-metadata";
+
+import {
+    PROGRAM_ID as BUBBLEGUM_PROGRAM_ID,
+    createCreateTreeInstruction,
+} from "@metaplex-foundation/mpl-bubblegum";
+
 (async () => {
     const payer = Keypair.fromSecretKey(
         Uint8Array.from(JSON.parse(process.env.PRIVATE_KEY ?? "[]"))
@@ -56,19 +69,19 @@ dotenv.config();
         );
 
     // create nft metadata
-    const buffer = fs.readFileSync("./src/assets/dog0.jpeg");
-    const file = toMetaplexFile(buffer, "dog0.jpeg");
+    const buffer = fs.readFileSync("./src/assets/dog2.jpeg");
+    const file = toMetaplexFile(buffer, "dog2.jpeg");
     const imageUri = await metaplex.storage().upload(file);
 
     const nftMetadata: UploadMetadataInput = {
-        name: "Doggy Worriars cNFT #0",
+        name: "Doggy Worriars cNFT #2",
         symbol: "DWFC",
         description: "The Studious Dog are smart and productive dogs.",
         image: imageUri,
         properties: {
             files: [
                 {
-                    uri: "dog0.jpeg",
+                    uri: "dog2.jpeg",
                     type: "image/jpeg",
                 },
             ],
@@ -97,6 +110,8 @@ dotenv.config();
         tokenProgramVersion: TokenProgramVersion.Original,
         tokenStandard: TokenStandard.NonFungible,
     };
+
+    console.log(compressedNftMetadata)
 
     const receiverAddress = payer.publicKey;
     const mintToWallet = await mintCompressedNft(
