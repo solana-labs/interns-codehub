@@ -1,5 +1,5 @@
-import { Connection, Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { loadPublicKeysFromFile } from "@/utils/helper";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { loadNonceFromFile, saveNonceToFile, loadPublicKeysFromFile } from "@/utils/helper";
 import {
     Metaplex,
     UploadMetadataInput,
@@ -16,19 +16,6 @@ import {
 import { mintCompressedNft } from "@/utils/mint-cnft";
 import dotenv from "dotenv";
 dotenv.config();
-
-import {
-    CreateMetadataAccountArgsV3,
-    PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID,
-    createCreateMasterEditionV3Instruction,
-    createCreateMetadataAccountV3Instruction,
-    createSetCollectionSizeInstruction,
-} from "@metaplex-foundation/mpl-token-metadata";
-
-import {
-    PROGRAM_ID as BUBBLEGUM_PROGRAM_ID,
-    createCreateTreeInstruction,
-} from "@metaplex-foundation/mpl-bubblegum";
 
 (async () => {
     const payer = Keypair.fromSecretKey(
@@ -58,6 +45,11 @@ import {
     console.log("Collection metadata:", collectionMetadataAccount.toBase58());
     console.log("Collection master edition:", collectionMasterEditionAccount.toBase58());
 
+    let nonce = loadNonceFromFile();
+    if (!nonce?.nonce) {
+        return console.warn("Please create nonce first");
+    }
+
     const metaplex = Metaplex.make(connection)
         .use(keypairIdentity(payer))
         .use(
@@ -74,14 +66,14 @@ import {
     const imageUri = await metaplex.storage().upload(file);
 
     const nftMetadata: UploadMetadataInput = {
-        name: "Doggy Worriars cNFT #2",
+        name: `Doggy Worriars cNFT #${nonce.nonce}`,
         symbol: "DWFC",
         description: "The Studious Dog are smart and productive dogs.",
         image: imageUri,
         properties: {
             files: [
                 {
-                    uri: "dog2.jpeg",
+                    uri: `dog${nonce.nonce}.jpeg`,
                     type: "image/jpeg",
                 },
             ],
@@ -127,4 +119,6 @@ import {
     )
     console.log(`Minting a single compressed NFT to ${receiverAddress.toBase58()}...`);
     console.log("transacition hash ", mintToWallet);
+
+    saveNonceToFile(nonce.nonce + 1);
 })();
