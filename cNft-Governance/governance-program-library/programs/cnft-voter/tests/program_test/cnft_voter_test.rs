@@ -193,63 +193,6 @@ impl CompressedNftVoterTest {
     }
 
     #[allow(dead_code)]
-    pub async fn with_voter_weight_record(
-        &mut self,
-        registrar_cookie: &RegistrarCookie,
-    ) -> Result<MaxVoterWeightRecordCookie, BanksClientError> {
-        self.with_voter_weight_record_using_ix(registrar_cookie, NopOverride)
-            .await
-    }
-
-    #[allow(dead_code)]
-    pub async fn with_voter_weight_record_using_ix<F: Fn(&mut Instruction)>(
-        &mut self, 
-        registrar_cookie: &RegistrarCookie,
-        instruction_override: F,
-    ) -> Result<MaxVoterWeightRecordCookie, BanksClientError> {
-        let max_voter_weight_record_key = get_max_voter_weight_record_address(
-            &registrar_cookie.account.realm, 
-            &registrar_cookie.account.governing_token_mint
-        );
-
-        let data = anchor_lang::InstructionData::data(&gpl_cnft_voter::instruction::CreateMaxVoterWeightRecord{});
-
-        let accounts = gpl_cnft_voter::accounts::CreateMaxVoterWeightRecord{
-            governance_program_id: self.governance.program_id,
-            realm: registrar_cookie.account.realm,
-            realm_governing_token_mint: registrar_cookie.account.governing_token_mint,
-            max_voter_weight_record: max_voter_weight_record_key,
-            payer: self.bench.payer.pubkey(),
-            system_program: anchor_lang::solana_program::system_program::id(),
-        };
-
-        let mut create_max_voter_weight_record_ix = Instruction {
-            program_id: gpl_cnft_voter::id(),
-            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
-            data,
-        };
-
-        instruction_override(&mut create_max_voter_weight_record_ix);
-
-        self.bench
-            .process_transaction(&[create_max_voter_weight_record_ix],  None)
-            .await?;
-        
-        let account = MaxVoterWeightRecord {
-            realm: registrar_cookie.account.realm,
-            governing_token_mint: registrar_cookie.account.governing_token_mint,
-            max_voter_weight: 0,
-            max_voter_weight_expiry: Some(0),
-            reserved: [0; 8],
-        };
-
-        Ok(MaxVoterWeightRecordCookie {
-            account,
-            address: max_voter_weight_record_key,
-        })
-    }
-
-    #[allow(dead_code)]
     pub async fn get_registrar_account(&mut self, registrar: &Pubkey) -> Registrar {
         self.bench.get_anchor_account::<Registrar>(*registrar).await
     }
@@ -323,5 +266,79 @@ impl CompressedNftVoterTest {
             .await
     }
 
+    #[allow(dead_code)]
+    pub async fn with_voter_weight_record(
+        &mut self,
+        registrar_cookie: &RegistrarCookie,
+        voter_cookie: &WalletCookie,
+    ) -> Result<VoterWeightRecordCookie, BanksClientError> {
+        self.with_voter_weight_record_using_ix(registrar_cookie, voter_cookie, NopOverride)
+            .await
+    }
 
+    #[allow(dead_code)]
+    pub async fn with_voter_weight_record_using_ix<F: Fn(&mut Instruction)>(
+        &mut self, 
+        registrar_cookie: &RegistrarCookie,
+        voter_cookie: &WalletCookie,
+        instruction_override: F,
+    ) -> Result<VoterWeightRecordCookie, BanksClientError> {
+        let governing_token_owner = voter_cookie.address;
+
+        let (voter_weight_record_key, _) = Pubkey::find_program_address(
+            &[
+                b"voter-weight-record".as_ref(),
+                registrar_cookie.account.realm.as_ref(),
+                registrar_cookie.account.governing_token_mint.as_ref(),
+                governing_token_owner.as_ref(),
+            ],
+            &gpl_cnft_voter::id(),
+        );
+
+        let data = anchor_lang::InstructionData::data(
+            &gpl_cnft_voter::instruction::CreateVoterWeightRecord{
+                governing_token_owner,
+            }
+        );
+
+        let accounts = gpl_cnft_voter::accounts::CreateVoterWeightRecord {
+            voter_weight_record: voter_weight_record_key,
+            governance_program_id: self.governance.program_id,
+            realm: registrar_cookie.account.realm,
+            realm_governing_token_mint: registrar_cookie.account.governing_token_mint,
+            payer: self.bench.payer.pubkey(),
+            system_program: solana_sdk::system_program::id(),
+        };
+
+        let mut create_voter_weight_record_ix = Instruction {
+            program_id: gpl_cnft_voter::id(),
+            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
+            data,
+        };
+
+        instruction_override(&mut create_voter_weight_record_ix);
+
+        self.bench.process_transaction(&[create_voter_weight_record_ix], None).await?;
+
+        let account = VoterWeightRecord {
+            realm: registrar_cookie.account.realm,
+            governing_token_mint: registrar_cookie.account.governing_token_mint,
+            governing_token_owner,
+            voter_weight: 0,
+            voter_weight_expiry: Some(0),
+            weight_action: None,
+            weight_action_target: None,
+            reserved: [0; 8],
+        };
+
+        Ok(VoterWeightRecordCookie {
+            address: voter_weight_record_key,
+            account,
+        })
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_voter_weight_record(&self, voter_weight_record: &Pubkey) -> VoterWeightRecord {
+        self.bench.get_anchor_account(*voter_weight_record).await
+    }
 }
