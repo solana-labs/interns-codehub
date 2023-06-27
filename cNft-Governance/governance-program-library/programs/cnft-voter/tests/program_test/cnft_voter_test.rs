@@ -341,4 +341,74 @@ impl CompressedNftVoterTest {
     pub async fn get_voter_weight_record(&self, voter_weight_record: &Pubkey) -> VoterWeightRecord {
         self.bench.get_anchor_account(*voter_weight_record).await
     }
+
+    #[allow(dead_code)]
+    pub async fn with_collection(
+        &mut self,
+        registrar_cookie: &RegistrarCookie,
+        nft_collection_cookie: &NftCollectionCookie,
+        max_voter_weight_record_cookie: &MaxVoterWeightRecordCookie,
+        args: Option<ConfigureCollectionArgs>,
+    ) -> Result<CollectionConfigCookie, BanksClientError> {
+        self.with_collection_using_ix(
+            registrar_cookie,
+            nft_collection_cookie,
+            max_voter_weight_record_cookie,
+            args,
+            NopOverride,
+            None
+        ).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_collection_using_ix<F: Fn(&mut Instruction)>(
+        &mut self,
+        registrar_cookie: &RegistrarCookie,
+        nft_collection_cookie: &NftCollectionCookie,
+        max_voter_weight_record_cookie: &MaxVoterWeightRecordCookie,
+        args: Option<ConfigureCollectionArgs>,
+        instruction_override: F,
+        signers_override: Option<&[&Keypair]>,
+    ) -> Result<CollectionConfigCookie, BanksClientError> {
+        let args = args.unwrap_or_default();
+
+        let data = anchor_lang::InstructionData::data(
+            &gpl_cnft_voter::instruction::ConfigureCollection {
+                weight: args.weight,
+                size: args.size
+            }
+        );
+        
+        let accounts = gpl_cnft_voter::accounts::ConfigureCollection {
+            registrar: registrar_cookie.address,
+            realm: registrar_cookie.account.realm,
+            realm_authority: registrar_cookie.realm_authority.pubkey(),
+            collection: nft_collection_cookie.mint,
+            max_voter_weight_record: max_voter_weight_record_cookie.address,
+        };
+
+        let mut configure_collection_ix = Instruction {
+            program_id: gpl_cnft_voter::id(),
+            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
+            data,
+        };
+
+        instruction_override(&mut configure_collection_ix);
+
+        let default_signers = &[&registrar_cookie.realm_authority];
+        let signers = signers_override.unwrap_or(default_signers);
+
+        self.bench
+            .process_transaction(&[configure_collection_ix], Some(signers))
+            .await?;
+
+        let collection_config = CollectionConfig {
+            collection: nft_collection_cookie.mint,
+            size: args.size,
+            weight: args.weight,
+            reserved: [0; 8],
+        };
+
+        Ok(CollectionConfigCookie { collection_config })
+    }
 }
