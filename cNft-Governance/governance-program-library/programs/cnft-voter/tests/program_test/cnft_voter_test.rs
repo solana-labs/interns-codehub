@@ -30,6 +30,7 @@ use crate::program_test::program_test_bench::ProgramTestBench;
 use crate::program_test::governance_test::{ProposalCookie, RealmCookie, TokenOwnerRecordCookie};
 use crate::program_test::program_test_bench::WalletCookie;
 use crate::program_test::token_metadata_test::{NftCollectionCookie, NftCookie, TokenMetadataTest};
+use crate::program_test::merkle_tree_test::{MerkleTreeCookie, MerkleTreeTest};
 use crate::program_test::tools::NopOverride;
 
 #[derive(Debug, PartialEq)]
@@ -89,6 +90,7 @@ pub struct CompressedNftVoterTest {
     pub bench: Arc<ProgramTestBench>,
     pub governance: GovernanceTest,
     pub token_metadata: TokenMetadataTest,
+    pub merkle_tree: MerkleTreeTest,
 }
 
 impl CompressedNftVoterTest {
@@ -109,6 +111,7 @@ impl CompressedNftVoterTest {
         CompressedNftVoterTest::add_program(&mut program_test);
         GovernanceTest::add_program(&mut program_test);
         TokenMetadataTest::add_program(&mut program_test);
+        MerkleTreeTest::add_program(&mut program_test);
 
 
         let program_id = gpl_cnft_voter::id();
@@ -123,12 +126,14 @@ impl CompressedNftVoterTest {
             Some(program_id)
         );
         let token_metadata_bench = TokenMetadataTest::new(bench_rc.clone());
+        let merkle_tree_bench = MerkleTreeTest::new(bench_rc.clone());
 
         Self {
             program_id,
             bench: bench_rc,
             governance: governance_bench,
             token_metadata: token_metadata_bench,
+            merkle_tree: merkle_tree_bench,
         }
     }
 

@@ -59,4 +59,5 @@ Input:
 
 ### Thoughts
 1. Can we also store votes as a merkle tree?
-2. How to verify nft owner addres
+2. How to verify nft owner address
+3. How to verify nft amount == 1
