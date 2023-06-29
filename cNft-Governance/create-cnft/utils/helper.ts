@@ -5,7 +5,7 @@ import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.j
 // define some default locations
 const DEFAULT_KEY_DIR_NAME = ".local_keys";
 const DEFAULT_PUBLIC_KEY_FILE = "keys.json";
-const DEFAULT_NONCE_FILE = "noncw.json"
+const DEFAULT_NONCE_FILE = "nonce.json"
 
 /*
   Load locally stored PublicKey addresses
@@ -86,7 +86,7 @@ export function loadNonceFromFile(
 
         // convert all loaded keyed values into valid public keys
         for (const [key, value] of Object.entries(data)) {
-            data[key] = new PublicKey(value as string) ?? "";
+            data[key] = value as number;
         }
 
         return data;

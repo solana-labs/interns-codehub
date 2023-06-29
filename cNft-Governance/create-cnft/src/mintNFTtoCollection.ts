@@ -46,9 +46,10 @@ dotenv.config();
     console.log("Collection master edition:", collectionMasterEditionAccount.toBase58());
 
     let nonce = loadNonceFromFile();
-    if (!nonce?.nonce) {
-        return console.warn("Please create nonce first");
-    }
+    console.log(nonce.nonce)
+    // if (!nonce?.nonce) {
+    //     return console.warn("Please create nonce first");
+    // }
 
     const metaplex = Metaplex.make(connection)
         .use(keypairIdentity(payer))
@@ -66,7 +67,7 @@ dotenv.config();
     const imageUri = await metaplex.storage().upload(file);
 
     const nftMetadata: UploadMetadataInput = {
-        name: `Doggy Worriars cNFT #${nonce.nonce}`,
+        name: `Doggy cNFT #${nonce.nonce}`,
         symbol: "DWFC",
         description: "The Studious Dog are smart and productive dogs.",
         image: imageUri,
