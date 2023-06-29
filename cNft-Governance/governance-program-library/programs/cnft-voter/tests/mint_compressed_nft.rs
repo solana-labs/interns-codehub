@@ -9,7 +9,7 @@ async fn test_mint_compressed_nft() -> Result<(), TransportError> {
     let cnft_voter_test = CompressedNftVoterTest::start_new().await;
 
     // mint compressed nft
-    let cnft_collection_cookie = cnft_voter_test.token_metadata.with_cnft_collection().await?;
+    let cnft_collection_cookie = cnft_voter_test.token_metadata.with_nft_collection().await?;
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
 
     let nonce = 0u64;
@@ -24,7 +24,7 @@ async fn test_mint_compressed_nft() -> Result<(), TransportError> {
 async fn test_mint_multiple_compressed_nft() -> Result<(), TransportError> {
     let cnft_voter_test = CompressedNftVoterTest::start_new().await;
 
-    let cnft_collection_cookie = cnft_voter_test.token_metadata.with_cnft_collection().await?;
+    let cnft_collection_cookie = cnft_voter_test.token_metadata.with_nft_collection().await?;
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
 
     for i in 0..5 {
