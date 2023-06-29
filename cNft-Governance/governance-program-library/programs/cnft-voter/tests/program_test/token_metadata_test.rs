@@ -232,7 +232,7 @@ impl TokenMetadataTest {
     }
 
     #[allow(dead_code)]
-    pub async fn with_cnft_collection(&self) -> Result<NftCollectionCookie, TransportError> {
+    pub async fn with_cnft_collection(&self, collection_size: u64) -> Result<NftCollectionCookie, TransportError> {
         let update_authority = self.bench.context.borrow().payer.pubkey();
         let payer = self.bench.context.borrow().payer.pubkey();
 
@@ -270,7 +270,7 @@ impl TokenMetadataTest {
             false,
             None,
             None,
-            Some(CollectionDetails::V1 { size: 10 }),
+            Some(CollectionDetails::V1 { size: collection_size }),
         );
 
         self.bench
