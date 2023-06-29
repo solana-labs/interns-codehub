@@ -98,6 +98,8 @@ impl MerkleTreeTest {
     #[allow(dead_code)]
     pub fn add_program(program_test: &mut ProgramTest) {
         program_test.add_program("mpl_bubblegum", Self::program_id(), None);
+        program_test.add_program("spl_noop", spl_noop::id(), None);
+        program_test.add_program("spl_account_compression", spl_account_compression::id(), None);
     }
 
     #[allow(dead_code)]
@@ -126,7 +128,7 @@ impl MerkleTreeTest {
             u64::try_from(merkle_tree_size).unwrap(),
             &spl_account_compression::id());
 
-        let signers = &[payer, merkle_tree];
+        let signers = &[merkle_tree];
 
         self.bench.process_transaction(&[tree_alloc_ix], Some(signers)).await?;
         Ok(())
@@ -179,11 +181,11 @@ impl MerkleTreeTest {
         };
 
 
-        let signers = &[payer];
+        // let signers = &[payer];
 
         self.bench.process_transaction(
             &[create_merkle_tree_ix],
-            Some(signers),
+            None,
         ).await?;
         
         let proof_tree = MerkleTree::new(vec![Node::default(); 1 << args.max_depth].as_slice());

@@ -27,9 +27,12 @@ async fn test_cast_nft_vote() -> Result<(), TransportError> {
     let proposal_cookie = cnft_voter_test.governance.with_proposal(&realm_cookie).await?;
 
     // mint compressed nft
-    let tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
+    let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
 
     cnft_voter_test.bench.advance_clock().await;
     let clock = cnft_voter_test.bench.get_clock().await;
+
+    let nonce = 0u64;
+    let leaf_cookie = cnft_voter_test.token_metadata.with_compressed_nft(&cnft_collection_cookie, &mut tree_cookie, nonce).await?;
     Ok(())
 }
