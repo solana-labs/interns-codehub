@@ -33,6 +33,6 @@ async fn test_cast_nft_vote() -> Result<(), TransportError> {
     let clock = cnft_voter_test.bench.get_clock().await;
 
     let nonce = 0u64;
-    let leaf_cookie = cnft_voter_test.token_metadata.with_compressed_nft(&cnft_collection_cookie, &mut tree_cookie, nonce).await?;
+    let leaf_cookie = cnft_voter_test.token_metadata.with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, nonce).await?;
     Ok(())
 }
