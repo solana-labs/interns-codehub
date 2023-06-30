@@ -3,7 +3,9 @@ use std::{str::FromStr, sync::Arc};
 use anchor_lang::err;
 use anchor_lang::error::Error;
 use anchor_lang::prelude::Pubkey;
-use solana_program::instruction::Instruction;
+use mpl_bubblegum::state::TreeConfig;
+use mpl_bubblegum::state::leaf_schema::LeafSchema;
+use solana_program::instruction::{Instruction, AccountMeta};
 use solana_program::{system_program, msg, system_instruction};
 use solana_program_test::ProgramTest;
 use solana_sdk::{
@@ -14,9 +16,12 @@ use solana_sdk::{
 use crate::program_test::program_test_bench::ProgramTestBench;
 use crate::program_test::tools::clone_keypair;
 use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
+use mpl_bubblegum::{hash_metadata, hash_creators};
+use mpl_bubblegum::utils::get_asset_id;
 use spl_merkle_tree_reference::{MerkleTree, Node};
 use spl_account_compression::{ConcurrentMerkleTree, AccountCompressionError};
 use spl_account_compression::state::CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1;
+use bytemuck::try_from_bytes;
 
 pub fn merkle_tree_get_size(max_depth: usize, max_buffer_size: usize) -> Result<usize, Error> {
     // Note: max_buffer_size MUST be a power of 2
@@ -83,6 +88,17 @@ impl Default for MerkleTreeArgs {
             public: Some(false),
         }
     }
+}
+
+// #[derive(Default)]
+pub struct LeafVerificationCookie {
+    pub root: [u8; 32],
+    pub data_hash: [u8; 32],
+    pub creator_hash: [u8; 32],
+    pub nonce: u64,
+    pub index: u32,
+    pub message: MetadataArgs,
+    pub proofs: Vec<AccountMeta>
 }
 
 pub struct MerkleTreeTest {
@@ -204,6 +220,49 @@ impl MerkleTreeTest {
     #[allow(dead_code)]
     pub fn get_tree_authority_address(&self, tree_pubkey: &Pubkey) -> Pubkey {
         Pubkey::find_program_address(&[tree_pubkey.as_ref()], &self.program_id).0
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_tree_config(&self, tree_cookie: &mut MerkleTreeCookie) -> Result<TreeConfig, TransportError> {
+        let tree_authority = &tree_cookie.tree_authority;
+        let tree_config = self.bench.get_anchor_account::<TreeConfig>(*tree_authority).await;
+        Ok(tree_config)
+    }
+
+    #[allow(dead_code)]
+    pub async fn decode_root(&self, tree_mint: &Pubkey, max_depth: usize, max_buffer_size: usize) -> Result<[u8; 32], TransportError> {
+        let mut tree_account = self.bench.get_account(tree_mint).await.unwrap();
+
+        let merkle_tree_bytes = tree_account.data.as_mut_slice();
+        let(_header_bytes, rest) = merkle_tree_bytes.split_at_mut(CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1);
+
+        let merkle_tree_size = merkle_tree_get_size(max_depth, max_buffer_size).unwrap();
+        let tree_bytes = &mut rest[..merkle_tree_size];
+
+        // fixed ConcurrentMerkleTree<5, 8> for now
+        let tree = try_from_bytes::<ConcurrentMerkleTree<5, 8>>(tree_bytes).unwrap();
+        let root = tree.change_logs[tree.active_index as usize].root;
+        Ok(root)
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_leaf_verification_info(&self, tree_cookie: &mut MerkleTreeCookie, args: &LeafArgs, max_depth: usize, max_buffer_size: usize) -> Result<LeafVerificationCookie, TransportError> {
+        let root = self.decode_root(&tree_cookie.address, max_depth, max_buffer_size).await?;
+        let data_hash = hash_metadata(&args.metadata).unwrap();
+        let creator_hash = hash_creators(&args.metadata.creators.as_slice()).unwrap();
+
+        let nodes: Vec<Node> = tree_cookie.proof_tree.get_proof_of_leaf(usize::try_from(args.index).unwrap());
+        let proofs: Vec<AccountMeta> = nodes.into_iter().map(|node| AccountMeta::new_readonly(Pubkey::new_from_array(node), false)).collect();
+
+        Ok(LeafVerificationCookie {
+            root,
+            data_hash,
+            creator_hash,
+            nonce: args.nonce,
+            index: args.index,
+            message: args.metadata.clone(),
+            proofs
+        })
     }
 }
 

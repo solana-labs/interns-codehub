@@ -61,3 +61,10 @@ Input:
 1. Can we also store votes as a merkle tree?
 2. How to verify nft owner address
 3. How to verify nft amount == 1
+
+### Tests
+1. Mint Compressed NFT (to be refactored)
+    - token_metadata_test.rs
+    - merkle_tree_test.rs
+    - mint_compressed_nft.rs
+    - next: how to get proof and verify

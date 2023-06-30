@@ -74,3 +74,20 @@ async fn test_mint_multiple_compressed_nft_to_collection() -> Result<(), Transpo
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn test_mint_and_verify_compressed_nft() -> Result<(), TransportError> {
+    let cnft_voter_test = CompressedNftVoterTest::start_new().await;
+
+    // mint compressed nft
+    let cnft_collection_cookie = cnft_voter_test.token_metadata.with_nft_collection().await?;
+    let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
+
+    let nonce = 0u64;
+    let leaf_cookie = cnft_voter_test.token_metadata.with_compressed_nft(&cnft_collection_cookie, &mut tree_cookie, nonce).await?;
+
+    // verify compressed nft
+    // let verified = cnft_voter_test.token_metadata.verify_compressed_nft(&cnft_collection_cookie, &tree_cookie, &leaf_cookie).await?;
+    // assert!(verified);
+    Ok(())
+}
