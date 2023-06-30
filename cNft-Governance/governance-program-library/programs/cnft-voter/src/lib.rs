@@ -68,6 +68,15 @@ pub mod cnft_voter {
         log_version();
         instructions::cast_cnft_vote(ctx, proposal, &params)
     }
+
+    pub fn verify_cnft_info<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, VerifyCnftInfo<'info>>,
+        params: utils::helper::VerifyParams2,
+    ) -> Result<()> {
+        log_version();
+        instructions::verify_cnft_info(ctx, &params)
+    }
+
 }
 
 fn log_version() {

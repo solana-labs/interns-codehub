@@ -1,7 +1,7 @@
 mod program_test;
 
-use anchor_lang::{prelude::{ErrorCode, Pubkey}, Key};
-use gpl_cnft_voter::{error::CompressedNftVoterError, state::cnft_vote_record};
+use anchor_lang::prelude::{ErrorCode, Pubkey};
+use gpl_cnft_voter::error::CompressedNftVoterError;
 use program_test::cnft_voter_test::CompressedNftVoterTest;
 use program_test::nft_voter_test::NftVoterTest;
 

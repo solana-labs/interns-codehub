@@ -4,7 +4,6 @@ use anchor_lang::err;
 use anchor_lang::error::Error;
 use anchor_lang::prelude::Pubkey;
 use mpl_bubblegum::state::TreeConfig;
-use mpl_bubblegum::state::leaf_schema::LeafSchema;
 use solana_program::instruction::{Instruction, AccountMeta};
 use solana_program::{system_program, msg, system_instruction};
 use solana_program_test::ProgramTest;
@@ -17,7 +16,6 @@ use crate::program_test::program_test_bench::ProgramTestBench;
 use crate::program_test::tools::clone_keypair;
 use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 use mpl_bubblegum::{hash_metadata, hash_creators};
-use mpl_bubblegum::utils::get_asset_id;
 use spl_merkle_tree_reference::{MerkleTree, Node};
 use spl_account_compression::{ConcurrentMerkleTree, AccountCompressionError};
 use spl_account_compression::state::CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1;
@@ -93,6 +91,7 @@ impl Default for MerkleTreeArgs {
 // #[derive(Default)]
 pub struct LeafVerificationCookie {
     pub root: [u8; 32],
+    pub asset_id: Pubkey,
     pub data_hash: [u8; 32],
     pub creator_hash: [u8; 32],
     pub nonce: u64,
@@ -250,9 +249,10 @@ impl MerkleTreeTest {
         let root = self.decode_root(&tree_cookie.address, max_depth, max_buffer_size).await?;
         let data_hash = hash_metadata(&args.metadata).unwrap();
         let creator_hash = hash_creators(&args.metadata.creators.as_slice()).unwrap();
-
+        let asset_id = 
         let nodes: Vec<Node> = tree_cookie.proof_tree.get_proof_of_leaf(usize::try_from(args.index).unwrap());
         let proofs: Vec<AccountMeta> = nodes.into_iter().map(|node| AccountMeta::new_readonly(Pubkey::new_from_array(node), false)).collect();
+    
 
         Ok(LeafVerificationCookie {
             root,

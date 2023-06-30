@@ -21,3 +21,6 @@ mod cast_nft_vote;
 
 pub use cast_cnft_vote::*;
 mod cast_cnft_vote;
+
+pub use verify_cnft_info::*;
+mod verify_cnft_info;

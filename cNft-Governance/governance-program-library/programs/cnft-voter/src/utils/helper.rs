@@ -49,6 +49,7 @@ pub fn verify_cnft<'info>(
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct VerifyParams2 {
     pub root: [u8; 32],
+    pub asset_id: Pubkey,
     pub metadata: MetadataArgs,
     pub data_hash: [u8; 32],
     pub creator_hash: [u8; 32],

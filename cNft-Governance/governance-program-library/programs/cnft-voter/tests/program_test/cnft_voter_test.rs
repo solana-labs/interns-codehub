@@ -1,3 +1,4 @@
+use std::os::unix::process;
 use std::sync::Arc;
 
 use anchor_lang::Key;
@@ -11,6 +12,7 @@ use gpl_cnft_voter::state::*;
 use mpl_bubblegum::program;
 use mpl_token_metadata::instruction;
 use solana_program::msg;
+use solana_sdk::transport::TransportError;
 use spl_governance::instruction::cast_vote;
 use spl_governance::state::vote_record::{self, Vote, VoteChoice};
 
@@ -32,6 +34,10 @@ use crate::program_test::program_test_bench::WalletCookie;
 use crate::program_test::token_metadata_test::{NftCollectionCookie, NftCookie, TokenMetadataTest};
 use crate::program_test::merkle_tree_test::{MerkleTreeCookie, MerkleTreeTest};
 use crate::program_test::tools::NopOverride;
+
+use gpl_cnft_voter::utils::helper::VerifyParams2;
+
+use super::merkle_tree_test::{LeafArgs, LeafVerificationCookie};
 
 #[derive(Debug, PartialEq)]
 pub struct RegistrarCookie {
@@ -415,5 +421,59 @@ impl CompressedNftVoterTest {
         };
 
         Ok(CollectionConfigCookie { collection_config })
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_cnft_verification(
+        &mut self,
+        merkle_tree_cookie: &MerkleTreeCookie,
+        leaf_cookie: &LeafArgs,
+        leaf_verification_cookei : &LeafVerificationCookie,
+    ) -> Result<(), TransportError> {
+        self.with_cnft_verification_using_ix(merkle_tree_cookie, leaf_cookie, leaf_verification_cookei, NopOverride, None).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_cnft_verification_using_ix<F: Fn(&mut Instruction)>(
+        &mut self,
+        merkle_tree_cookie: &MerkleTreeCookie,
+        leaf_cookie: &LeafArgs,
+        leaf_verification_cookie: &LeafVerificationCookie,
+        instruction_override: F,
+        signers_override: Option<&[&Keypair]>,
+    ) -> Result<(), TransportError> {
+        let tree_authority = &merkle_tree_cookie.tree_authority;
+        let proofs = &mut leaf_verification_cookie.proofs.clone();
+    
+        let accounts = gpl_cnft_voter::accounts::VerifyCnftInfo {
+            tree_authority: *tree_authority,
+            leaf_owner: leaf_cookie.owner.pubkey(),
+            leaf_delegate: leaf_cookie.delegate.pubkey(),
+            merkle_tree: merkle_tree_cookie.address,
+            payer: self.bench.payer.pubkey(),
+            compression_program: spl_account_compression::id(),
+            system_program: solana_sdk::system_program::id(),
+        };
+
+
+        let data = anchor_lang::InstructionData::data(&gpl_cnft_voter::instruction::VerifyCnftInfo {
+            params: params.clone(),
+        });
+
+        let mut verify_cnft_info_ix = Instruction {
+            program_id: gpl_cnft_voter::id(),
+            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
+            data,
+        };
+
+        verify_cnft_info_ix.accounts.append(proofs);
+
+        instruction_override(&mut verify_cnft_info_ix);
+
+        let default_signers = &[&self.bench.payer, &leaf_cookie.owner, &leaf_cookie.delegate];
+        let signers = signers_override.unwrap_or(default_signers);
+
+        self.bench.process_transaction(&[verify_cnft_info_ix], Some(signers)).await?;
+        Ok(())
     }
 }

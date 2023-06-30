@@ -1,6 +1,6 @@
 use program_test::cnft_voter_test::*;
 use gpl_cnft_voter::error::CompressedNftVoterError;
-use gpl_cnft_voter::state::*;
+use gpl_cnft_voter::{state::*, cnft_voter};
 use solana_sdk::transport::TransportError;
 use solana_program_test::*;
 
@@ -12,7 +12,7 @@ async fn test_cast_nft_vote() -> Result<(), TransportError> {
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;
     let max_voter_weight_record_cookie = cnft_voter_test.with_max_voter_weight_record(&registrar_cookie).await?;
-    let cnft_collection_cookie = cnft_voter_test.token_metadata.with_nft_collection().await?;
+    let cnft_collection_cookie = cnft_voter_test.token_metadata.with_cnft_collection(10).await?;
 
     let collection_config_cookie = cnft_voter_test.with_collection(
         &registrar_cookie,
@@ -29,10 +29,21 @@ async fn test_cast_nft_vote() -> Result<(), TransportError> {
     // mint compressed nft
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
 
-    cnft_voter_test.bench.advance_clock().await;
-    let clock = cnft_voter_test.bench.get_clock().await;
 
     let nonce = 0u64;
-    let leaf_cookie = cnft_voter_test.token_metadata.with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, nonce).await?;
+    let leaf_cookie = cnft_voter_test.token_metadata.with_compressed_nft_to_collection(
+        &cnft_collection_cookie, 
+        &mut tree_cookie, 
+        nonce
+    ).await?;
+
+    let leaf_verification_cookie = cnft_voter_test.merkle_tree.get_leaf_verification_info(
+        &mut tree_cookie, 
+        &leaf_cookie, 
+        5,
+        8
+    ).await?;
+
+    cnft_voter_test.with_cnft_verification(&tree_cookie, &leaf_cookie, &leaf_verification_cookie).await?;
     Ok(())
 }

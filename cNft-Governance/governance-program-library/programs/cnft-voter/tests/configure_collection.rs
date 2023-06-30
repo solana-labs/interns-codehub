@@ -1,4 +1,4 @@
-use gpl_cnft_voter::{error::CompressedNftVoterError, state::max_voter_weight_record};
+use gpl_cnft_voter::error::CompressedNftVoterError;
 use program_test::{
     cnft_voter_test::CompressedNftVoterTest,
     tools::{assert_anchor_err, assert_cnft_voter_err},
