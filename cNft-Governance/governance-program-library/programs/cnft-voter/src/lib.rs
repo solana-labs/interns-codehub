@@ -76,7 +76,6 @@ pub mod cnft_voter {
         log_version();
         instructions::verify_cnft_info(ctx, &params)
     }
-
 }
 
 fn log_version() {

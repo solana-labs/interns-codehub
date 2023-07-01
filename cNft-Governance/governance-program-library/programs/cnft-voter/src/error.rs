@@ -82,8 +82,10 @@ pub enum CompressedNftVoterError {
 
     #[msg("Invalid Metadata")]
     InvalidMetadata,
-}
 
+    #[msg("Invalid AssetId")]
+    InvalidAssetId,
+}
 
 #[error_code]
 pub enum NftVoterError {
@@ -158,4 +160,7 @@ pub enum NftVoterError {
 
     #[msg("VoterWeightRecord must be expired")]
     VoterWeightRecordMustBeExpired,
+
+    #[msg("Root must be equal")]
+    RootMustBeEqual,
 }

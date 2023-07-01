@@ -1,18 +1,23 @@
-use std::{str::FromStr, sync::Arc, fmt::Display};
+use std::{fmt::Display, str::FromStr, sync::Arc};
 
 // use anchor_lang::prelude::Pubkey;
 use mpl_bubblegum;
-use mpl_bubblegum::state::metaplex_adapter::{MetadataArgs, TokenProgramVersion, Creator, Collection as CNFT_Collection};
+use mpl_bubblegum::state::leaf_schema::LeafSchema;
+use mpl_bubblegum::state::metaplex_adapter::{
+    Collection as CNFT_Collection, Creator, MetadataArgs, TokenProgramVersion,
+};
+use mpl_bubblegum::utils::get_asset_id;
+use mpl_bubblegum::{hash_creators, hash_metadata};
 use mpl_token_metadata::state::{Collection, CollectionDetails};
 use solana_program::instruction::Instruction;
-use solana_program_test::ProgramTest;
-use solana_program::system_program;
 use solana_program::pubkey::Pubkey;
+use solana_program::system_program;
+use solana_program_test::ProgramTest;
 use solana_sdk::signature::Keypair;
 use solana_sdk::{signer::Signer, transport::TransportError};
 
+use crate::program_test::merkle_tree_test::{LeafArgs, MerkleTreeCookie};
 use crate::program_test::program_test_bench::{MintCookie, ProgramTestBench, WalletCookie};
-use crate::program_test::merkle_tree_test::{MerkleTreeCookie, LeafArgs};
 use crate::program_test::tools::clone_keypair;
 
 pub struct NftCookie {
@@ -232,7 +237,10 @@ impl TokenMetadataTest {
     }
 
     #[allow(dead_code)]
-    pub async fn with_cnft_collection(&self, collection_size: u64) -> Result<NftCollectionCookie, TransportError> {
+    pub async fn with_cnft_collection(
+        &self,
+        collection_size: u64,
+    ) -> Result<NftCollectionCookie, TransportError> {
         let update_authority = self.bench.context.borrow().payer.pubkey();
         let payer = self.bench.context.borrow().payer.pubkey();
 
@@ -270,7 +278,9 @@ impl TokenMetadataTest {
             false,
             None,
             None,
-            Some(CollectionDetails::V1 { size: collection_size }),
+            Some(CollectionDetails::V1 {
+                size: collection_size,
+            }),
         );
 
         self.bench
@@ -331,16 +341,19 @@ impl TokenMetadataTest {
         })
     }
 
-
     #[allow(dead_code)]
     pub fn default_cnft_metadata<T, U, V>(
-        &self, 
-        name: T, 
-        symbol: U, 
-        uri: V, 
+        &self,
+        name: T,
+        symbol: U,
+        uri: V,
         collection_mint: &Pubkey,
-    ) -> MetadataArgs 
-    where T: Display, U: Display, V: Display {
+    ) -> MetadataArgs
+    where
+        T: Display,
+        U: Display,
+        V: Display,
+    {
         MetadataArgs {
             name: name.to_string(),
             symbol: symbol.to_string(),
@@ -356,13 +369,11 @@ impl TokenMetadataTest {
                 key: collection_mint.clone(),
             }),
             uses: None,
-            creators: vec!{
-                Creator {
-                    address: self.bench.payer.pubkey(),
-                    verified: true,
-                    share: 100,
-                }
-            }
+            creators: vec![Creator {
+                address: self.bench.payer.pubkey(),
+                verified: true,
+                share: 100,
+            }],
         }
     }
 
@@ -370,36 +381,28 @@ impl TokenMetadataTest {
     pub async fn with_compressed_nft(
         &self,
         nft_collection_cookie: &NftCollectionCookie,
-        merkle_tree_cookie: &mut MerkleTreeCookie,
-        nonce: u64,
+        tree_cookie: &mut MerkleTreeCookie,
     ) -> Result<LeafArgs, TransportError> {
-
         let payer = &self.bench.payer;
 
-
-        let name = format!("test{}", nonce);
-        let symbol = format!("tst{}", nonce);
+        let name = format!("test{}", tree_cookie.num_minted);
+        let symbol = format!("tst{}", tree_cookie.num_minted);
         let uri = "https://www.bubblegum-nfts.com/".to_owned();
-        let metadata = self.default_cnft_metadata(
-            name, 
-            symbol, 
-            uri, 
-            &nft_collection_cookie.mint,
-        );
+        let metadata = self.default_cnft_metadata(name, symbol, uri, &nft_collection_cookie.mint);
         let mut args = LeafArgs::new(payer, metadata);
 
-        args.index = u32::try_from(merkle_tree_cookie.num_minted).unwrap();
-        args.nonce = merkle_tree_cookie.num_minted;
-    
+        args.index = u32::try_from(tree_cookie.num_minted).unwrap();
+        args.nonce = tree_cookie.num_minted;
+
         let accounts = mpl_bubblegum::accounts::MintV1 {
-            tree_authority: merkle_tree_cookie.tree_authority,
-            tree_delegate: merkle_tree_cookie.tree_delegate.pubkey(),
+            tree_authority: tree_cookie.tree_authority,
+            tree_delegate: tree_cookie.tree_delegate.pubkey(),
             payer: args.owner.pubkey(),
             log_wrapper: spl_noop::id(),
             compression_program: spl_account_compression::id(),
             leaf_owner: args.owner.pubkey(),
             leaf_delegate: args.delegate.pubkey(),
-            merkle_tree: merkle_tree_cookie.address,
+            merkle_tree: tree_cookie.address,
             system_program: system_program::id(),
         };
 
@@ -410,55 +413,64 @@ impl TokenMetadataTest {
         let mint_cnft_ix = Instruction {
             program_id: mpl_bubblegum::id(),
             accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
-            data
+            data,
         };
 
         let owner = clone_keypair(&args.owner);
-        let signers = &[&merkle_tree_cookie.tree_delegate, &owner];
-        self.bench.process_transaction(&[mint_cnft_ix], Some(signers)).await?;
-        
-        
-        merkle_tree_cookie.num_minted += 1;
+        let signers = &[&tree_cookie.tree_delegate, &owner];
+        self.bench
+            .process_transaction(&[mint_cnft_ix], Some(signers))
+            .await?;
+
+        let data_hash = hash_metadata(&args.metadata).unwrap();
+        let creator_hash = hash_creators(&args.metadata.creators.as_slice()).unwrap();
+        let asset_id = get_asset_id(&tree_cookie.address, args.nonce);
+
+        let leaf_node = LeafSchema::new_v0(
+            asset_id,
+            args.owner.pubkey(),
+            args.delegate.pubkey(),
+            args.nonce,
+            data_hash,
+            creator_hash,
+        )
+        .to_node();
+
+        tree_cookie.num_minted += 1;
+        tree_cookie
+            .proof_tree
+            .add_leaf(leaf_node, usize::try_from(args.index).unwrap());
         Ok(args)
     }
-
 
     #[allow(dead_code)]
     pub async fn with_compressed_nft_to_collection(
         &self,
         nft_collection_cookie: &NftCollectionCookie,
-        merkle_tree_cookie: &mut MerkleTreeCookie,
-        nonce: u64,
+        tree_cookie: &mut MerkleTreeCookie,
     ) -> Result<LeafArgs, TransportError> {
-
         let payer = &self.bench.payer;
 
-
-        let name = format!("test{}", nonce);
-        let symbol = format!("tst{}", nonce);
+        let name = format!("test{}", tree_cookie.num_minted);
+        let symbol = format!("tst{}", tree_cookie.num_minted);
         let uri = "https://www.bubblegum-nfts.com/".to_owned();
-        let metadata = self.default_cnft_metadata(
-            name, 
-            symbol, 
-            uri, 
-            &nft_collection_cookie.mint,
-        );
+        let metadata = self.default_cnft_metadata(name, symbol, uri, &nft_collection_cookie.mint);
         let mut args = LeafArgs::new(payer, metadata);
 
-        args.index = u32::try_from(merkle_tree_cookie.num_minted).unwrap();
-        args.nonce = merkle_tree_cookie.num_minted;
+        args.index = u32::try_from(tree_cookie.num_minted).unwrap();
+        args.nonce = tree_cookie.num_minted;
 
         // let collection_mint_authority = nft_collection_cookie.mint_authority.as_ref().unwrap();
         let collection_mint_authority = &self.bench.payer;
         let accounts = mpl_bubblegum::accounts::MintToCollectionV1 {
-            tree_authority: merkle_tree_cookie.tree_authority,
-            tree_delegate: merkle_tree_cookie.tree_delegate.pubkey(),
+            tree_authority: tree_cookie.tree_authority,
+            tree_delegate: tree_cookie.tree_delegate.pubkey(),
             payer: args.owner.pubkey(),
             log_wrapper: spl_noop::id(),
             compression_program: spl_account_compression::id(),
             leaf_owner: args.owner.pubkey(),
             leaf_delegate: args.delegate.pubkey(),
-            merkle_tree: merkle_tree_cookie.address,
+            merkle_tree: tree_cookie.address,
             system_program: system_program::id(),
             collection_mint: nft_collection_cookie.mint,
             collection_authority: collection_mint_authority.pubkey(),
@@ -466,24 +478,52 @@ impl TokenMetadataTest {
             collection_metadata: nft_collection_cookie.metadata,
             edition_account: nft_collection_cookie.master_edition,
             bubblegum_signer: self.get_bubblegum_signer_address(),
-            token_metadata_program: self.program_id
+            token_metadata_program: self.program_id,
         };
 
-        let data = anchor_lang::InstructionData::data(&mpl_bubblegum::instruction::MintToCollectionV1 {
-            metadata_args: args.metadata.clone()
-        });
+        let data =
+            anchor_lang::InstructionData::data(&mpl_bubblegum::instruction::MintToCollectionV1 {
+                metadata_args: args.metadata.clone(),
+            });
 
         let mint_cnft_ix = Instruction {
             program_id: mpl_bubblegum::id(),
             accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
-            data
+            data,
         };
 
         let owner = clone_keypair(&args.owner);
-        let signers = &[&merkle_tree_cookie.tree_delegate, &owner, &collection_mint_authority];
-        self.bench.process_transaction(&[mint_cnft_ix], Some(signers)).await?;
-        
-        merkle_tree_cookie.num_minted += 1;
+        let signers = &[
+            &tree_cookie.tree_delegate,
+            &owner,
+            &collection_mint_authority,
+        ];
+        self.bench
+            .process_transaction(&[mint_cnft_ix], Some(signers))
+            .await?;
+
+        if let Some(collection) = args.metadata.collection.as_mut() {
+            collection.verified = true;
+        }
+
+        let data_hash = hash_metadata(&args.metadata).unwrap();
+        let creator_hash = hash_creators(&args.metadata.creators.as_slice()).unwrap();
+        let asset_id = get_asset_id(&tree_cookie.address, args.nonce);
+
+        let leaf_node = LeafSchema::new_v0(
+            asset_id,
+            args.owner.pubkey(),
+            args.delegate.pubkey(),
+            args.nonce,
+            data_hash,
+            creator_hash,
+        )
+        .to_node();
+
+        tree_cookie.num_minted += 1;
+        tree_cookie
+            .proof_tree
+            .add_leaf(leaf_node, usize::try_from(args.index).unwrap());
         Ok(args)
     }
 
@@ -491,5 +531,4 @@ impl TokenMetadataTest {
     pub fn get_bubblegum_signer_address(&self) -> Pubkey {
         Pubkey::find_program_address(&[b"collection_cpi".as_ref()], &mpl_bubblegum::id()).0
     }
-    
 }
