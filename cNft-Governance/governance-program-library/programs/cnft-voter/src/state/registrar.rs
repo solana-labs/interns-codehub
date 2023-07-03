@@ -197,16 +197,6 @@ pub fn resolve_cnft_vote_weight2<'info>(
         CompressedNftVoterError::LeafOwnerMustBeTokenOwner
     );
 
-    verify_cnft2(
-        merkle_tree,
-        leaf_owner,
-        leaf_delegate,
-        &asset_id,
-        params,
-        proofs,
-        compression_program,
-    )?;
-
     let collection = params
         .metadata
         .collection
@@ -222,6 +212,17 @@ pub fn resolve_cnft_vote_weight2<'info>(
         collection.verified,
         CompressedNftVoterError::CollectionMustBeVerified
     );
+
+    verify_cnft2(
+        merkle_tree,
+        leaf_owner,
+        leaf_delegate,
+        &asset_id,
+        params,
+        proofs,
+        compression_program,
+    )?;
+
     if unique_asset_ids.contains(&asset_id) {
         return Err(CompressedNftVoterError::DuplicatedNftDetected.into());
     }

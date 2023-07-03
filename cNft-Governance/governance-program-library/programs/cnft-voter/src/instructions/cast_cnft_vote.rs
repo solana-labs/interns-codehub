@@ -48,6 +48,7 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
+    let voter_authority = &ctx.accounts.voter_authority.to_account_info();
     let merkle_tree = &ctx.accounts.merkle_tree.to_account_info();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let leaf_delegate = &ctx.accounts.leaf_delegate.to_account_info();
@@ -63,11 +64,11 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
         voter_weight_record,
     )?;
 
-    // require_eq!(
-    //     payer.key(),
-    //     leaf_owner.key(),
-    //     CompressedNftVoterError::LeafOwnerMustBePayer
-    // );
+    require_eq!(
+        voter_authority.key(),
+        leaf_owner.key(),
+        CompressedNftVoterError::VoterDoesNotOwnNft
+    );
     
     for i in 0..params.len() {
         // let cnft_vote_record_info = remaining_accounts.pop().unwrap();

@@ -88,6 +88,12 @@ pub enum CompressedNftVoterError {
 
     #[msg("Invalid NFT Collection")]
     InvalidCollectionMint,
+
+    #[msg("Governance Token Owner Or Delegate Must Sign")]
+    GoverningTokenOwnerOrDelegateMustSign,
+
+    #[msg("Leaf Owner Must Be Voter Authority")]
+    LeafOwnerMustBeVoterAuthority
 }
 
 #[error_code]

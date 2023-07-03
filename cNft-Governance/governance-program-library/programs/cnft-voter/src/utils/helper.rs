@@ -81,7 +81,7 @@ pub fn verify_cnft2<'info>(
     let data_hash = hash_metadata(&metadata).unwrap();
     require!(
         data_hash == params.data_hash,
-        CompressedNftVoterError::InvalidMetadata
+        CompressedNftVoterError::TokenMetadataDoesNotMatch
     );
 
     let leaf = LeafSchema::new_v0(

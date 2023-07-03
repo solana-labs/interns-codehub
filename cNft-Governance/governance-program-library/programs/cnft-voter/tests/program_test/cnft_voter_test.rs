@@ -587,15 +587,12 @@ impl CompressedNftVoterTest {
 
         let signers = &[
             &voter_cookie.signer,
-            &leaf_cookies[0].owner,
-            &leaf_cookies[0].delegate,
+            // &leaf_cookies[0].owner,
+            // &leaf_cookies[0].delegate,
         ];
-
         self.bench
             .process_transaction(&instructions, Some(signers))
             .await?;
-
-        
 
         Ok(cnft_vote_record_cookies)
     }
