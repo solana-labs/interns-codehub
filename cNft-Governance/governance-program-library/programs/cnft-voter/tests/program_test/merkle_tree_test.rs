@@ -268,10 +268,12 @@ impl MerkleTreeTest {
         let nodes: Vec<Node> = tree_cookie
             .proof_tree
             .get_proof_of_leaf(usize::try_from(args.index).unwrap());
-        let proofs: Vec<AccountMeta> = nodes
+        let mut proofs: Vec<AccountMeta> = nodes
             .into_iter()
             .map(|node| AccountMeta::new_readonly(Pubkey::new_from_array(node), false))
             .collect();
+
+        proofs = proofs[..(proofs.len() - tree_cookie.canopy_depth as usize)].to_vec();
 
         Ok((
             LeafVerificationCookie {

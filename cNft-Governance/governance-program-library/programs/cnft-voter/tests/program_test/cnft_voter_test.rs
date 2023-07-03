@@ -498,7 +498,7 @@ impl CompressedNftVoterTest {
         proposal_cookie: &ProposalCookie,
         cnft_voter_cookie: &WalletCookie,
         nft_collection_cookie: &NftCollectionCookie,
-        merkle_tree_cookie: &MerkleTreeCookie,
+        tree_cookie: &MerkleTreeCookie,
         leaf_cookie: &LeafArgs,
         leaf_verification_cookie: &LeafVerificationCookie,
         proofs: &Vec<AccountMeta>,
@@ -510,6 +510,7 @@ impl CompressedNftVoterTest {
         let data = anchor_lang::InstructionData::data(
             &gpl_cnft_voter::instruction::CastCompressedNftVote {
                 proposal: proposal_cookie.address,
+                cnft_info_len: (proofs.len() + 1) as u32,
                 params: leaf_verification_cookie.clone(),
             },
         );
@@ -520,7 +521,7 @@ impl CompressedNftVoterTest {
             voter_token_owner_record: voter_token_owner_record_cookie.address,
             voter_authority: cnft_voter_cookie.address,
             collection_mint: nft_collection_cookie.mint,
-            merkle_tree: merkle_tree_cookie.address,
+            merkle_tree: tree_cookie.address,
             leaf_owner: leaf_cookie.owner.pubkey(),
             leaf_delegate: leaf_cookie.delegate.pubkey(),
             payer: self.bench.payer.pubkey(),

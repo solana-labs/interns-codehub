@@ -43,6 +43,7 @@ pub struct CastCompressedNftVote<'info> {
 pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
+    cnft_info_len: u32,
     params: &VerifyParams2,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
@@ -68,8 +69,10 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
     //     CompressedNftVoterError::LeafOwnerMustBePayer
     // );
 
-    let cnft_vote_record_info = remaining_accounts.pop().unwrap();
-    let proofs = remaining_accounts.to_vec();
+    // let cnft_vote_record_info = remaining_accounts.pop().unwrap();
+    // let proofs = remaining_accounts.to_vec();
+    let cnft_vote_record_info = remaining_accounts[(cnft_info_len as usize) - 1].clone();
+    let proofs = remaining_accounts[0..(cnft_info_len - 1) as usize].to_vec();
     let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight2(
         &registrar,
         &governing_token_owner,
@@ -92,15 +95,6 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
         governing_token_owner,
         reserved: [0; 8],
     };
-
-    // // pseudo-code:
-    // // nft data we get nft_metadata, nft_vote_record_info
-    // // for (cnft_metadata_info, cnft_vote_record_info) in ctx.remaining_accounts
-    // //     get cnft_asset_id and cnft_vote_weight
-    // //     add up voter_weight with cnft_vote_weight
-    // //     verify cnft_vote_record_info is empty
-    // //     create cnft_vote_record_data
-    // //     create_and_serialize_account_signed
     require!(
         cnft_vote_record_info.data_is_empty(),
         CompressedNftVoterError::NftAlreadyVoted
