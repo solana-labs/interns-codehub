@@ -4,6 +4,7 @@ Reference(fork): [nft-voter](https://github.com/solana-labs/governance-program-l
 ### Question
 1. how to get cNFT' collenction.verifird from ReadAPI?
 2. why cast_nft_vote's payer is not the nft_owner but the bench.payer?
+3. how to deal with nft in different tree
 
 ### Steps to create a goverance (from governance-ui)
 1. Prepare realm configs: ./tools/governance/prepareRealmCreation.ts
@@ -68,4 +69,8 @@ Input:
     - token_metadata_test.rs
     - merkle_tree_test.rs
     - mint_compressed_nft.rs
-    - next: how to get proof and verify
+    - get cnft proofs
+2. Cast cNFT vote
+    - cast one cnft vote
+    - cast vote with multiple cnft
+    - test with different canopy!!

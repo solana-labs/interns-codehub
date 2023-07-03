@@ -86,8 +86,8 @@ async fn test_mint_multiple_compressed_nft_to_collection() -> Result<(), Transpo
 }
 
 #[tokio::test]
-async fn test_get_leaf_verification_info() -> Result<(), TransportError> {
-    let cnft_voter_test = CompressedNftVoterTest::start_new().await;
+async fn test_leaf_verification() -> Result<(), TransportError> {
+    let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let max_depth = 5;
     let max_buffer_size = 8;
     let voter_cookie = cnft_voter_test.bench.with_wallet().await;
@@ -123,7 +123,18 @@ async fn test_get_leaf_verification_info() -> Result<(), TransportError> {
     assert!(leaf_verification_cookie.data_hash != [0u8; 32]);
     assert!(leaf_verification_cookie.creator_hash != [0u8; 32]);
     assert!(leaf_verification_cookie.index == leaf_cookie.index);
-    assert!(proofs.len() == max_depth);
+    assert!(proofs.len() == max_depth - tree_cookie.canopy_depth as usize);
 
+    cnft_voter_test
+        .with_cnft_verification(
+            &voter_cookie,
+            &mut tree_cookie,
+            &leaf_cookie,
+            &leaf_verification_cookie,
+            &proofs,
+        )
+        .await?;
     Ok(())
 }
+
+

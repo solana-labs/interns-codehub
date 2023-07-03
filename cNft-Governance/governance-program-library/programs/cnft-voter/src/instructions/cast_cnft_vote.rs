@@ -44,7 +44,7 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
     cnft_info_len: u32,
-    params: &VerifyParams2,
+    params: &Vec<VerifyParams2>,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
@@ -68,47 +68,55 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
     //     leaf_owner.key(),
     //     CompressedNftVoterError::LeafOwnerMustBePayer
     // );
+    
+    for i in 0..params.len() {
+        // let cnft_vote_record_info = remaining_accounts.pop().unwrap();
+        // let proofs = remaining_accounts.to_vec();
 
-    // let cnft_vote_record_info = remaining_accounts.pop().unwrap();
-    // let proofs = remaining_accounts.to_vec();
-    let cnft_vote_record_info = remaining_accounts[(cnft_info_len as usize) - 1].clone();
-    let proofs = remaining_accounts[0..(cnft_info_len - 1) as usize].to_vec();
-    let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight2(
-        &registrar,
-        &governing_token_owner,
-        &collection.key(),
-        &merkle_tree,
-        &mut unique_asset_ids,
-        &leaf_owner,
-        &leaf_delegate,
-        params,
-        proofs,
-        &ctx.accounts.compression_program.to_account_info(),
-    )?;
+        // let cnft_vote_record_info = remaining_accounts[(cnft_info_len as usize) - 1].clone();
+        // let proofs = remaining_accounts[0..(cnft_info_len - 1) as usize].to_vec();
+        let param = &params[i];
+        let cnft_info = &remaining_accounts[(i * cnft_info_len as usize)..((i + 1) * cnft_info_len as usize)];
+        let proofs = cnft_info[0..(cnft_info_len - 1) as usize].to_vec();
+        let cnft_vote_record_info = cnft_info[(cnft_info_len - 1) as usize].clone();
+        let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight2(
+            &registrar,
+            &governing_token_owner,
+            &collection.key(),
+            &merkle_tree,
+            &mut unique_asset_ids,
+            &leaf_owner,
+            &leaf_delegate,
+            param,
+            proofs,
+            &ctx.accounts.compression_program.to_account_info(),
+        )?;
 
-    voter_weight = voter_weight.checked_add(cnft_vote_weight as u64).unwrap();
-    let rent = Rent::get()?;
-    let cnft_vote_record = CompressedNftVoteRecord {
-        account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
-        proposal,
-        asset_id,
-        governing_token_owner,
-        reserved: [0; 8],
-    };
-    require!(
-        cnft_vote_record_info.data_is_empty(),
-        CompressedNftVoterError::NftAlreadyVoted
-    );
-    create_and_serialize_account_signed(
-        &ctx.accounts.payer.to_account_info(),
-        &cnft_vote_record_info,
-        &cnft_vote_record,
-        &[b"cnft-vote-record", proposal.as_ref(), asset_id.as_ref()],
-        &id(),
-        &ctx.accounts.system_program.to_account_info(),
-        &rent,
-        0,
-    )?;
+        voter_weight = voter_weight.checked_add(cnft_vote_weight as u64).unwrap();
+        let rent = Rent::get()?;
+        let cnft_vote_record = CompressedNftVoteRecord {
+            account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
+            proposal,
+            asset_id,
+            governing_token_owner,
+            reserved: [0; 8],
+        };
+        require!(
+            cnft_vote_record_info.data_is_empty(),
+            CompressedNftVoterError::NftAlreadyVoted
+        );
+        create_and_serialize_account_signed(
+            &ctx.accounts.payer.to_account_info(),
+            &cnft_vote_record_info,
+            &cnft_vote_record,
+            &[b"cnft-vote-record", proposal.as_ref(), asset_id.as_ref()],
+            &id(),
+            &ctx.accounts.system_program.to_account_info(),
+            &rent,
+            0,
+        )?;
+    }
+    
 
     if voter_weight_record.weight_action_target == Some(proposal)
         && voter_weight_record.weight_action == Some(VoterWeightAction::CastVote)
