@@ -31,7 +31,7 @@ pub fn verify_cnft_info<'info>(
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let leaf_delegate = &ctx.accounts.leaf_delegate.to_account_info();
     let metadata = params.metadata.clone();
-    let proofs = ctx.remaining_accounts;
+    let proofs = ctx.remaining_accounts.to_vec();
     require!(
         leaf_owner.is_signer || leaf_delegate.is_signer,
         BubblegumError::LeafAuthorityMustSign
@@ -63,7 +63,7 @@ pub fn verify_cnft_info<'info>(
         ctx.accounts.compression_program.to_account_info(),
         VerifyLeaf { merkle_tree },
     )
-    .with_remaining_accounts(proofs.to_vec());
+    .with_remaining_accounts(proofs);
     spl_account_compression::cpi::verify_leaf(cpi_ctx, params.root, leaf.to_node(), params.index)?;
 
     Ok(())

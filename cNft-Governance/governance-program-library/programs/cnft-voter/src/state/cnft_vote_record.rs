@@ -25,7 +25,6 @@ impl CompressedNftVoteRecord {
     pub const ACCOUNT_DISCRIMINATOR: [u8; 8] = [78, 251, 13, 96, 198, 207, 234, 216];
 }
 
-
 impl AccountMaxSize for CompressedNftVoteRecord {}
 
 impl IsInitialized for CompressedNftVoteRecord {
@@ -34,10 +33,10 @@ impl IsInitialized for CompressedNftVoteRecord {
     }
 }
 
-pub fn get_cnft_vote_record_address(proposal: &Pubkey, nft_mint: &Pubkey) -> Pubkey {
+pub fn get_cnft_vote_record_address(proposal: &Pubkey, asset_id: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
-        &[b"cnft-vote-record", proposal.as_ref(), nft_mint.as_ref()],
-        &crate::id(),
+        &[b"cnft-vote-record", proposal.as_ref(), asset_id.as_ref()],
+        &id(),
     )
     .0
 }

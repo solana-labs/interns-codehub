@@ -180,27 +180,28 @@ pub fn resolve_cnft_vote_weight<'info>(
 pub fn resolve_cnft_vote_weight2<'info>(
     registrar: &Registrar,
     governing_token_owner: &Pubkey,
-    merkle_tree: &UncheckedAccount<'info>,
-    leaf_owner: &Pubkey,
-    leaf_delegate: &Pubkey,
+    collection_mint: &Pubkey,
+    merkle_tree: &AccountInfo<'info>,
+    unique_asset_ids: &mut Vec<Pubkey>,
+    leaf_owner: &AccountInfo<'info>,
+    leaf_delegate: &AccountInfo<'info>,
     params: &VerifyParams2,
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>,
-    unique_asset_ids: &mut Vec<Pubkey>,
 ) -> Result<(u64, Pubkey)> {
     let asset_id = get_asset_id(&merkle_tree.key(), params.nonce);
 
     require_eq!(
         *governing_token_owner,
-        *leaf_owner,
+        leaf_owner.key(),
         CompressedNftVoterError::LeafOwnerMustBeTokenOwner
     );
 
     verify_cnft2(
-        &merkle_tree.to_account_info(),
+        merkle_tree,
+        leaf_owner,
+        leaf_delegate,
         &asset_id,
-        &leaf_owner.key(),
-        &leaf_delegate.key(),
         params,
         proofs,
         compression_program,
@@ -211,6 +212,12 @@ pub fn resolve_cnft_vote_weight2<'info>(
         .collection
         .as_ref()
         .ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
+
+    require_eq!(
+        *collection_mint,
+        collection.key,
+        CompressedNftVoterError::InvalidCollectionMint
+    );
     require!(
         collection.verified,
         CompressedNftVoterError::CollectionMustBeVerified
@@ -223,7 +230,6 @@ pub fn resolve_cnft_vote_weight2<'info>(
     let collection_config = registrar.get_collection_config(collection.key)?;
     Ok((collection_config.weight, asset_id))
 }
-
 
 #[cfg(test)]
 mod test {

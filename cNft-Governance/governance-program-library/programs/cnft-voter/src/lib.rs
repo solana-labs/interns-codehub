@@ -59,11 +59,11 @@ pub mod cnft_voter {
         instructions::cast_nft_vote(ctx, proposal)
     }
 
-    pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
+    pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
         proposal: Pubkey,
         // cnft_metadata: MetadataArgs,
-        params: utils::helper::VerifyParams,
+        params: utils::helper::VerifyParams2,
     ) -> Result<()> {
         log_version();
         instructions::cast_cnft_vote(ctx, proposal, &params)

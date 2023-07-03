@@ -85,6 +85,9 @@ pub enum CompressedNftVoterError {
 
     #[msg("Invalid AssetId")]
     InvalidAssetId,
+
+    #[msg("Invalid NFT Collection")]
+    InvalidCollectionMint,
 }
 
 #[error_code]

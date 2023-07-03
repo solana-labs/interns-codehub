@@ -8,34 +8,33 @@ mod program_test;
 #[tokio::test]
 async fn test_mint_compressed_nft() -> Result<(), TransportError> {
     let cnft_voter_test = CompressedNftVoterTest::start_new().await;
-
-    // mint compressed nft
+    let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let cnft_collection_cookie = cnft_voter_test.token_metadata.with_nft_collection().await?;
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
 
     let leaf_cookie = cnft_voter_test
         .token_metadata
-        .with_compressed_nft(&cnft_collection_cookie, &mut tree_cookie)
+        .with_compressed_nft(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
     assert_eq!(leaf_cookie.index, u32::try_from(leaf_cookie.nonce).unwrap());
-    assert_eq!(leaf_cookie.nonce, tree_cookie.num_minted);
+    assert_eq!(leaf_cookie.nonce + 1, tree_cookie.num_minted);
     Ok(())
 }
 
 #[tokio::test]
 async fn test_mint_multiple_compressed_nft() -> Result<(), TransportError> {
     let cnft_voter_test = CompressedNftVoterTest::start_new().await;
-
+    let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let cnft_collection_cookie = cnft_voter_test.token_metadata.with_nft_collection().await?;
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
 
     for _ in 0..5 {
         let leaf_cookie = cnft_voter_test
             .token_metadata
-            .with_compressed_nft(&cnft_collection_cookie, &mut tree_cookie)
+            .with_compressed_nft(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
             .await?;
         assert_eq!(leaf_cookie.index, u32::try_from(leaf_cookie.nonce).unwrap());
-        assert_eq!(leaf_cookie.nonce, tree_cookie.num_minted);
+        assert_eq!(leaf_cookie.nonce + 1, tree_cookie.num_minted);
     }
     Ok(())
 }
@@ -43,8 +42,7 @@ async fn test_mint_multiple_compressed_nft() -> Result<(), TransportError> {
 #[tokio::test]
 async fn test_mint_compressed_nft_to_collection() -> Result<(), TransportError> {
     let cnft_voter_test = CompressedNftVoterTest::start_new().await;
-
-    // mint compressed nft
+    let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let cnft_collection_cookie = cnft_voter_test
         .token_metadata
         .with_cnft_collection(10)
@@ -53,19 +51,18 @@ async fn test_mint_compressed_nft_to_collection() -> Result<(), TransportError> 
 
     let leaf_cookie = cnft_voter_test
         .token_metadata
-        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie)
+        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
 
     assert_eq!(leaf_cookie.index, u32::try_from(leaf_cookie.nonce).unwrap());
-    assert_eq!(leaf_cookie.nonce, tree_cookie.num_minted);
+    assert_eq!(leaf_cookie.nonce + 1, tree_cookie.num_minted);
     Ok(())
 }
 
 #[tokio::test]
 async fn test_mint_multiple_compressed_nft_to_collection() -> Result<(), TransportError> {
     let cnft_voter_test = CompressedNftVoterTest::start_new().await;
-
-    // mint compressed nft
+    let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let cnft_collection_cookie = cnft_voter_test
         .token_metadata
         .with_cnft_collection(10)
@@ -75,11 +72,15 @@ async fn test_mint_multiple_compressed_nft_to_collection() -> Result<(), Transpo
     for _ in 0..5 {
         let leaf_cookie = cnft_voter_test
             .token_metadata
-            .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie)
+            .with_compressed_nft_to_collection(
+                &cnft_collection_cookie,
+                &mut tree_cookie,
+                &voter_cookie,
+            )
             .await?;
 
         assert_eq!(leaf_cookie.index, u32::try_from(leaf_cookie.nonce).unwrap());
-        assert_eq!(leaf_cookie.nonce, tree_cookie.num_minted);
+        assert_eq!(leaf_cookie.nonce + 1, tree_cookie.num_minted);
     }
     Ok(())
 }
@@ -89,7 +90,7 @@ async fn test_get_leaf_verification_info() -> Result<(), TransportError> {
     let cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let max_depth = 5;
     let max_buffer_size = 8;
-    // mint compressed nft
+    let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let cnft_collection_cookie = cnft_voter_test
         .token_metadata
         .with_cnft_collection(10)
@@ -98,7 +99,7 @@ async fn test_get_leaf_verification_info() -> Result<(), TransportError> {
 
     let leaf_cookie = cnft_voter_test
         .token_metadata
-        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie)
+        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
     println!(
         "proof_tree.root: {}",

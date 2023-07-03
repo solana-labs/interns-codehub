@@ -382,14 +382,15 @@ impl TokenMetadataTest {
         &self,
         nft_collection_cookie: &NftCollectionCookie,
         tree_cookie: &mut MerkleTreeCookie,
+        voter_cookie: &WalletCookie,
     ) -> Result<LeafArgs, TransportError> {
-        let payer = &self.bench.payer;
+        let owner = &voter_cookie.signer;
 
         let name = format!("test{}", tree_cookie.num_minted);
         let symbol = format!("tst{}", tree_cookie.num_minted);
         let uri = "https://www.bubblegum-nfts.com/".to_owned();
         let metadata = self.default_cnft_metadata(name, symbol, uri, &nft_collection_cookie.mint);
-        let mut args = LeafArgs::new(payer, metadata);
+        let mut args = LeafArgs::new(owner, metadata);
 
         args.index = u32::try_from(tree_cookie.num_minted).unwrap();
         args.nonce = tree_cookie.num_minted;
@@ -448,14 +449,15 @@ impl TokenMetadataTest {
         &self,
         nft_collection_cookie: &NftCollectionCookie,
         tree_cookie: &mut MerkleTreeCookie,
+        voter_cookie: &WalletCookie,
     ) -> Result<LeafArgs, TransportError> {
-        let payer = &self.bench.payer;
+        let owner = &voter_cookie.signer;
 
         let name = format!("test{}", tree_cookie.num_minted);
         let symbol = format!("tst{}", tree_cookie.num_minted);
         let uri = "https://www.bubblegum-nfts.com/".to_owned();
         let metadata = self.default_cnft_metadata(name, symbol, uri, &nft_collection_cookie.mint);
-        let mut args = LeafArgs::new(payer, metadata);
+        let mut args = LeafArgs::new(owner, metadata);
 
         args.index = u32::try_from(tree_cookie.num_minted).unwrap();
         args.nonce = tree_cookie.num_minted;
