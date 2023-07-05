@@ -16,10 +16,6 @@ pub struct ConfigureCollection<'info> {
      )]
     pub realm: UncheckedAccount<'info>,
 
-    pub realm_authority: Signer<'info>,
-
-    pub collection: Account<'info, Mint>,
-
     #[account(
         mut,
         constraint = max_voter_weight_record.realm == registrar.realm
@@ -29,6 +25,9 @@ pub struct ConfigureCollection<'info> {
         @ CompressedNftVoterError::InvalidMaxVoterWeightRecordMint,
     )]
     pub max_voter_weight_record: Account<'info, MaxVoterWeightRecord>,
+
+    pub realm_authority: Signer<'info>,
+    pub collection: Account<'info, Mint>,
 }
 
 pub fn configure_collection(
@@ -56,8 +55,8 @@ pub fn configure_collection(
     let collection_config = CollectionConfig {
         collection: collection.key(),
         weight,
-        reserved: [0; 8],
         size,
+        reserved: [0; 8],
     };
 
     let collection_idx = registrar

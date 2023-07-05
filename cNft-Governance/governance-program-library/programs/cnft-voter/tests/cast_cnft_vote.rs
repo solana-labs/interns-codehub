@@ -1147,6 +1147,7 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_attempted_sandwich
         .await;
 
     assert_eq!(voter_weight_record.voter_weight, 3);
+
     Ok(())
 }
 

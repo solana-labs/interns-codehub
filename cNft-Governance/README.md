@@ -6,6 +6,7 @@ Reference(fork): [nft-voter](https://github.com/solana-labs/governance-program-l
 2. why cast_nft_vote's payer is not the nft_owner but the bench.payer?
 3. how to deal with nft in different tree
 4. how to check nft amount
+5. can regret vote?
 
 ### Steps to create a goverance (from governance-ui)
 1. Prepare realm configs: ./tools/governance/prepareRealmCreation.ts

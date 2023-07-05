@@ -7,6 +7,7 @@ use spl_governance::error::GovernanceError;
 use crate::program_test::tools::{assert_cnft_voter_err, assert_gov_err};
 mod program_test;
 
+// relinquish vote after the proposal has ended
 #[tokio::test]
 async fn test_relinquish_cnft_vote() -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
@@ -551,7 +552,7 @@ async fn test_relinquish_cnft_vote_using_delegate() -> Result<(), TransportError
         .token_metadata
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
-    
+
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
