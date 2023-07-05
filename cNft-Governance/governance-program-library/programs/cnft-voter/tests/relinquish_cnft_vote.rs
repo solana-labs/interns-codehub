@@ -52,7 +52,6 @@ async fn test_relinquish_cnft_vote() -> Result<(), TransportError> {
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
 
-    cnft_voter_test.bench.advance_clock().await;
 
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
@@ -146,8 +145,6 @@ async fn test_relinquish_cnft_vote_for_proposal_in_voting_state() -> Result<(), 
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
 
-    cnft_voter_test.bench.advance_clock().await;
-
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
@@ -236,8 +233,6 @@ async fn test_relinquish_cnft_vote_for_proposal_in_voting_state_and_vote_record_
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
 
-    cnft_voter_test.bench.advance_clock().await;
-
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
@@ -313,8 +308,6 @@ async fn test_relinquish_cnft_vote_with_invalid_voter_error() -> Result<(), Tran
         .token_metadata
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
-
-    cnft_voter_test.bench.advance_clock().await;
 
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
@@ -395,8 +388,6 @@ async fn test_relinquish_cnft_vote_unexpired_vote_weight_record() -> Result<(), 
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
 
-    cnft_voter_test.bench.advance_clock().await;
-
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
@@ -476,8 +467,6 @@ async fn test_relinquish_cnft_vote_with_invalid_voter_weight_token_owner_error()
         .token_metadata
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
-
-    cnft_voter_test.bench.advance_clock().await;
 
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
@@ -562,9 +551,7 @@ async fn test_relinquish_cnft_vote_using_delegate() -> Result<(), TransportError
         .token_metadata
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
-
-    cnft_voter_test.bench.advance_clock().await;
-
+    
     let (leaf_verification_cookie, proofs) = cnft_voter_test
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
