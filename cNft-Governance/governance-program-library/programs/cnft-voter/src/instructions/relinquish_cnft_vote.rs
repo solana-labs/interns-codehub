@@ -10,7 +10,7 @@ use spl_governance_tools::account::dispose_account;
 /// Disposes NftVoteRecord and recovers the rent from the accounts
 /// It can only be executed when voting on the target Proposal ended or voter withdrew vote from the Proposal
 #[derive(Accounts)]
-pub struct RelinquishNftVote<'info> {
+pub struct RelinquishCompressedNftVote<'info> {
     pub registrar: Account<'info, Registrar>,
 
     #[account(
@@ -20,26 +20,30 @@ pub struct RelinquishNftVote<'info> {
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
 
-    /// Governance account the Proposal is for
+    /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     #[account(owner = registrar.governance_program_id)]
     pub governance: UncheckedAccount<'info>,
 
+    /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     #[account(owner = registrar.governance_program_id)]
     pub proposal: UncheckedAccount<'info>,
 
+    /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     #[account(owner = registrar.governance_program_id)]
     voter_token_owner_record: UncheckedAccount<'info>,
 
     pub voter_authority: Signer<'info>,
 
+    /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     pub vote_record: UncheckedAccount<'info>,
 
+    /// CHECK: The beneficiary who receives lamports from the disposed CompressedNftVoterRecord accounts can be any account
     #[account(mut)]
     pub beneficiary: UncheckedAccount<'info>,
 
 }
 
-pub fn relinquish_nft_vote(ctx: Context<RelinquishNftVote>) -> Result<()> {
+pub fn relinquish_compressed_nft_vote(ctx: Context<RelinquishCompressedNftVote>) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
     

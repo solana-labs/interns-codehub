@@ -40,7 +40,7 @@ pub struct CastCompressedNftVote<'info> {
 }
 
 // so far only one nft is supported
-pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
+pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
     cnft_info_len: u32,

@@ -445,7 +445,7 @@ impl CompressedNftVoterTest {
         // let tree_authority = &tree_cookie.tree_authority;
         let proofs = &mut proofs.clone();
 
-        let accounts = gpl_cnft_voter::accounts::VerifyCnftInfo {
+        let accounts = gpl_cnft_voter::accounts::VerifyCompressedNftInfo {
             // tree_authority: *tree_authority,
             leaf_owner: leaf_cookie.owner.pubkey(),
             leaf_delegate: leaf_cookie.delegate.pubkey(),
@@ -457,7 +457,7 @@ impl CompressedNftVoterTest {
         };
 
         let data =
-            anchor_lang::InstructionData::data(&gpl_cnft_voter::instruction::VerifyCnftInfo {
+            anchor_lang::InstructionData::data(&gpl_cnft_voter::instruction::VerifyCompressedNftInfo {
                 params: leaf_verification_cookie.clone(),
             });
 

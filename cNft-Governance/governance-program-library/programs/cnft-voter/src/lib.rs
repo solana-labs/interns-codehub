@@ -39,9 +39,9 @@ pub mod cnft_voter {
         instructions::update_voter_weight_record(ctx, voter_weight_action, cnft_info_len, &params)
     }
 
-    pub fn relinquish_nft_vote(ctx: Context<RelinquishNftVote>) -> Result<()> {
+    pub fn relinquish_nft_vote(ctx: Context<RelinquishCompressedNftVote>) -> Result<()> {
         log_version();
-        instructions::relinquish_nft_vote(ctx)
+        instructions::relinquish_compressed_nft_vote(ctx)
     }
 
     pub fn configure_collection(
@@ -60,15 +60,15 @@ pub mod cnft_voter {
         params: Vec<utils::helper::VerifyParams2>,
     ) -> Result<()> {
         log_version();
-        instructions::cast_cnft_vote(ctx, proposal, cnft_info_len, &params)
+        instructions::cast_compressed_nft_vote(ctx, proposal, cnft_info_len, &params)
     }
 
-    pub fn verify_cnft_info<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, VerifyCnftInfo<'info>>,
+    pub fn verify_compressed_nft_info<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, VerifyCompressedNftInfo<'info>>,
         params: utils::helper::VerifyParams2,
     ) -> Result<()> {
         log_version();
-        instructions::verify_cnft_info(ctx, &params)
+        instructions::verify_compressed_nft_info(ctx, &params)
     }
 }
 
