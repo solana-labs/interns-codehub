@@ -29,12 +29,14 @@ pub mod cnft_voter {
         instructions::create_max_voter_weight_record(ctx)
     }
 
-    pub fn update_voter_weight_record(
-        ctx: Context<UpdateVoterWeightRecord>,
+    pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, UpdateVoterWeightRecord<'info>>,
         voter_weight_action: VoterWeightAction,
+        cnft_info_len: u32,
+        params: Vec<utils::helper::VerifyParams2>,
     ) -> Result<()> {
         log_version();
-        instructions::update_voter_weight_record(ctx, voter_weight_action)
+        instructions::update_voter_weight_record(ctx, voter_weight_action, cnft_info_len, &params)
     }
 
     pub fn relinquish_nft_vote(ctx: Context<RelinquishNftVote>) -> Result<()> {
@@ -49,14 +51,6 @@ pub mod cnft_voter {
     ) -> Result<()> {
         log_version();
         instructions::configure_collection(ctx, weight, size)
-    }
-
-    pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, CastNftVote<'info>>,
-        proposal: Pubkey,
-    ) -> Result<()> {
-        log_version();
-        instructions::cast_nft_vote(ctx, proposal)
     }
 
     pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
