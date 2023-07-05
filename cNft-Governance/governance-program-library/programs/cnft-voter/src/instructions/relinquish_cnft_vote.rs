@@ -102,15 +102,15 @@ pub fn relinquish_compressed_nft_vote(ctx: Context<RelinquishCompressedNftVote>)
     }
 
     // Dispose all NftVoteRecords
-    for nft_vote_record_info in ctx.remaining_accounts.iter() {
+    for cnft_vote_record_info in ctx.remaining_accounts.iter() {
         // Ensure NftVoteRecord is for the given Proposal and TokenOwner
-        let _nft_vote_record = get_nft_vote_record_data_for_proposal_and_token_owner(
-            nft_vote_record_info,
+        let _cnft_vote_record = get_cnft_vote_record_data_for_proposal_and_token_owner(
+            cnft_vote_record_info,
             &ctx.accounts.proposal.key(),
             &governing_token_owner,
         )?;
 
-        dispose_account(nft_vote_record_info, &ctx.accounts.beneficiary)?;
+        dispose_account(cnft_vote_record_info, &ctx.accounts.beneficiary)?;
     }
 
     // Reset VoterWeightRecord and set expiry to expired to prevent it from being used
