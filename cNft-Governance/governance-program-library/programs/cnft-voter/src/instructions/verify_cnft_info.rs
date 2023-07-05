@@ -1,6 +1,6 @@
 /// USE FOR TESTING ONLY
 use crate::error::CompressedNftVoterError;
-use crate::utils::helper::VerifyParams2;
+use crate::utils::cnft_verification::VerifyParams2;
 use anchor_lang::prelude::*;
 use mpl_bubblegum::error::BubblegumError;
 use mpl_bubblegum::hash_metadata;

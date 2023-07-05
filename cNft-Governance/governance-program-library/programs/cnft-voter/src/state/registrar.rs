@@ -3,7 +3,7 @@ use crate::{
     id,
     state::{CollectionConfig, VoterWeightRecord},
     utils::constant::DISCRIMINATOR_SIZE,
-    utils::helper::*,
+    utils::cnft_verification::*,
 };
 use anchor_lang::prelude::*;
 use mpl_bubblegum::utils::get_asset_id;

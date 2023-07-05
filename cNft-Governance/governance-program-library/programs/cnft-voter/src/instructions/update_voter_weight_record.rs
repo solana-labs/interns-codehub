@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use crate::state::*;
-use crate::utils::helper::*;
+use crate::utils::cnft_verification::*;
 use crate::error::CompressedNftVoterError;
 use spl_account_compression::program::SplAccountCompression;
 

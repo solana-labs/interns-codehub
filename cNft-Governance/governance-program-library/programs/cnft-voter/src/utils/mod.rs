@@ -1,4 +1,4 @@
 pub mod constant;
 pub mod governance;
-pub mod helper;
+pub mod cnft_verification;
 pub mod spl_token;
