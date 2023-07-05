@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use mpl_bubblegum::error::BubblegumError;
+// use mpl_bubblegum::error::BubblegumError;
 use mpl_bubblegum::hash_metadata;
 use mpl_bubblegum::state::leaf_schema::LeafSchema;
 use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
@@ -67,10 +67,10 @@ pub fn verify_cnft2<'info>(
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>,
 ) -> Result<()> {
-    require!(
-        leaf_owner.is_signer || leaf_delegate.is_signer,
-        BubblegumError::LeafAuthorityMustSign
-    );
+    // require!(
+    //     leaf_owner.is_signer || leaf_delegate.is_signer,
+    //     BubblegumError::LeafAuthorityMustSign
+    // );
     require_eq!(
         *asset_id,
         params.asset_id,

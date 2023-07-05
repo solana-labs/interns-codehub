@@ -1,19 +1,15 @@
 mod program_test;
-
 use anchor_lang::prelude::{ErrorCode, Pubkey};
 use gpl_cnft_voter::error::CompressedNftVoterError;
 use program_test::cnft_voter_test::CompressedNftVoterTest;
-use program_test::nft_voter_test::NftVoterTest;
-
 use solana_program_test::*;
 use solana_sdk::{signature::Keypair, transport::TransportError};
-
 use program_test::tools::{assert_anchor_err, assert_cnft_voter_err};
 
 #[tokio::test]
 async fn test_create_registrar() -> Result<(), TransportError> {
     // Arrange
-    let mut cnft_voter_test = NftVoterTest::start_new().await;
+    let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     println!("Initialized");
 
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;

@@ -48,12 +48,12 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
-    let voter_authority = &ctx.accounts.voter_authority.to_account_info();
     let merkle_tree = &ctx.accounts.merkle_tree.to_account_info();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let leaf_delegate = &ctx.accounts.leaf_delegate.to_account_info();
     let collection = &ctx.accounts.collection_mint.to_account_info();
     let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
+    let rent = Rent::get()?;
     let mut voter_weight = 0u64;
     let mut unique_asset_ids: Vec<Pubkey> = vec![];
 
@@ -64,11 +64,11 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
         voter_weight_record,
     )?;
 
-    require_eq!(
-        voter_authority.key(),
-        leaf_owner.key(),
-        CompressedNftVoterError::VoterDoesNotOwnNft
-    );
+    // require_eq!(
+    //     voter_authority.key(),
+    //     leaf_owner.key(),
+    //     CompressedNftVoterError::VoterDoesNotOwnNft
+    // );
     
     for i in 0..params.len() {
         // let cnft_vote_record_info = remaining_accounts.pop().unwrap();
@@ -94,7 +94,6 @@ pub fn cast_cnft_vote<'a, 'b, 'c, 'info>(
         )?;
 
         voter_weight = voter_weight.checked_add(cnft_vote_weight as u64).unwrap();
-        let rent = Rent::get()?;
         let cnft_vote_record = CompressedNftVoteRecord {
             account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
             proposal,

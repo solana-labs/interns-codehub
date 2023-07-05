@@ -598,6 +598,53 @@ impl CompressedNftVoterTest {
     }
 
     #[allow(dead_code)]
+    pub async fn update_voter_weight_record(
+        &self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
+        voter_weight_action: VoterWeightAction,
+        nft_collection_cookie: &NftCollectionCookie,
+        tree_cookie: &MerkleTreeCookie,
+        leaf_cookies: &[&LeafArgs],
+        leaf_verification_cookies: &[&LeafVerificationCookie],
+        proofs: &[&Vec<AccountMeta>]
+    ) -> Result<(), BanksClientError> {
+        let params: Vec<LeafVerificationCookie> = leaf_verification_cookies.to_vec().into_iter().map(|v| v.clone()).collect();
+        let data = anchor_lang::InstructionData::data(
+            &gpl_cnft_voter::instruction::UpdateVoterWeightRecord {
+                voter_weight_action: voter_weight_action.into(),
+                cnft_info_len: proofs[0].len() as u32,
+                params,
+            },
+        );
+
+        let accounts = gpl_cnft_voter::accounts::UpdateVoterWeightRecord {
+            registrar: registrar_cookie.address,
+            voter_weight_record: voter_weight_record_cookie.address,
+            collection_mint: nft_collection_cookie.mint,
+            merkle_tree: tree_cookie.address,
+            leaf_owner: leaf_cookies[0].owner.pubkey(),
+            leaf_delegate: leaf_cookies[0].delegate.pubkey(),
+            compression_program: spl_account_compression::id()
+        };
+
+        let mut update_voter_weight_record_ix = Instruction {
+            program_id: gpl_cnft_voter::id(),
+            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
+            data,
+        };
+
+        for i in 0..leaf_verification_cookies.len() {
+            let proof = &mut proofs[i].clone();
+            update_voter_weight_record_ix.accounts.append(proof);
+        }
+
+        self.bench
+            .process_transaction(&[update_voter_weight_record_ix], None)
+            .await
+    }
+
+    #[allow(dead_code)]
     pub async fn get_cnft_vote_record_account(
         &mut self,
         cnft_vote_record: &Pubkey,
@@ -606,4 +653,5 @@ impl CompressedNftVoterTest {
             .get_borsh_account::<CompressedNftVoteRecord>(cnft_vote_record)
             .await
     }
+
 }

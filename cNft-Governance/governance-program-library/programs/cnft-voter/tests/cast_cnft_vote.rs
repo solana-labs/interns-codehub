@@ -1,4 +1,3 @@
-// use gpl_cnft_voter::error::CompressedNftVoterError;
 use gpl_cnft_voter::{state::*, error::CompressedNftVoterError};
 use program_test::cnft_voter_test::*;
 use solana_program_test::*;
@@ -879,12 +878,27 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
         .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
         .await?;
 
+    let leaf_cookie2 = cnft_voter_test
+        .token_metadata
+        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
+        .await?;
+
     cnft_voter_test.bench.advance_clock().await;
+    let clock = cnft_voter_test.bench.get_clock().await;
 
     let (leaf_verification_cookie1, proofs1) = cnft_voter_test
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie1, 5, 8)
         .await?;
+
+    let (leaf_verification_cookie2, proofs2) = cnft_voter_test
+        .merkle_tree
+        .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie2, 5, 8)
+        .await?;
+
+    let args = CastCompressedNftVoteArgs {
+        cast_spl_gov_vote: false,
+    };
     
     cnft_voter_test.cast_cnft_vote(
             &registrar_cookie,
@@ -898,21 +912,8 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
             &[&leaf_cookie1],
             &[&leaf_verification_cookie1],
             &[&proofs1],
-            None,
+            Some(args),
         )
-        .await?;
-    
-    let leaf_cookie2 = cnft_voter_test
-    .token_metadata
-    .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
-    .await?;
-
-    cnft_voter_test.bench.advance_clock().await;
-    let clock = cnft_voter_test.bench.get_clock().await;
-
-    let (leaf_verification_cookie2, proofs2) = cnft_voter_test
-        .merkle_tree
-        .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie2, 5, 8)
         .await?;
     
     cnft_voter_test.cast_cnft_vote(
@@ -999,6 +1000,10 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
         .await?;
+
+    let args = CastCompressedNftVoteArgs {
+        cast_spl_gov_vote: false,
+    };
     
     cnft_voter_test.cast_cnft_vote(
             &registrar_cookie,
@@ -1012,7 +1017,7 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
             &[&proofs],
-            None,
+            Some(args),
         )
         .await?;
 
@@ -1037,10 +1042,10 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
     Ok(())
 }
 
-// async fn test_cast_nft_vote_using_multiple_instructions_with_attempted_sandwiched_relinquish
+// async fn test_cast_cnft_vote_using_multiple_instructions_with_attempted_sandwiched_relinquish
 
 #[tokio::test]
-async fn test_cast_nft_vote_using_delegate() -> Result<(), TransportError> {
+async fn test_cast_cnft_vote_using_delegate() -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;
@@ -1124,7 +1129,7 @@ async fn test_cast_nft_vote_using_delegate() -> Result<(), TransportError> {
 }
 
 #[tokio::test]
-async fn test_cast_nft_vote_with_invalid_voter_weight_token_owner_error() -> Result<(), TransportError> {
+async fn test_cast_cnft_vote_with_invalid_voter_weight_token_owner_error() -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;

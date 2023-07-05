@@ -4,14 +4,12 @@ use crate::{
     state::{CollectionConfig, VoterWeightRecord},
     utils::constant::DISCRIMINATOR_SIZE,
     utils::helper::*,
-    utils::spl_token::{get_spl_token_amount, get_token_metadata_for_mint},
 };
 use anchor_lang::prelude::*;
 use mpl_bubblegum::utils::get_asset_id;
 use solana_program::pubkey::PUBKEY_BYTES;
 use spl_governance::{
     state::token_owner_record,
-    tools::spl_token::{get_spl_token_mint, get_spl_token_owner},
 };
 
 // Registrar which store cNFT voting configuration for the given Realm.
@@ -89,47 +87,6 @@ pub fn resolve_governing_token_owner(
     Ok(voter_token_owner_record.governing_token_owner)
 }
 
-/// TODO: modify this
-/// 1. get nft Owner, and assert its same as the voter
-/// 2.
-pub fn resolve_nft_vote_weight_and_mint(
-    registrar: &Registrar,
-    governing_token_owner: &Pubkey,
-    nft_info: &AccountInfo,
-    nft_metadata_info: &AccountInfo,
-    unique_nft_mints: &mut Vec<Pubkey>,
-) -> Result<(u64, Pubkey)> {
-    let nft_owner = get_spl_token_owner(nft_info)?;
-
-    require_eq!(
-        nft_owner,
-        *governing_token_owner,
-        CompressedNftVoterError::VoterDoesNotOwnNft,
-    );
-
-    let nft_mint = get_spl_token_mint(nft_info)?;
-    if unique_nft_mints.contains(&nft_mint) {
-        return Err(CompressedNftVoterError::DuplicatedNftDetected.into());
-    }
-    unique_nft_mints.push(nft_mint);
-
-    let nft_amount = get_spl_token_amount(nft_info)?;
-    require!(nft_amount == 1, CompressedNftVoterError::InvalidNftAmount);
-
-    let nft_metadata = get_token_metadata_for_mint(nft_metadata_info, &nft_mint)?;
-
-    let collection = nft_metadata
-        .collection
-        .ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
-    require!(
-        collection.verified,
-        CompressedNftVoterError::CollectionMustBeVerified
-    );
-
-    let collection_config = registrar.get_collection_config(collection.key)?;
-    Ok((collection_config.weight, nft_mint))
-}
-
 pub fn resolve_cnft_vote_weight<'info>(
     registrar: &Registrar,
     collection: &Pubkey,
@@ -194,7 +151,7 @@ pub fn resolve_cnft_vote_weight2<'info>(
     require_eq!(
         *governing_token_owner,
         leaf_owner.key(),
-        CompressedNftVoterError::LeafOwnerMustBeTokenOwner
+        CompressedNftVoterError::VoterDoesNotOwnNft
     );
 
     let collection = params
