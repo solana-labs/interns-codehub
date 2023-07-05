@@ -18,6 +18,7 @@ use solana_program_test::{BanksClientError, ProgramTest};
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
+use spl_governance::state::vote_record;
 use spl_governance::{
     instruction::cast_vote,
     state::vote_record::{Vote, VoteChoice},
@@ -642,6 +643,52 @@ impl CompressedNftVoterTest {
         self.bench
             .process_transaction(&[update_voter_weight_record_ix], None)
             .await
+    }
+
+    #[allow(dead_code)]
+    pub async fn relinquish_cnft_vote(
+        &self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
+        proposal_cookie: &ProposalCookie,
+        voter_cookie: &WalletCookie,
+        voter_token_owner_record_cookie: &TokenOwnerRecordCookie,
+        cnft_vote_record_cookies: &Vec<CompressedNftVoteRecordCookie>,
+    ) -> Result<(), BanksClientError> {
+        let data = anchor_lang::InstructionData::data(&gpl_cnft_voter::instruction::RelinquishCompressedNftVote{});
+
+        let vote_record_key = vote_record::get_vote_record_address(
+            &self.governance.program_id, 
+            &proposal_cookie.address, 
+            &voter_token_owner_record_cookie.address
+        );
+
+        let accounts = gpl_cnft_voter::accounts::RelinquishCompressedNftVote {
+            registrar: registrar_cookie.address,
+            voter_weight_record: voter_weight_record_cookie.address,
+            governance: proposal_cookie.account.governance,
+            proposal: proposal_cookie.address,
+            vote_record: vote_record_key,
+            beneficiary: voter_cookie.address, // why not voter
+            voter_token_owner_record: voter_token_owner_record_cookie.address,
+            voter_authority: voter_cookie.address,
+        };
+
+        let mut relinquish_cnft_vote_ix = Instruction {
+            program_id: gpl_cnft_voter::id(),
+            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
+            data,
+        };
+
+        for cnft_vote_record_cookie in cnft_vote_record_cookies {
+            relinquish_cnft_vote_ix.accounts.push(AccountMeta::new(cnft_vote_record_cookie.address, false));
+        }
+
+        let signers = &[
+            &voter_cookie.signer,
+        ];
+        self.bench.process_transaction(&[relinquish_cnft_vote_ix], Some(signers)).await?;
+        Ok(())
     }
 
     #[allow(dead_code)]
