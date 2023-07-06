@@ -15,9 +15,14 @@ pub struct UpdateVoterWeightRecord<'info> {
         constraint = voter_weight_record.governing_token_mint == registrar.governing_token_mint @ CompressedNftVoterError::InvalidVoterWeightRecordMint,
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
+    
+    /// CHECK: This account is checked in the instruction
     pub collection_mint: UncheckedAccount<'info>,
+    /// CHECK: unsafe
     pub merkle_tree: UncheckedAccount<'info>,
+    /// CHECK: This account is checked in the instruction
     pub leaf_owner: UncheckedAccount<'info>,
+    /// CHECK: This account is checked in the instruction
     pub leaf_delegate: UncheckedAccount<'info>,
     pub compression_program: Program<'info, SplAccountCompression>,
 }

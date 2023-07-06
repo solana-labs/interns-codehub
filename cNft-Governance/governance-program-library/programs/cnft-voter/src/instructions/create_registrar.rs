@@ -19,7 +19,8 @@ pub struct CreateRegistrar<'info> {
     )]
     pub registrar: Account<'info, Registrar>,
 
-
+    /// The program id of the spl-governance program the realm belongs to
+    /// CHECK: Can be any instance of spl-governance and it's not known at the compilation time
     #[account(executable)]
     pub governance_program_id: UncheckedAccount<'info>,
 

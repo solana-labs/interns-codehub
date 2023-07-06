@@ -21,14 +21,19 @@ pub struct CastCompressedNftVote<'info> {
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
 
     // owner should be crate::id()
+    /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     #[account(
         owner = registrar.governance_program_id
      )]
     voter_token_owner_record: UncheckedAccount<'info>,
-
+    
+    /// CHECK: This account is checked in the instruction
     pub collection_mint: UncheckedAccount<'info>,
+    /// CHECK: unsafe
     pub merkle_tree: UncheckedAccount<'info>,
+    /// CHECK: This account is checked in the instruction
     pub leaf_owner: UncheckedAccount<'info>,
+    /// CHECK: This account is checked in the instruction
     pub leaf_delegate: UncheckedAccount<'info>,
 
     pub voter_authority: Signer<'info>,

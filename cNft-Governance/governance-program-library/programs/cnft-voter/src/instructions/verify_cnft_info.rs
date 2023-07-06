@@ -11,14 +11,12 @@ use spl_account_compression::program::SplAccountCompression;
 
 #[derive(Accounts)]
 pub struct VerifyCompressedNftInfo<'info> {
-    // #[account(
-    //     seeds = [merkle_tree.key().as_ref()],
-    //     bump,
-    // )]
-    // pub tree_authority: Account<'info, TreeConfig>,
-    pub leaf_owner: UncheckedAccount<'info>,
-    pub leaf_delegate: UncheckedAccount<'info>,
+    /// CHECK: unsafe
     pub merkle_tree: UncheckedAccount<'info>,
+    /// CHECK: This account is checked in the instruction
+    pub leaf_owner: UncheckedAccount<'info>,
+    /// CHECK: This account is checked in the instruction
+    pub leaf_delegate: UncheckedAccount<'info>,
     pub payer: Signer<'info>,
     pub compression_program: Program<'info, SplAccountCompression>,
     pub system_program: Program<'info, System>,

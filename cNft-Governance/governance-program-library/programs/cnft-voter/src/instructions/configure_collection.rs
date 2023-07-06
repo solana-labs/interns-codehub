@@ -10,6 +10,7 @@ pub struct ConfigureCollection<'info> {
     #[account(mut)]
     pub registrar: Account<'info, Registrar>,
 
+    /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     #[account(
         address = registrar.realm @ CompressedNftVoterError::InvalidRealmForRegistrar,
         owner = registrar.governance_program_id
