@@ -130,7 +130,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         voter_weight_record.voter_weight = voter_weight;
     }
 
-    // dont know what does this mean exactly
+    
     voter_weight_record.voter_weight_expiry = Some(Clock::get()?.slot);
 
     // The record is only valid for casting vote on the given Proposal
