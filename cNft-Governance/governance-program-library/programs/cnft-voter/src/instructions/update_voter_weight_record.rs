@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
+use crate::error::CompressedNftVoterError;
 use crate::state::*;
 use crate::utils::cnft_verification::*;
-use crate::error::CompressedNftVoterError;
+use anchor_lang::prelude::*;
 use spl_account_compression::program::SplAccountCompression;
 
 #[derive(Accounts)]
@@ -15,7 +15,7 @@ pub struct UpdateVoterWeightRecord<'info> {
         constraint = voter_weight_record.governing_token_mint == registrar.governing_token_mint @ CompressedNftVoterError::InvalidVoterWeightRecordMint,
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
-    
+
     /// CHECK: This account is checked in the instruction
     pub collection_mint: UncheckedAccount<'info>,
     /// CHECK: unsafe
@@ -29,10 +29,10 @@ pub struct UpdateVoterWeightRecord<'info> {
 
 // to be modify
 pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, UpdateVoterWeightRecord<'info>>, 
+    ctx: Context<'a, 'b, 'c, 'info, UpdateVoterWeightRecord<'info>>,
     voter_weight_action: VoterWeightAction,
     cnft_info_len: u32,
-    params: &Vec<VerifyParams2>,
+    params: &Vec<CompressedNftAsset>,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
@@ -57,8 +57,10 @@ pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
 
     for i in 0..params.len() {
         let param = &params[i];
-        let proofs = remaining_accounts[(i * cnft_info_len as usize)..((i + 1) * cnft_info_len as usize)].to_vec();
-        let cnft_vote_weight = resolve_cnft_vote_weight2(
+        let proofs = remaining_accounts
+            [(i * cnft_info_len as usize)..((i + 1) * cnft_info_len as usize)]
+            .to_vec();
+        let cnft_vote_weight = resolve_cnft_vote_weight(
             &registrar,
             &governing_token_owner,
             &collection.key(),
@@ -69,7 +71,8 @@ pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
             param,
             proofs,
             &ctx.accounts.compression_program.to_account_info(),
-        )?.0;
+        )?
+        .0;
         //  unwrap() is a method that can be called on Option or Result types.
         // When called on an Option<T>, it will return the value inside if it's Some(T). If it's None, it will panic and crash the program.
         // When called on a Result<T, E>, it will return the value inside if it's Ok(T). If it's Err(E), it will panic and crash the program.
@@ -84,4 +87,3 @@ pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
 
     Ok(())
 }
-

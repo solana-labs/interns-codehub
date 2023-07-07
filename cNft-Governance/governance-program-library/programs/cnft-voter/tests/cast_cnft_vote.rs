@@ -1,4 +1,4 @@
-use gpl_cnft_voter::{state::*, error::CompressedNftVoterError};
+use gpl_cnft_voter::{error::CompressedNftVoterError, state::*};
 use program_test::cnft_voter_test::*;
 use solana_program_test::*;
 use solana_sdk::transport::TransportError;
@@ -60,7 +60,7 @@ async fn test_cast_cnft_vote() -> Result<(), TransportError> {
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
         .await?;
-    
+
     let cnft_vote_record_cookie = cnft_voter_test
         .cast_cnft_vote(
             &registrar_cookie,
@@ -102,7 +102,6 @@ async fn test_cast_cnft_vote() -> Result<(), TransportError> {
     Ok(())
 }
 
-
 #[tokio::test]
 async fn test_cast_cnft_vote_with_multiple_nfts() -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
@@ -141,7 +140,6 @@ async fn test_cast_cnft_vote_with_multiple_nfts() -> Result<(), TransportError> 
         .with_proposal(&realm_cookie)
         .await?;
 
-
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
 
     // first nft
@@ -151,9 +149,9 @@ async fn test_cast_cnft_vote_with_multiple_nfts() -> Result<(), TransportError> 
         .await?;
 
     let leaf_cookie2 = cnft_voter_test
-    .token_metadata
-    .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
-    .await?;
+        .token_metadata
+        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
+        .await?;
 
     cnft_voter_test.bench.advance_clock().await;
     let clock = cnft_voter_test.bench.get_clock().await;
@@ -265,8 +263,9 @@ async fn test_cast_cnft_vote_with_cnft_already_voted_error() -> Result<(), Trans
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
         .await?;
-    
-    cnft_voter_test.cast_cnft_vote(
+
+    cnft_voter_test
+        .cast_cnft_vote(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_token_owner_record_cookie,
@@ -283,22 +282,25 @@ async fn test_cast_cnft_vote_with_cnft_already_voted_error() -> Result<(), Trans
         .await?;
 
     cnft_voter_test.bench.advance_clock().await;
-    
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie,
-        &voter_token_owner_record_cookie,
-        &max_voter_weight_record_cookie,
-        &proposal_cookie,
-        &voter_cookie,
-        &cnft_collection_cookie,
-        &tree_cookie,
-        &[&leaf_cookie],
-        &[&leaf_verification_cookie],
-        &[&proofs],
-        None,
-    )
-    .await.err().unwrap();
+
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
 
     assert_cnft_voter_err(err, CompressedNftVoterError::NftAlreadyVoted);
 
@@ -332,10 +334,16 @@ async fn test_cast_cnft_vote_with_invalid_voter_error() -> Result<(), TransportE
 
     let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let voter_token_owner_record_cookie = cnft_voter_test
-        .governance.with_token_owner_record(&realm_cookie, &voter_cookie)
+        .governance
+        .with_token_owner_record(&realm_cookie, &voter_cookie)
         .await?;
-    let voter_weight_record_cookie = cnft_voter_test.with_voter_weight_record(&registrar_cookie, &voter_cookie).await?;
-    let proposal_cookie = cnft_voter_test.governance.with_proposal(&realm_cookie).await?;
+    let voter_weight_record_cookie = cnft_voter_test
+        .with_voter_weight_record(&registrar_cookie, &voter_cookie)
+        .await?;
+    let proposal_cookie = cnft_voter_test
+        .governance
+        .with_proposal(&realm_cookie)
+        .await?;
 
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
     let leaf_cookie = cnft_voter_test
@@ -352,21 +360,24 @@ async fn test_cast_cnft_vote_with_invalid_voter_error() -> Result<(), TransportE
 
     let voter_cookie2 = cnft_voter_test.bench.with_wallet().await;
 
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie,
-        &voter_token_owner_record_cookie,
-        &max_voter_weight_record_cookie,
-        &proposal_cookie,
-        &voter_cookie2,
-        &cnft_collection_cookie,
-        &tree_cookie,
-        &[&leaf_cookie],
-        &[&leaf_verification_cookie],
-        &[&proofs],
-        None,
-    )
-    .await.err().unwrap();
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie2,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
     println!("error: {}", err);
     assert_gov_err(err, GovernanceError::GoverningTokenOwnerOrDelegateMustSign);
     Ok(())
@@ -399,10 +410,16 @@ async fn test_cast_cnft_vote_unverified_collection_error() -> Result<(), Transpo
 
     let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let voter_token_owner_record_cookie = cnft_voter_test
-        .governance.with_token_owner_record(&realm_cookie, &voter_cookie)
+        .governance
+        .with_token_owner_record(&realm_cookie, &voter_cookie)
         .await?;
-    let voter_weight_record_cookie = cnft_voter_test.with_voter_weight_record(&registrar_cookie, &voter_cookie).await?;
-    let proposal_cookie = cnft_voter_test.governance.with_proposal(&realm_cookie).await?;
+    let voter_weight_record_cookie = cnft_voter_test
+        .with_voter_weight_record(&registrar_cookie, &voter_cookie)
+        .await?;
+    let proposal_cookie = cnft_voter_test
+        .governance
+        .with_proposal(&realm_cookie)
+        .await?;
 
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
     let leaf_cookie = cnft_voter_test
@@ -421,20 +438,24 @@ async fn test_cast_cnft_vote_unverified_collection_error() -> Result<(), Transpo
         collection.verified = false;
     }
 
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie, 
-        &voter_weight_record_cookie, 
-        &voter_token_owner_record_cookie, 
-        &max_voter_weight_record_cookie, 
-        &proposal_cookie, 
-        &voter_cookie, 
-        &cnft_collection_cookie, 
-        &tree_cookie, 
-        &[&leaf_cookie], 
-        &[&leaf_verification_cookie], 
-        &[&proofs], 
-        None).
-        await.err().unwrap();
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
 
     assert_cnft_voter_err(err, CompressedNftVoterError::CollectionMustBeVerified);
     Ok(())
@@ -467,18 +488,28 @@ async fn test_cast_cnft_vote_with_invalid_owner_error() -> Result<(), TransportE
 
     let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let voter_token_owner_record_cookie = cnft_voter_test
-        .governance.with_token_owner_record(&realm_cookie, &voter_cookie)
+        .governance
+        .with_token_owner_record(&realm_cookie, &voter_cookie)
         .await?;
-    let voter_weight_record_cookie = cnft_voter_test.with_voter_weight_record(&registrar_cookie, &voter_cookie).await?;
-    let proposal_cookie = cnft_voter_test.governance.with_proposal(&realm_cookie).await?;
+    let voter_weight_record_cookie = cnft_voter_test
+        .with_voter_weight_record(&registrar_cookie, &voter_cookie)
+        .await?;
+    let proposal_cookie = cnft_voter_test
+        .governance
+        .with_proposal(&realm_cookie)
+        .await?;
 
     let voter_cookie2 = cnft_voter_test.bench.with_wallet().await;
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
     let leaf_cookie = cnft_voter_test
         .token_metadata
-        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie2)
+        .with_compressed_nft_to_collection(
+            &cnft_collection_cookie,
+            &mut tree_cookie,
+            &voter_cookie2,
+        )
         .await?;
-    
+
     cnft_voter_test.bench.advance_clock().await;
 
     let (leaf_verification_cookie, proofs) = cnft_voter_test
@@ -486,21 +517,25 @@ async fn test_cast_cnft_vote_with_invalid_owner_error() -> Result<(), TransportE
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
         .await?;
 
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie, 
-        &voter_weight_record_cookie, 
-        &voter_token_owner_record_cookie, 
-        &max_voter_weight_record_cookie, 
-        &proposal_cookie, 
-        &voter_cookie, 
-        &cnft_collection_cookie, 
-        &tree_cookie, 
-        &[&leaf_cookie], 
-        &[&leaf_verification_cookie], 
-        &[&proofs], 
-        None).
-        await.err().unwrap();
-    
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
     assert_cnft_voter_err(err, CompressedNftVoterError::VoterDoesNotOwnNft);
     Ok(())
 }
@@ -529,13 +564,19 @@ async fn test_cast_cnft_vote_with_invalid_collection_error() -> Result<(), Trans
             }),
         )
         .await?;
-    let proposal_cookie = cnft_voter_test.governance.with_proposal(&realm_cookie).await?;
+    let proposal_cookie = cnft_voter_test
+        .governance
+        .with_proposal(&realm_cookie)
+        .await?;
     let voter_cookie = cnft_voter_test.bench.with_wallet().await;
     let voter_token_owner_record_cookie = cnft_voter_test
-        .governance.with_token_owner_record(&realm_cookie, &voter_cookie)
+        .governance
+        .with_token_owner_record(&realm_cookie, &voter_cookie)
         .await?;
-    let voter_weight_record_cookie = cnft_voter_test.with_voter_weight_record(&registrar_cookie, &voter_cookie).await?;
-    
+    let voter_weight_record_cookie = cnft_voter_test
+        .with_voter_weight_record(&registrar_cookie, &voter_cookie)
+        .await?;
+
     let cnft_collection_cookie2 = cnft_voter_test
         .token_metadata
         .with_cnft_collection(10)
@@ -544,7 +585,11 @@ async fn test_cast_cnft_vote_with_invalid_collection_error() -> Result<(), Trans
     let mut tree_cookie = cnft_voter_test.merkle_tree.with_merkle_tree(None).await?;
     let leaf_cookie = cnft_voter_test
         .token_metadata
-        .with_compressed_nft_to_collection(&cnft_collection_cookie2, &mut tree_cookie, &voter_cookie)
+        .with_compressed_nft_to_collection(
+            &cnft_collection_cookie2,
+            &mut tree_cookie,
+            &voter_cookie,
+        )
         .await?;
 
     cnft_voter_test.bench.advance_clock().await;
@@ -554,20 +599,24 @@ async fn test_cast_cnft_vote_with_invalid_collection_error() -> Result<(), Trans
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
         .await?;
 
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie, 
-        &voter_weight_record_cookie, 
-        &voter_token_owner_record_cookie, 
-        &max_voter_weight_record_cookie, 
-        &proposal_cookie, 
-        &voter_cookie, 
-        &cnft_collection_cookie, 
-        &tree_cookie, 
-        &[&leaf_cookie], 
-        &[&leaf_verification_cookie], 
-        &[&proofs], 
-        None).
-        await.err().unwrap();
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
 
     assert_cnft_voter_err(err, CompressedNftVoterError::InvalidCollectionMint);
     Ok(())
@@ -632,21 +681,25 @@ async fn test_cast_cnft_vote_with_invalid_metadata_error() -> Result<(), Transpo
         .await?;
 
     leaf_verification_cookie.metadata = leaf_cookie2.metadata.clone();
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie, 
-        &voter_weight_record_cookie, 
-        &voter_token_owner_record_cookie, 
-        &max_voter_weight_record_cookie, 
-        &proposal_cookie, 
-        &voter_cookie, 
-        &cnft_collection_cookie, 
-        &tree_cookie, 
-        &[&leaf_cookie], 
-        &[&leaf_verification_cookie], 
-        &[&proofs], 
-        None).
-        await.err().unwrap();
-    
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
     assert_cnft_voter_err(err, CompressedNftVoterError::TokenMetadataDoesNotMatch);
     Ok(())
 }
@@ -703,22 +756,26 @@ async fn test_cast_cnft_vote_with_same_nft_error() -> Result<(), TransportError>
         .merkle_tree
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
         .await?;
-    
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie, 
-        &voter_weight_record_cookie, 
-        &voter_token_owner_record_cookie, 
-        &max_voter_weight_record_cookie, 
-        &proposal_cookie, 
-        &voter_cookie, 
-        &cnft_collection_cookie, 
-        &tree_cookie, 
-        &[&leaf_cookie, &leaf_cookie], 
-        &[&leaf_verification_cookie, &leaf_verification_cookie], 
-        &[&proofs, &proofs], 
-        None).
-        await.err().unwrap();
-    
+
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie, &leaf_cookie],
+            &[&leaf_verification_cookie, &leaf_verification_cookie],
+            &[&proofs, &proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+
     assert_cnft_voter_err(err, CompressedNftVoterError::DuplicatedNftDetected);
     Ok(())
 }
@@ -767,12 +824,16 @@ async fn test_cast_cnft_vote_with_max_5_nfts() -> Result<(), TransportError> {
     let mut leaf_cookies = vec![];
     let mut leaf_verification_cookies = vec![];
     let mut proofs = vec![];
-    
+
     for _ in 0..5 {
         let leaf_cookie = cnft_voter_test
-        .token_metadata
-        .with_compressed_nft_to_collection(&cnft_collection_cookie, &mut tree_cookie, &voter_cookie)
-        .await?;
+            .token_metadata
+            .with_compressed_nft_to_collection(
+                &cnft_collection_cookie,
+                &mut tree_cookie,
+                &voter_cookie,
+            )
+            .await?;
 
         cnft_voter_test.bench.advance_clock().await;
 
@@ -785,28 +846,30 @@ async fn test_cast_cnft_vote_with_max_5_nfts() -> Result<(), TransportError> {
         leaf_verification_cookies.push(leaf_verification_cookie);
         proofs.push(proofs_i);
     }
-    
+
     cnft_voter_test.bench.advance_clock().await;
     let clock = cnft_voter_test.bench.get_clock().await;
 
-    let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie, 
-        &voter_weight_record_cookie, 
-        &voter_token_owner_record_cookie, 
-        &max_voter_weight_record_cookie, 
-        &proposal_cookie, 
-        &voter_cookie, 
-        &cnft_collection_cookie, 
-        &tree_cookie, 
-        &leaf_cookies.iter().collect::<Vec<_>>(), 
-        &leaf_verification_cookies.iter().collect::<Vec<_>>(), 
-        &proofs.iter().collect::<Vec<_>>(), 
-        None).
-        await?;
-    
+    let cnft_vote_record_cookies = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &leaf_cookies.iter().collect::<Vec<_>>(),
+            &leaf_verification_cookies.iter().collect::<Vec<_>>(),
+            &proofs.iter().collect::<Vec<_>>(),
+            None,
+        )
+        .await?;
+
     let cnft_vote_record1 = cnft_voter_test
-    .get_cnft_vote_record_account(&cnft_vote_record_cookies[0].address)
-    .await;
+        .get_cnft_vote_record_account(&cnft_vote_record_cookies[0].address)
+        .await;
 
     assert_eq!(cnft_vote_record_cookies[0].account, cnft_vote_record1);
 
@@ -899,8 +962,9 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
     let args = CastCompressedNftVoteArgs {
         cast_spl_gov_vote: false,
     };
-    
-    cnft_voter_test.cast_cnft_vote(
+
+    cnft_voter_test
+        .cast_cnft_vote(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_token_owner_record_cookie,
@@ -915,8 +979,9 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
             Some(args),
         )
         .await?;
-    
-    cnft_voter_test.cast_cnft_vote(
+
+    cnft_voter_test
+        .cast_cnft_vote(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_token_owner_record_cookie,
@@ -933,8 +998,8 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
         .await?;
 
     let voter_weight_record = cnft_voter_test
-    .get_voter_weight_record(&voter_weight_record_cookie.address)
-    .await;
+        .get_voter_weight_record(&voter_weight_record_cookie.address)
+        .await;
 
     assert_eq!(voter_weight_record.voter_weight, 6);
     assert_eq!(voter_weight_record.voter_weight_expiry, Some(clock.slot));
@@ -950,7 +1015,8 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
 }
 
 #[tokio::test]
-async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_error() -> Result<(), TransportError> {
+async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_error(
+) -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;
@@ -1004,8 +1070,9 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
     let args = CastCompressedNftVoteArgs {
         cast_spl_gov_vote: false,
     };
-    
-    cnft_voter_test.cast_cnft_vote(
+
+    cnft_voter_test
+        .cast_cnft_vote(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_token_owner_record_cookie,
@@ -1021,21 +1088,24 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
         )
         .await?;
 
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie,
-        &voter_token_owner_record_cookie,
-        &max_voter_weight_record_cookie,
-        &proposal_cookie,
-        &voter_cookie,
-        &cnft_collection_cookie,
-        &tree_cookie,
-        &[&leaf_cookie],
-        &[&leaf_verification_cookie],
-        &[&proofs],
-        None,
-    )
-    .await.err().unwrap();
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
 
     assert_cnft_voter_err(err, CompressedNftVoterError::NftAlreadyVoted);
 
@@ -1043,7 +1113,8 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
 }
 
 #[tokio::test]
-async fn test_cast_cnft_vote_using_multiple_instructions_with_attempted_sandwiched_relinquish() -> Result<(), TransportError> {
+async fn test_cast_cnft_vote_using_multiple_instructions_with_attempted_sandwiched_relinquish(
+) -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;
@@ -1098,49 +1169,52 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_attempted_sandwich
         cast_spl_gov_vote: false,
     };
 
-    let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie,
-        &voter_token_owner_record_cookie,
-        &max_voter_weight_record_cookie,
-        &proposal_cookie,
-        &voter_cookie,
-        &cnft_collection_cookie,
-        &tree_cookie,
-        &[&leaf_cookie],
-        &[&leaf_verification_cookie],
-        &[&proofs],
-        Some(args),
-    )
-    .await?;
+    let cnft_vote_record_cookies = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            Some(args),
+        )
+        .await?;
 
     cnft_voter_test.bench.advance_clock().await;
 
-    cnft_voter_test.relinquish_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie,
-        &proposal_cookie,
-        &voter_cookie,
-        &voter_token_owner_record_cookie,
-        &cnft_vote_record_cookies,
-    )
-    .await?;
+    cnft_voter_test
+        .relinquish_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &voter_token_owner_record_cookie,
+            &cnft_vote_record_cookies,
+        )
+        .await?;
 
-    cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie,
-        &voter_token_owner_record_cookie,
-        &max_voter_weight_record_cookie,
-        &proposal_cookie,
-        &voter_cookie,
-        &cnft_collection_cookie,
-        &tree_cookie,
-        &[&leaf_cookie],
-        &[&leaf_verification_cookie],
-        &[&proofs],
-        None,
-    )
-    .await?;
+    cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await?;
 
     let voter_weight_record = cnft_voter_test
         .get_voter_weight_record(&voter_weight_record_cookie.address)
@@ -1204,28 +1278,32 @@ async fn test_cast_cnft_vote_using_delegate() -> Result<(), TransportError> {
         .await?;
 
     let delegate_cookie = cnft_voter_test.bench.with_wallet().await;
-    cnft_voter_test.governance.set_governance_delegate(
-        &realm_cookie, 
-        &voter_token_owner_record_cookie, 
-        &voter_cookie, 
-        &Some(delegate_cookie.address)
-    ).await;
+    cnft_voter_test
+        .governance
+        .set_governance_delegate(
+            &realm_cookie,
+            &voter_token_owner_record_cookie,
+            &voter_cookie,
+            &Some(delegate_cookie.address),
+        )
+        .await;
 
-    let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie,
-        &voter_token_owner_record_cookie,
-        &max_voter_weight_record_cookie,
-        &proposal_cookie,
-        &delegate_cookie,
-        &cnft_collection_cookie,
-        &tree_cookie,
-        &[&leaf_cookie],
-        &[&leaf_verification_cookie],
-        &[&proofs],
-        None,
-    )
-    .await?;
+    let cnft_vote_record_cookies = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &delegate_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await?;
 
     let cnft_vote_record = cnft_voter_test
         .get_cnft_vote_record_account(&cnft_vote_record_cookies[0].address)
@@ -1236,7 +1314,8 @@ async fn test_cast_cnft_vote_using_delegate() -> Result<(), TransportError> {
 }
 
 #[tokio::test]
-async fn test_cast_cnft_vote_with_invalid_voter_weight_token_owner_error() -> Result<(), TransportError> {
+async fn test_cast_cnft_vote_with_invalid_voter_weight_token_owner_error(
+) -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;
@@ -1270,7 +1349,7 @@ async fn test_cast_cnft_vote_with_invalid_voter_weight_token_owner_error() -> Re
     let voter_weight_record_cookie2 = cnft_voter_test
         .with_voter_weight_record(&registrar_cookie, &voter_cookie2)
         .await?;
-    
+
     let proposal_cookie = cnft_voter_test
         .governance
         .with_proposal(&realm_cookie)
@@ -1290,21 +1369,27 @@ async fn test_cast_cnft_vote_with_invalid_voter_weight_token_owner_error() -> Re
         .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
         .await?;
 
-    let err = cnft_voter_test.cast_cnft_vote(
-        &registrar_cookie,
-        &voter_weight_record_cookie2,
-        &voter_token_owner_record_cookie,
-        &max_voter_weight_record_cookie,
-        &proposal_cookie,
-        &voter_cookie,
-        &cnft_collection_cookie,
-        &tree_cookie,
-        &[&leaf_cookie],
-        &[&leaf_verification_cookie],
-        &[&proofs],
-        None,
-    )
-    .await.err().unwrap();
-    assert_cnft_voter_err(err, CompressedNftVoterError::InvalidTokenOwnerForVoterWeightRecord);
+    let err = cnft_voter_test
+        .cast_cnft_vote(
+            &registrar_cookie,
+            &voter_weight_record_cookie2,
+            &voter_token_owner_record_cookie,
+            &max_voter_weight_record_cookie,
+            &proposal_cookie,
+            &voter_cookie,
+            &cnft_collection_cookie,
+            &tree_cookie,
+            &[&leaf_cookie],
+            &[&leaf_verification_cookie],
+            &[&proofs],
+            None,
+        )
+        .await
+        .err()
+        .unwrap();
+    assert_cnft_voter_err(
+        err,
+        CompressedNftVoterError::InvalidTokenOwnerForVoterWeightRecord,
+    );
     Ok(())
 }
