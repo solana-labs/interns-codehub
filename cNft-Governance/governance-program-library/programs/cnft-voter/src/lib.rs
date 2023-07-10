@@ -6,7 +6,7 @@ pub mod state;
 pub mod utils;
 use crate::state::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("GcNftdN8Fr2ejgQhxWpjogJYXwAVK9uHKow5eEfaZMaD");
 
 #[program]
 pub mod cnft_voter {
