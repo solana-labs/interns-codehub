@@ -94,6 +94,9 @@ pub enum ErrorCode {
     AmountCalcOverflow, //0x1797
     #[msg("Amount remaining overflows")]
     AmountRemainingOverflow, //0x1798
+
+    #[msg("There are no loan amount to borrow.")]
+    ZeroBorrowableAmount, //0x1799
 }
 
 impl From<TryFromIntError> for ErrorCode {

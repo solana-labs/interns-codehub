@@ -33,21 +33,6 @@ pub mod globalpool {
         return instructions::initialize_clad(ctx, &params);
     }
 
-    /// Initializes a Globalpool account.
-    /// Fee rate is set to the default values on the config and supplied fee_tier.
-    ///
-    /// ### Parameters
-    /// - `tick_spacing` - The desired tick spacing for this pool.
-    /// - `initial_sqrt_price` - The desired initial sqrt-price for this pool
-    ///
-    /// #### Special Errors
-    /// `InvalidTokenMintOrder` - The order of mints have to be ordered by
-    /// `SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64
-    ///
-    pub fn create_pool(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
-        return instructions::create_pool(ctx, &params);
-    }
-
     /// Initializes a tick_array account to represent a tick-range in a Globalpool.
     ///
     /// ### Parameters
@@ -62,6 +47,21 @@ pub mod globalpool {
         params: InitializeTickArrayParams,
     ) -> Result<()> {
         return instructions::initialize_tick_array(ctx, &params);
+    }
+
+    /// Initializes a Globalpool account.
+    /// Fee rate is set to the default values on the config and supplied fee_tier.
+    ///
+    /// ### Parameters
+    /// - `tick_spacing` - The desired tick spacing for this pool.
+    /// - `initial_sqrt_price` - The desired initial sqrt-price for this pool
+    ///
+    /// #### Special Errors
+    /// `InvalidTokenMintOrder` - The order of mints have to be ordered by
+    /// `SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64
+    ///
+    pub fn create_pool(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
+        return instructions::create_pool(ctx, &params);
     }
 
     /// Open a position in a Globalpool. A unique token will be minted to represent the liquidity position
@@ -89,10 +89,13 @@ pub mod globalpool {
     /// #### Special Errors
     /// - `CloseLiquidityPositionNotEmpty` - The provided liquidity position account is not empty.
     pub fn close_liquidity_position(ctx: Context<CloseLiquidityPosition>) -> Result<()> {
-        return instructions::close_liquidity_position::handler(ctx);
+        return instructions::close_liquidity_position(ctx);
     }
 
-    pub fn open_trade_position(ctx: Context<OpenTradePosition>, params: OpenTradePositionParams) -> Result<()> {
+    pub fn open_trade_position(
+        ctx: Context<OpenTradePosition>,
+        params: OpenTradePositionParams,
+    ) -> Result<()> {
         return instructions::open_trade_position(ctx, &params);
     }
 
@@ -103,7 +106,7 @@ pub mod globalpool {
     ///
     /// #### Special Errors
     /// - `CloseTradePositionNotEmpty` - The provided trade position account is not empty.
-    pub fn close_loan_position() -> Result<()> {
+    pub fn close_trade_position() -> Result<()> {
         todo!()
     }
 
@@ -144,16 +147,9 @@ pub mod globalpool {
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
     pub fn decrease_liquidity(
         ctx: Context<ModifyLiquidity>,
-        liquidity_amount: u128,
-        token_min_a: u64,
-        token_min_b: u64,
+        params: DecreaseLiquidityParams,
     ) -> Result<()> {
-        return instructions::decrease_liquidity::handler(
-            ctx,
-            liquidity_amount,
-            token_min_a,
-            token_min_b,
-        );
+        return instructions::decrease_liquidity(ctx, params);
     }
 
     /// Collect fees accrued for this position.

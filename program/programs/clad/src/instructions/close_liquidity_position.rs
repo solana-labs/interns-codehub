@@ -32,7 +32,7 @@ pub struct CloseLiquidityPosition<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<CloseLiquidityPosition>) -> Result<()> {
+pub fn close_liquidity_position(ctx: Context<CloseLiquidityPosition>) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
