@@ -2,8 +2,8 @@ use {
     crate::{
         errors::ErrorCode,
         manager::swap_manager::*,
-        state::{TickArray, Globalpool},
-        util::{to_timestamp_u64, update_and_swap_globalpool, SwapTickSequence},
+        state::{Globalpool, TickArray},
+        util::{update_and_swap_globalpool, TickSequence},
     },
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Token, TokenAccount},
@@ -37,38 +37,38 @@ pub struct Swap<'info> {
 
     #[account(mut, has_one = globalpool)]
     pub tick_array_2: AccountLoader<'info, TickArray>,
-
-    #[account(seeds = [b"oracle", globalpool.key().as_ref()], bump)]
-    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
-    pub oracle: UncheckedAccount<'info>,
 }
 
-pub fn handler(
-    ctx: Context<Swap>,
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct SwapParams {
     amount: u64,
     other_amount_threshold: u64,
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
     a_to_b: bool, // Zero for one
-) -> Result<()> {
+}
+
+pub fn swap(ctx: Context<Swap>, params: &SwapParams) -> Result<()> {
     let globalpool = &mut ctx.accounts.globalpool;
     let clock = Clock::get()?;
 
-    let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
-    let mut swap_tick_sequence = SwapTickSequence::new(
+    // let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
+    let mut swap_tick_sequence = TickSequence::new(
         ctx.accounts.tick_array_0.load_mut().unwrap(),
         ctx.accounts.tick_array_1.load_mut().ok(),
         ctx.accounts.tick_array_2.load_mut().ok(),
     );
 
-    let swap_update = swap(
+    let amount_specified_is_input = params.amount_specified_is_input;
+    let a_to_b = params.a_to_b;
+
+    let swap_update = swap_manager::swap(
         &globalpool,
         &mut swap_tick_sequence,
-        amount,
-        sqrt_price_limit,
+        params.amount,
+        params.sqrt_price_limit,
         amount_specified_is_input,
         a_to_b,
-        timestamp,
     )?;
 
     if amount_specified_is_input {

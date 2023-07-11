@@ -3,11 +3,11 @@ use crate::state::*;
 use anchor_lang::prelude::*;
 use std::cell::RefMut;
 
-pub struct SwapTickSequence<'info> {
+pub struct TickSequence<'info> {
     arrays: Vec<RefMut<'info, TickArray>>,
 }
 
-impl<'info> SwapTickSequence<'info> {
+impl<'info> TickSequence<'info> {
     pub fn new(
         ta0: RefMut<'info, TickArray>,
         ta1: Option<RefMut<'info, TickArray>>,
@@ -99,7 +99,7 @@ impl<'info> SwapTickSequence<'info> {
     /// - `start_array_index` -
     ///
     /// # Returns
-    /// - `(usize, i32, &mut Tick)`: The array_index which the next initialized index was found, the next initialized tick-index & a mutable reference to that tick
+    /// - `(usize, i32)`: The array_index which the next initialized index was found, the next initialized tick-index & a mutable reference to that tick
     /// - `TickArraySequenceInvalidIndex` - The swap loop provided an invalid array index to query the next tick in.
     /// - `InvalidTickArraySequence`: - User provided tick-arrays are not in sequential order required to proceed in this trade direction.
 
@@ -195,7 +195,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(11264, vec![50]);
             let ta1 = build_tick_array(0, vec![25, 71]);
             let ta2 = build_tick_array(-11264, vec![25, 35, 56]);
-            let mut swap_tick_sequence = SwapTickSequence::new(
+            let mut swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -236,7 +236,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(9216, vec![50]);
             let ta1 = build_tick_array(0, vec![25, 71]);
             let ta2 = build_tick_array(-9216, vec![25, 35, 56]);
-            let mut swap_tick_sequence = SwapTickSequence::new(
+            let mut swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -272,7 +272,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(9216, vec![50]);
             let ta1 = build_tick_array(0, vec![25, 71]);
             let ta2 = build_tick_array(-9216, vec![25, 35, 56]);
-            let mut swap_tick_sequence = SwapTickSequence::new(
+            let mut swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -319,7 +319,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(9216, vec![50]);
             let ta1 = build_tick_array(0, vec![25, 71]);
             let ta2 = build_tick_array(-9216, vec![25, 35, 56]);
-            let mut swap_tick_sequence = SwapTickSequence::new(
+            let mut swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -355,7 +355,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
             let ta1 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
             let ta2 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(
+            let swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -386,7 +386,7 @@ mod swap_tick_sequence_tests {
                 TICK_ARRAY_SIZE * TS_128 as i32,
                 vec![0, 1, LAST_TICK_OFFSET],
             );
-            let swap_tick_sequence = SwapTickSequence::new(ta0.borrow_mut(), None, None);
+            let swap_tick_sequence = TickSequence::new(ta0.borrow_mut(), None, None);
 
             // Verify start range is ok at start-tick-index
             let (start_range_array_index, start_range_result_index) = swap_tick_sequence
@@ -408,7 +408,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
             let ta1 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
             let ta2 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(
+            let swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -427,7 +427,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
             let ta1 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
             let ta2 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(
+            let swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -446,7 +446,7 @@ mod swap_tick_sequence_tests {
         /// & the last usable tick in this array minus one.
         fn search_range() {
             let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(ta0.borrow_mut(), None, None);
+            let swap_tick_sequence = TickSequence::new(ta0.borrow_mut(), None, None);
 
             // Verify start range is ok at start-tick-index
             let (start_range_array_index, start_range_result_index) = swap_tick_sequence
@@ -470,7 +470,7 @@ mod swap_tick_sequence_tests {
         /// In an b_to_a search, search will panic if search index is on the last usable tick
         fn range_panic_on_end_range_plus_one() {
             let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(ta0.borrow_mut(), None, None);
+            let swap_tick_sequence = TickSequence::new(ta0.borrow_mut(), None, None);
 
             let last_searchable_tick_in_array_plus_one = LAST_TICK_OFFSET as i32 * TS_8 as i32;
             let (_, _) = swap_tick_sequence
@@ -488,7 +488,7 @@ mod swap_tick_sequence_tests {
         /// In an b_to_a search, search will panic if search index is less than the last usable tick in the previous tick-array
         fn range_panic_on_start_range_sub_one() {
             let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(ta0.borrow_mut(), None, None);
+            let swap_tick_sequence = TickSequence::new(ta0.borrow_mut(), None, None);
 
             let (_, _) = swap_tick_sequence
                 .get_next_initialized_tick_index(TS_8 as i32 * -1 - 1, TS_8, false, 0)
@@ -499,7 +499,7 @@ mod swap_tick_sequence_tests {
     mod tick_bound {
         use super::*;
 
-        /// SwapTickSequence will bound the ticks by tick-array, not max/min tick. This is to reduce duplicated responsibility
+        /// TickSequence will bound the ticks by tick-array, not max/min tick. This is to reduce duplicated responsibility
         /// between thsi & the swap loop / compute_swap.
 
         #[test]
@@ -507,7 +507,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(0, vec![]);
             let ta1 = build_tick_array(0, vec![]);
             let ta2 = build_tick_array(443520, vec![]); // Max(443636).div_floor(tick-spacing (8) * TA Size (72))* tick-spacing (8) *  TA Size (72)
-            let swap_tick_sequence = SwapTickSequence::new(
+            let swap_tick_sequence = TickSequence::new(
                 ta0.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta2.borrow_mut()),
@@ -526,7 +526,7 @@ mod swap_tick_sequence_tests {
             let ta0 = build_tick_array(0, vec![]);
             let ta1 = build_tick_array(0, vec![]);
             let ta2 = build_tick_array(-444096, vec![]); // Min(-443636).div_ceil(tick-spacing (8) * TA Size (72)) * tick-spacing (8) * TA Size (72)
-            let swap_tick_sequence = SwapTickSequence::new(
+            let swap_tick_sequence = TickSequence::new(
                 ta2.borrow_mut(),
                 Some(ta1.borrow_mut()),
                 Some(ta0.borrow_mut()),
@@ -549,7 +549,7 @@ mod swap_tick_sequence_tests {
         let ta0 = build_tick_array(9216, vec![]);
         let ta1 = build_tick_array(0, vec![25, 71]);
         let ta2 = build_tick_array(-9216, vec![25, 35, 56]);
-        let swap_tick_sequence = SwapTickSequence::new(
+        let swap_tick_sequence = TickSequence::new(
             ta0.borrow_mut(),
             Some(ta1.borrow_mut()),
             Some(ta2.borrow_mut()),
@@ -577,7 +577,7 @@ mod swap_tick_sequence_tests {
         let ta0 = build_tick_array(9216, vec![]);
         let ta1 = build_tick_array(0, vec![25, 71]);
         let ta2 = build_tick_array(-9216, vec![25, 35, 56]);
-        let swap_tick_sequence = SwapTickSequence::new(
+        let swap_tick_sequence = TickSequence::new(
             ta0.borrow_mut(),
             Some(ta1.borrow_mut()),
             Some(ta2.borrow_mut()),
@@ -627,7 +627,7 @@ mod swap_tick_sequence_tests {
         let ta0 = build_tick_array(0, vec![10, 25]);
         let ta1 = build_tick_array(704, vec![]);
         let ta2 = build_tick_array(1408, vec![10, 50, 25]);
-        let swap_tick_sequence = SwapTickSequence::new(
+        let swap_tick_sequence = TickSequence::new(
             ta0.borrow_mut(),
             Some(ta1.borrow_mut()),
             Some(ta2.borrow_mut()),
@@ -676,7 +676,7 @@ mod swap_tick_sequence_tests {
         let ta0 = build_tick_array(0, vec![10, 25]);
         let ta1 = build_tick_array(720, vec![53, 71]);
         let ta2 = build_tick_array(1440, vec![10, 50, 25]);
-        let swap_tick_sequence = SwapTickSequence::new(
+        let swap_tick_sequence = TickSequence::new(
             ta1.borrow_mut(),
             Some(ta0.borrow_mut()),
             Some(ta2.borrow_mut()),
@@ -706,7 +706,7 @@ mod swap_tick_sequence_tests {
         let ta0 = build_tick_array(-576, vec![10]);
         let ta1 = build_tick_array(0, vec![10]);
         let ta2 = build_tick_array(576, vec![25]);
-        let swap_tick_sequence = SwapTickSequence::new(
+        let swap_tick_sequence = TickSequence::new(
             ta2.borrow_mut(),
             Some(ta0.borrow_mut()),
             Some(ta1.borrow_mut()),

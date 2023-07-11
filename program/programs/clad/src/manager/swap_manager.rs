@@ -1,12 +1,11 @@
-use crate::{
-    errors::ErrorCode,
-    manager::tick_manager::next_tick_cross_update,
-    math::*,
-    state::*,
-    util::SwapTickSequence,
+use {
+    crate::{
+        errors::ErrorCode, manager::tick_manager::next_tick_cross_update, math::*, state::*,
+        util::TickSequence,
+    },
+    anchor_lang::prelude::*,
+    std::convert::TryInto,
 };
-use anchor_lang::prelude::*;
-use std::convert::TryInto;
 
 #[derive(Debug)]
 pub struct PostSwapUpdate {
@@ -21,7 +20,7 @@ pub struct PostSwapUpdate {
 
 pub fn swap(
     globalpool: &Globalpool,
-    swap_tick_sequence: &mut SwapTickSequence,
+    swap_tick_sequence: &mut TickSequence,
     amount: u64,
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
@@ -236,8 +235,7 @@ fn calculate_update(
         tick.liquidity_net
     };
 
-    let update =
-        next_tick_cross_update(tick, fee_growth_global_a, fee_growth_global_b)?;
+    let update = next_tick_cross_update(tick, fee_growth_global_a, fee_growth_global_b)?;
 
     // Update the global liquidity to reflect the new current tick
     let next_liquidity = add_liquidity_delta(liquidity, signed_liquidity_net)?;
@@ -261,8 +259,7 @@ fn get_next_sqrt_prices(
 
 #[cfg(test)]
 mod swap_liquidity_tests {
-    use super::*;
-    use crate::util::{test_utils::swap_test_fixture::*};
+    use {super::*, crate::util::test_utils::swap_test_fixture::*};
 
     #[test]
     /// A rightward swap on a pool with zero liquidity across the range with initialized ticks.
@@ -297,7 +294,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -363,7 +360,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -425,7 +422,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -479,7 +476,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -551,7 +548,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -635,7 +632,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -721,7 +718,7 @@ mod swap_liquidity_tests {
             ..Default::default()
         });
         let mut tick_sequence =
-            SwapTickSequence::new(swap_test_info.tick_arrays[0].borrow_mut(), None, None);
+            TickSequence::new(swap_test_info.tick_arrays[0].borrow_mut(), None, None);
         let post_swap = swap_test_info.run(&mut tick_sequence, 100);
         assert_swap(
             &post_swap,
@@ -809,7 +806,7 @@ mod swap_liquidity_tests {
             ..Default::default()
         });
         let mut tick_sequence =
-            SwapTickSequence::new(swap_test_info.tick_arrays[0].borrow_mut(), None, None);
+            TickSequence::new(swap_test_info.tick_arrays[0].borrow_mut(), None, None);
         let post_swap = swap_test_info.run(&mut tick_sequence, 100);
         assert_swap(
             &post_swap,
@@ -904,7 +901,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             None,
@@ -991,7 +988,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             None,
@@ -1081,7 +1078,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1170,7 +1167,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1230,7 +1227,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1269,7 +1266,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1311,7 +1308,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1351,7 +1348,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1403,7 +1400,7 @@ mod swap_liquidity_tests {
             array_3_ticks: None,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1446,7 +1443,7 @@ mod swap_liquidity_tests {
             array_3_ticks: None,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1496,7 +1493,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1547,7 +1544,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1597,7 +1594,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1648,7 +1645,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1699,7 +1696,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1746,7 +1743,7 @@ mod swap_liquidity_tests {
             fee_growth_global_b: 100,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1767,8 +1764,7 @@ mod swap_liquidity_tests {
 
 #[cfg(test)]
 mod swap_sqrt_price_tests {
-    use super::*;
-    use crate::util::test_utils::swap_test_fixture::*;
+    use {super::*, crate::util::test_utils::swap_test_fixture::*};
 
     #[test]
     #[should_panic(expected = "SqrtPriceOutOfBounds")]
@@ -1789,7 +1785,7 @@ mod swap_sqrt_price_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1816,7 +1812,7 @@ mod swap_sqrt_price_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1867,7 +1863,7 @@ mod swap_sqrt_price_tests {
             array_3_ticks: None,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1906,7 +1902,7 @@ mod swap_sqrt_price_tests {
             array_3_ticks: None,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1948,7 +1944,7 @@ mod swap_sqrt_price_tests {
             array_3_ticks: None,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -1983,7 +1979,7 @@ mod swap_sqrt_price_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2018,7 +2014,7 @@ mod swap_sqrt_price_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2054,7 +2050,7 @@ mod swap_sqrt_price_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2080,7 +2076,7 @@ mod swap_sqrt_price_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2115,7 +2111,7 @@ mod swap_sqrt_price_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2151,7 +2147,7 @@ mod swap_sqrt_price_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2177,7 +2173,7 @@ mod swap_sqrt_price_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2212,7 +2208,7 @@ mod swap_sqrt_price_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2232,8 +2228,7 @@ mod swap_sqrt_price_tests {
 
 #[cfg(test)]
 mod swap_error_tests {
-    use super::*;
-    use crate::util::test_utils::swap_test_fixture::*;
+    use {super::*, crate::util::test_utils::swap_test_fixture::*};
 
     #[test]
     #[should_panic(expected = "TickArraySequenceInvalidIndex")]
@@ -2255,7 +2250,7 @@ mod swap_error_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2283,7 +2278,7 @@ mod swap_error_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2308,7 +2303,7 @@ mod swap_error_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2342,7 +2337,7 @@ mod swap_error_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2377,7 +2372,7 @@ mod swap_error_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2403,7 +2398,7 @@ mod swap_error_tests {
             a_to_b: false,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
@@ -2438,7 +2433,7 @@ mod swap_error_tests {
             a_to_b: true,
             ..Default::default()
         });
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),

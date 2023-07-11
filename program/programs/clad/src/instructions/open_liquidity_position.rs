@@ -17,7 +17,8 @@ pub struct OpenLiquidityPosition<'info> {
     /// CHECK: safe, the account that will be the owner of the liquidity position can be arbitrary
     // pub owner: UncheckedAccount<'info>,
 
-    #[account(init,
+    #[account(
+        init,
         payer = position_authority,
         space = LiquidityPosition::LEN,
         seeds = [
@@ -28,14 +29,16 @@ pub struct OpenLiquidityPosition<'info> {
     )]
     pub position: Box<Account<'info, LiquidityPosition>>,
 
-    #[account(init,
+    #[account(
+        init,
         payer = position_authority,
         mint::authority = globalpool,
         mint::decimals = 0,
     )]
     pub position_mint: Account<'info, Mint>,
 
-    #[account(init,
+    #[account(
+        init,
         payer = position_authority,
         associated_token::mint = position_mint,
         associated_token::authority = position_authority,
@@ -51,7 +54,6 @@ pub struct OpenLiquidityPosition<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct OpenLiquidityPositionParams {
     tick_lower_index: i32,
@@ -59,8 +61,8 @@ pub struct OpenLiquidityPositionParams {
 }
 
 ///
-/// Opens a new Global Pool.
-/// 
+/// Opens a liquidity position in a GlobalPool.
+///
 pub fn open_liquidity_position(
     ctx: Context<OpenLiquidityPosition>,
     params: &OpenLiquidityPositionParams,

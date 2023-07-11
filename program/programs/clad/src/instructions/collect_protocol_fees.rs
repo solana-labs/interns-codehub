@@ -28,7 +28,7 @@ pub struct CollectProtocolFees<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<CollectProtocolFees>) -> Result<()> {
+pub fn collect_protocol_fees(ctx: Context<CollectProtocolFees>) -> Result<()> {
     let globalpool = &ctx.accounts.globalpool;
 
     transfer_from_vault_to_owner(

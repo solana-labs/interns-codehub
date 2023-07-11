@@ -58,7 +58,7 @@ impl TradePosition {
         &mut self,
         globalpool: &Account<Globalpool>,
         ticks: &Vec<TickLoan>,
-        a_not_b: bool,
+        borrow_a: bool,
     ) -> Result<()> {
         for tick in ticks {}
 

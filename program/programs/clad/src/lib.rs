@@ -161,7 +161,7 @@ pub mod globalpool {
     /// - `TickNotFound` - Provided tick array account does not contain the tick for this position.
     /// - `LiquidityZero` - Position has zero liquidity and therefore already has the most updated fees values.
     pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
-        return instructions::collect_fees::handler(ctx);
+        return instructions::collect_fees(ctx);
     }
 
     /// Collect the protocol fees accrued in this Globalpool
@@ -169,7 +169,7 @@ pub mod globalpool {
     /// ### Authority
     /// - `collect_protocol_fees_authority` - assigned authority in the GlobalpoolConfig that can collect protocol fees
     pub fn collect_protocol_fees(ctx: Context<CollectProtocolFees>) -> Result<()> {
-        return instructions::collect_protocol_fees::handler(ctx);
+        return instructions::collect_protocol_fees(ctx);
     }
 
     /// Perform a swap in this Globalpool
@@ -201,7 +201,7 @@ pub mod globalpool {
         amount_specified_is_input: bool,
         a_to_b: bool,
     ) -> Result<()> {
-        return instructions::swap::handler(
+        return instructions::swap(
             ctx,
             amount,
             other_amount_threshold,

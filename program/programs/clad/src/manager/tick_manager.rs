@@ -33,9 +33,9 @@ pub fn next_tick_modify_liquidity_update(
 
     let liquidity_gross = add_liquidity_delta(tick.liquidity_gross, liquidity_delta)?;
 
-    // Update to an uninitialized tick if remaining liquidity is being removed & no liquidity is loaned out
-    if liquidity_gross == 0 && tick.liquidity_borrowed == 0 {
-        return Ok(TickUpdate::default());
+    // Update to an uninitialized tick if remaining liquidity is being removed
+    if liquidity_gross == 0 {
+        return Ok(TickUpdate { ....Default::default(), liquidity_borrowed: tick.liquidity_borrowed });
     }
 
     let (fee_growth_outside_a, fee_growth_outside_b) =

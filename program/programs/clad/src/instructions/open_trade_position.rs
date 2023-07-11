@@ -1,5 +1,9 @@
 use {
-    crate::{state::*, util::mint_position_token_and_remove_authority},
+    crate::{
+        manager::loan_manager,
+        state::*,
+        util::{mint_position_token_and_remove_authority, TickSequence},
+    },
     anchor_lang::prelude::*,
     anchor_spl::{
         associated_token::AssociatedToken,
@@ -54,6 +58,15 @@ pub struct OpenTradePosition<'info> {
     #[account(mut, address = globalpool.token_vault_b)]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
+    #[account(mut, has_one = globalpool)]
+    pub tick_array_0: AccountLoader<'info, TickArray>,
+
+    #[account(mut, has_one = globalpool)]
+    pub tick_array_1: AccountLoader<'info, TickArray>,
+
+    #[account(mut, has_one = globalpool)]
+    pub tick_array_2: AccountLoader<'info, TickArray>,
+
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -63,10 +76,16 @@ pub struct OpenTradePosition<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct OpenTradePositionParams {
-    pub ticks: Vec<TickLoan>,
+    // Token A or B amount to borrow
+    pub amount: u64,
+
+    // Tick Index to start searching liquidity from.
+    // If borrow_a, we traverse Ticks to the right (positive) from this index, inclusive (a_to_b = False).
+    // Conversely, if !borrow_a, we traverse to the left (negative) from this index, inclusive.
+    pub start_tick_index: i32,
 
     // true: borrow token A | false: borrow token B
-    pub a_not_b: bool,
+    pub borrow_a: bool,
 }
 
 pub fn open_trade_position(
@@ -77,7 +96,32 @@ pub fn open_trade_position(
     let position_mint = &ctx.accounts.position_mint;
     let position = &mut ctx.accounts.position;
 
-    position.open_position(globalpool, &params.ticks);
+    let mut loan_tick_sequence = TickSequence::new(
+        ctx.accounts.tick_array_0.load_mut().unwrap(),
+        ctx.accounts.tick_array_1.load_mut().ok(),
+        ctx.accounts.tick_array_2.load_mut().ok(),
+    );
+
+    // Calculate Ticks touched for loans
+    let tick_loans = loan_manager::calculate_borrowed_ticks(
+        globalpool,
+        &mut loan_tick_sequence,
+        params.amount,
+        params.start_tick_index,
+        params.borrow_a,
+    )?;
+
+    // let (loan_update, tick_loans) = loan_manager::borrow(
+    //     globalpool,
+    //     &mut loan_tick_sequence,
+    //     params.amount,
+    //     params.start_tick_index,
+    //     params.borrow_a,
+    // )?;
+
+    // borrow_and_update_globalpool()
+
+    // position.open_position(globalpool, &params.ticks, params.borrow_a);
 
     todo!()
 }

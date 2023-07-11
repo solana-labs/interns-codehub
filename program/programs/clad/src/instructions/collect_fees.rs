@@ -41,7 +41,7 @@ pub struct CollectFees<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<CollectFees>) -> Result<()> {
+pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,

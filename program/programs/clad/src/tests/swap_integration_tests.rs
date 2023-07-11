@@ -2,7 +2,7 @@ use crate::errors::ErrorCode;
 use crate::manager::swap_manager::*;
 use crate::math::*;
 use crate::state::{MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE};
-use crate::util::{SwapTickSequence, test_utils::swap_test_fixture::*};
+use crate::util::{TickSequence, test_utils::swap_test_fixture::*};
 use serde::Deserialize;
 use serde_json;
 use serde_with::{serde_as, DisplayFromStr};
@@ -115,7 +115,7 @@ fn run_swap_integration_tests() {
             ..Default::default()
         });
 
-        let mut tick_sequence = SwapTickSequence::new(
+        let mut tick_sequence = TickSequence::new(
             swap_test_info.tick_arrays[0].borrow_mut(),
             Some(swap_test_info.tick_arrays[1].borrow_mut()),
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
