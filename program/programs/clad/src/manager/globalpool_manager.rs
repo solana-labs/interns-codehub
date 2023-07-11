@@ -13,8 +13,8 @@ pub fn next_globalpool_liquidity(
     if globalpool.tick_current_index < tick_upper_index
         && globalpool.tick_current_index >= tick_lower_index
     {
-        add_liquidity_delta(globalpool.liquidity, liquidity_delta)
+        add_liquidity_delta(globalpool.liquidity_available, liquidity_delta)
     } else {
-        Ok(globalpool.liquidity)
+        Ok(globalpool.liquidity_available)
     }
 }

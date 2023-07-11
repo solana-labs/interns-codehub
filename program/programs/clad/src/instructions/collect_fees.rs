@@ -15,9 +15,9 @@ pub struct CollectFees<'info> {
     pub position_authority: Signer<'info>,
 
     #[account(mut, has_one = globalpool)]
-    pub position: Box<Account<'info, Position>>,
+    pub position: Box<Account<'info, LiquidityPosition>>,
     #[account(
-        constraint = position_token_account.mint == liquidity_position.position_mint,
+        constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
@@ -48,23 +48,24 @@ pub fn collect_fees(ctx: Context<CollectFees>) -> Result<()> {
     )?;
 
     let globalpool = &mut ctx.accounts.globalpool;
-    let position = &mut ctx.accounts.position;
+    // let position = &mut ctx.accounts.position;
 
     // Update fee accrued for the position
-    position.update(&calculate_fee_growths(
+    let position_update = &calculate_fee_growths(
         globalpool,
-        position,
+        &ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
         to_timestamp_u64(Clock::get()?.unix_timestamp)?,
-    )?);
+    )?;
+    (&mut ctx.accounts.position).update(position_update);
 
     // Store the fees owed to use as transfer amounts, before resetting.
-    let fee_owed_a = position.fee_owed_a;
-    let fee_owed_b = position.fee_owed_b;
+    let fee_owed_a = ctx.accounts.position.fee_owed_a;
+    let fee_owed_b = ctx.accounts.position.fee_owed_b;
 
     // Reset the fee before transfer.
-    position.reset_fees_owed();
+    (&mut ctx.accounts.position).reset_fees_owed();
 
     transfer_from_vault_to_owner(
         globalpool,

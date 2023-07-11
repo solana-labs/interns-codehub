@@ -20,12 +20,12 @@ pub struct CloseLiquidityPosition<'info> {
     )]
     pub position: Account<'info, LiquidityPosition>,
 
-    #[account(mut, address = liquidity_position.position_mint)]
+    #[account(mut, address = position.position_mint)]
     pub position_mint: Account<'info, Mint>,
 
     #[account(mut,
         constraint = position_token_account.amount == 1,
-        constraint = position_token_account.mint == liquidity_position.position_mint)]
+        constraint = position_token_account.mint == position.position_mint)]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(address = token::ID)]
@@ -38,7 +38,7 @@ pub fn close_liquidity_position(ctx: Context<CloseLiquidityPosition>) -> Result<
         &ctx.accounts.position_authority,
     )?;
 
-    if !Position::is_position_empty(&ctx.accounts.position) {
+    if !LiquidityPosition::is_position_empty(&ctx.accounts.position) {
         return Err(ErrorCode::CloseLiquidityPositionNotEmpty.into());
     }
 

@@ -49,7 +49,7 @@ pub fn swap(
     let mut amount_calculated: u64 = 0;
     let mut curr_sqrt_price = globalpool.sqrt_price;
     let mut curr_tick_index = globalpool.tick_current_index;
-    let mut curr_liquidity = globalpool.liquidity;
+    let mut curr_liquidity = globalpool.liquidity_available;
     let mut curr_protocol_fee: u64 = 0;
     let mut curr_array_index: usize = 0;
     let mut curr_fee_growth_global_input = if a_to_b {

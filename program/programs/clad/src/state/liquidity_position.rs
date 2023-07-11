@@ -82,7 +82,7 @@ mod is_liquidity_position_empty_tests {
         liquidity: u128,
         fee_owed_a: u64,
         fee_owed_b: u64,
-    ) -> Position {
+    ) -> LiquidityPosition {
         LiquidityPosition {
             globalpool: Pubkey::default(),
             position_mint: Pubkey::default(),

@@ -10,14 +10,13 @@ pub const TICK_ARRAY_SIZE: i32 = 88;
 pub const TICK_ARRAY_SIZE_USIZE: usize = 88;
 
 #[zero_copy]
-#[repr(packed)]
+// #[repr(packed)]
 #[derive(Default, Debug, PartialEq)]
 pub struct Tick {
     pub initialized: bool,
     pub liquidity_net: i128,
     pub liquidity_gross: u128,
-
-    pub liquidity_borrowed: u128,
+    pub liquidity_borrowed: i128,
 
     // Q64.64
     pub fee_growth_outside_a: u128,
@@ -113,7 +112,7 @@ pub struct TickUpdate {
     pub initialized: bool,
     pub liquidity_net: i128,
     pub liquidity_gross: u128,
-    pub liquidity_borrowed: u128,
+    pub liquidity_borrowed: i128,
     pub fee_growth_outside_a: u128,
     pub fee_growth_outside_b: u128,
 }
@@ -131,8 +130,8 @@ impl TickUpdate {
     }
 }
 
-#[account(zero_copy)]
 #[repr(packed)]
+#[account(zero_copy)]
 pub struct TickArray {
     pub start_tick_index: i32,
     pub ticks: [Tick; TICK_ARRAY_SIZE_USIZE],
@@ -236,6 +235,7 @@ impl TickArray {
     /// # Returns
     /// - `&Tick`: A reference to the desired Tick object
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Globalpool w/ this tick-spacing.
+    #[allow(unaligned_references)]
     pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
         if !self.check_in_array_bounds(tick_index, tick_spacing)
             || !Tick::check_is_usable_tick(tick_index, tick_spacing)
@@ -258,6 +258,7 @@ impl TickArray {
     ///
     /// # Errors
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Globalpool w/ this tick-spacing.
+    #[allow(unaligned_references)]
     pub fn update_tick(
         &mut self,
         tick_index: i32,
@@ -321,8 +322,8 @@ impl TickArray {
     }
 }
 
-#[zero_copy]
-#[repr(packed)]
+// #[zero_copy]
+// #[repr(packed)]
 #[derive(Default, Debug, PartialEq)]
 pub struct TickLoan {
     pub tick: i32,
@@ -355,6 +356,7 @@ pub mod tick_builder {
     pub struct TickBuilder {
         initialized: bool,
         liquidity_net: i128,
+        liquidity_borrowed: i128,
         liquidity_gross: u128,
         fee_growth_outside_a: u128,
         fee_growth_outside_b: u128,
@@ -376,7 +378,7 @@ pub mod tick_builder {
             self
         }
 
-        pub fn liquidity_borrowed(mut self, liquidity_borrowed: u128) -> Self {
+        pub fn liquidity_borrowed(mut self, liquidity_borrowed: i128) -> Self {
             self.liquidity_borrowed = liquidity_borrowed;
             self
         }

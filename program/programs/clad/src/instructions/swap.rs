@@ -1,9 +1,9 @@
 use {
     crate::{
         errors::ErrorCode,
-        manager::swap_manager::*,
+        manager::swap_manager,
         state::{Globalpool, TickArray},
-        util::{update_and_swap_globalpool, TickSequence},
+        util::{update_and_swap_globalpool, to_timestamp_u64, TickSequence},
     },
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Token, TokenAccount},
@@ -50,9 +50,8 @@ pub struct SwapParams {
 
 pub fn swap(ctx: Context<Swap>, params: &SwapParams) -> Result<()> {
     let globalpool = &mut ctx.accounts.globalpool;
-    let clock = Clock::get()?;
 
-    // let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
+    let timestamp = to_timestamp_u64(Clock::get()?.unix_timestamp)?;
     let mut swap_tick_sequence = TickSequence::new(
         ctx.accounts.tick_array_0.load_mut().unwrap(),
         ctx.accounts.tick_array_1.load_mut().ok(),
@@ -61,6 +60,7 @@ pub fn swap(ctx: Context<Swap>, params: &SwapParams) -> Result<()> {
 
     let amount_specified_is_input = params.amount_specified_is_input;
     let a_to_b = params.a_to_b;
+    let other_amount_threshold = params.other_amount_threshold;
 
     let swap_update = swap_manager::swap(
         &globalpool,
@@ -69,6 +69,7 @@ pub fn swap(ctx: Context<Swap>, params: &SwapParams) -> Result<()> {
         params.sqrt_price_limit,
         amount_specified_is_input,
         a_to_b,
+        timestamp,
     )?;
 
     if amount_specified_is_input {

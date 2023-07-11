@@ -1,13 +1,11 @@
-use crate::util::to_timestamp_u64;
-
 use {
-    super::GlobalpoolsConfig,
     crate::{
         errors::ErrorCode,
         math::{
             tick_index_from_sqrt_price, MAX_FEE_RATE, MAX_PROTOCOL_FEE_RATE, MAX_SQRT_PRICE_X64,
             MIN_SQRT_PRICE_X64,
         },
+        util::to_timestamp_u64,
     },
     anchor_lang::prelude::*,
 };
@@ -15,18 +13,18 @@ use {
 #[account]
 #[derive(Default)]
 pub struct Globalpool {
-    pub bump: u8, // Globalpool bump
-    pub transfer_authority_bump: u8,
+    pub bump: [u8; 1], // Globalpool bump
 
-    pub tick_spacing: u16,          // 2
-    pub tick_spacing_seed: [u8; 2], // 2
+    pub tick_spacing: u16,         
+    pub tick_spacing_seed: [u8; 2],
 
     // Stored as hundredths of a basis point
     // u16::MAX corresponds to ~6.5%
-    pub fee_rate: u16, // 2
+    pub fee_rate: u16,
+    pub fee_rate_seed: [u8; 2],
 
     // Portion of fee rate taken stored as basis points
-    pub protocol_fee_rate: u16, // 2
+    pub protocol_fee_rate: u16,
 
     // liquidity: u128 Maximum amount that can be held by Solana account
 
@@ -43,7 +41,7 @@ pub struct Globalpool {
     pub liquidity_trade_locked_a: u128,
 
     // Liquidity of Token B swapped from Token A for trade positions (for ledger purposes)
-    pub liquidity_trade_locked_a: u128,
+    pub liquidity_trade_locked_b: u128,
 
     // MAX/MIN at Q32.64, but using Q64.64 for rounder bytes
     // Q64.64
@@ -66,17 +64,19 @@ pub struct Globalpool {
     pub fee_growth_global_b: u128, // 16
 
     // time of inception, also used as current wall clock time for testing
-    pub inception_time: i64,
+    pub inception_time: u64,
+
+    pub fee_authority: Pubkey,
 }
 
 impl Globalpool {
     pub const LEN: usize = 8 + std::mem::size_of::<Globalpool>() + 384;
-    pub fn seeds(&self) -> [&[u8]; 6] {
+    pub fn seeds<'a>(&self) -> [&[u8]; 6] {
         [
             &b"globalpool"[..],
             self.token_mint_a.as_ref(),
             self.token_mint_b.as_ref(),
-            self.fee_rate.as_ref(),
+            self.fee_rate_seed.as_ref(),
             self.tick_spacing_seed.as_ref(),
             self.bump.as_ref(),
         ]
@@ -85,11 +85,11 @@ impl Globalpool {
     pub fn initialize(
         &mut self,
         globalpool_bump: u8,
-        transfer_authority_bump: u8,
         tick_spacing: u16,
         sqrt_price: u128,
         fee_rate: u16,
         protocol_fee_rate: u16,
+        fee_authority: Pubkey,
         token_mint_a: Pubkey,
         token_vault_a: Pubkey,
         token_mint_b: Pubkey,
@@ -107,14 +107,21 @@ impl Globalpool {
             return Err(ProgramError::AccountAlreadyInitialized.into());
         }
 
-        self.bump = globalpool_bump;
-        self.transfer_authority_bump = transfer_authority_bump;
+        self.bump = [globalpool_bump];
 
         self.tick_spacing = tick_spacing;
         self.tick_spacing_seed = self.tick_spacing.to_le_bytes();
 
-        self.update_fee_rate(fee_rate)?;
-        self.update_protocol_fee_rate(protocol_fee_rate)?;
+        if fee_rate > MAX_FEE_RATE {
+            return Err(ErrorCode::FeeRateMaxExceeded.into());
+        }
+        self.fee_rate = fee_rate;
+        self.fee_rate_seed = self.fee_rate.to_le_bytes();
+
+        if protocol_fee_rate > MAX_PROTOCOL_FEE_RATE {
+            return Err(ErrorCode::ProtocolFeeRateMaxExceeded.into());
+        }
+        self.protocol_fee_rate = protocol_fee_rate;
 
         self.liquidity_available = 0;
         self.liquidity_borrowed_a = 0;
@@ -131,12 +138,13 @@ impl Globalpool {
         self.token_mint_a = token_mint_a;
         self.token_vault_a = token_vault_a;
         self.fee_growth_global_a = 0;
+        self.fee_authority = fee_authority;
 
         self.token_mint_b = token_mint_b;
         self.token_vault_b = token_vault_b;
         self.fee_growth_global_b = 0;
 
-        self.inception_time = to_timestamp_u64(Clock::get()?.unix_timestamp);
+        self.inception_time = to_timestamp_u64(Clock::get()?.unix_timestamp)?;
 
         Ok(())
     }
@@ -168,27 +176,9 @@ impl Globalpool {
         &mut self,
         liquidity_borrowed: u128,
         tick_index: i32,
-        sqrt_price: u128
+        sqrt_price: u128,
     ) {
         todo!()
-    }
-
-    pub fn update_fee_rate(&mut self, fee_rate: u16) -> Result<()> {
-        if fee_rate > MAX_FEE_RATE {
-            return Err(ErrorCode::FeeRateMaxExceeded.into());
-        }
-        self.fee_rate = fee_rate;
-
-        Ok(())
-    }
-
-    pub fn update_protocol_fee_rate(&mut self, protocol_fee_rate: u16) -> Result<()> {
-        if protocol_fee_rate > MAX_PROTOCOL_FEE_RATE {
-            return Err(ErrorCode::ProtocolFeeRateMaxExceeded.into());
-        }
-        self.protocol_fee_rate = protocol_fee_rate;
-
-        Ok(())
     }
 
     pub fn reset_protocol_fees_owed(&mut self) {
@@ -260,7 +250,7 @@ pub mod globalpool_builder {
 
         pub fn build(self) -> Globalpool {
             Globalpool {
-                liquidity_available: self.liquidity_available,
+                liquidity_available: self.liquidity,
                 tick_current_index: self.tick_current_index,
                 sqrt_price: self.sqrt_price,
                 tick_spacing: self.tick_spacing,

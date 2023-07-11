@@ -17,6 +17,8 @@ pub struct OpenLiquidityPosition<'info> {
     /// CHECK: safe, the account that will be the owner of the liquidity position can be arbitrary
     // pub owner: UncheckedAccount<'info>,
 
+    pub globalpool: Box<Account<'info, Globalpool>>,
+
     #[account(
         init,
         payer = position_authority,
@@ -44,8 +46,6 @@ pub struct OpenLiquidityPosition<'info> {
         associated_token::authority = position_authority,
     )]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
-
-    pub globalpool: Box<Account<'info, Globalpool>>,
 
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,

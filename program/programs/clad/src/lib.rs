@@ -1,5 +1,4 @@
-//! A concentrated liquidity AMM contract powered by Orca.
-use anchor_lang::prelude::*;
+//! Leveraged trading with concentrated liquidity AMM positions as loan source.
 
 declare_id!("Bt6okjbFCJwgbuxm3z78XS9i8VZxPkooCiVVyadazKM3");
 
@@ -17,10 +16,10 @@ pub mod tests;
 #[doc(hidden)]
 pub mod util;
 
-use instructions::*;
+use {anchor_lang::prelude::*, instructions::*};
 
 #[program]
-pub mod globalpool {
+pub mod clad {
     use super::*;
 
     /// Initializes a GlobalpoolsConfig account that hosts info & authorities
@@ -29,7 +28,10 @@ pub mod globalpool {
     /// ### Parameters
     /// - `fee_authority` - Authority authorized to initialize fee-tiers and set customs fees.
     /// - `collect_protocol_fees_authority` - Authority authorized to collect protocol fees.
-    pub fn initialize_clad(ctx: Context<InitializeConfig>, params: InitializeParams) -> Result<()> {
+    pub fn initialize_clad(
+        ctx: Context<InitializeClad>,
+        params: InitializeCladParams,
+    ) -> Result<()> {
         return instructions::initialize_clad(ctx, &params);
     }
 
@@ -106,9 +108,10 @@ pub mod globalpool {
     ///
     /// #### Special Errors
     /// - `CloseTradePositionNotEmpty` - The provided trade position account is not empty.
-    pub fn close_trade_position() -> Result<()> {
-        todo!()
-    }
+    // pub fn close_trade_position() -> Result<()> {
+    //     todo!();
+    //     Ok(())
+    // }
 
     /// Add liquidity to a position in the Globalpool. This call also updates the position's accrued fees.
     ///
@@ -145,12 +148,12 @@ pub mod globalpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
-    pub fn decrease_liquidity(
-        ctx: Context<ModifyLiquidity>,
-        params: DecreaseLiquidityParams,
-    ) -> Result<()> {
-        return instructions::decrease_liquidity(ctx, params);
-    }
+    // pub fn decrease_liquidity(
+    //     ctx: Context<ModifyLiquidity>,
+    //     params: DecreaseLiquidityParams,
+    // ) -> Result<()> {
+    //     return instructions::decrease_liquidity(ctx, &params);
+    // }
 
     /// Collect fees accrued for this position.
     ///
@@ -193,21 +196,7 @@ pub mod globalpool {
     /// - `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.
     /// - `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
-    pub fn swap(
-        ctx: Context<Swap>,
-        amount: u64,
-        other_amount_threshold: u64,
-        sqrt_price_limit: u128,
-        amount_specified_is_input: bool,
-        a_to_b: bool,
-    ) -> Result<()> {
-        return instructions::swap(
-            ctx,
-            amount,
-            other_amount_threshold,
-            sqrt_price_limit,
-            amount_specified_is_input,
-            a_to_b,
-        );
+    pub fn swap(ctx: Context<Swap>, params: SwapParams) -> Result<()> {
+        return instructions::swap(ctx, &params);
     }
 }

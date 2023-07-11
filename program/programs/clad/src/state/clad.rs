@@ -1,10 +1,9 @@
 use {
     crate::{errors::ErrorCode, math::MAX_PROTOCOL_FEE_RATE},
     anchor_lang::prelude::*,
-    anchor_spl::token::{Burn, MintTo, Transfer},
 };
 
-#[derive(Copy, Clone, PartialEq, AnchorSerialize, AnchorDeserialize, Default, Debug)]
+#[derive(Copy, Clone, PartialEq, AnchorSerialize, AnchorDeserialize, Debug)]
 pub struct Permissions {
     pub allow_swap: bool,
     pub allow_add_liquidity: bool,

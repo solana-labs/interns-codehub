@@ -35,7 +35,7 @@ pub fn next_tick_modify_liquidity_update(
 
     // Update to an uninitialized tick if remaining liquidity is being removed
     if liquidity_gross == 0 {
-        return Ok(TickUpdate { ....Default::default(), liquidity_borrowed: tick.liquidity_borrowed });
+        return Ok(TickUpdate { liquidity_borrowed: tick.liquidity_borrowed, ..Default::default() });
     }
 
     let (fee_growth_outside_a, fee_growth_outside_b) =

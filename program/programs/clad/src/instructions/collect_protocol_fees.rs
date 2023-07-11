@@ -4,12 +4,10 @@ use anchor_spl::token::{self, Token, TokenAccount};
 
 #[derive(Accounts)]
 pub struct CollectProtocolFees<'info> {
-    pub globalpools_config: Box<Account<'info, GlobalpoolsConfig>>,
-
-    #[account(mut, has_one = globalpools_config)]
+    #[account(mut)]
     pub globalpool: Box<Account<'info, Globalpool>>,
 
-    #[account(address = globalpools_config.collect_protocol_fees_authority)]
+    #[account(address = globalpool.fee_authority)]
     pub collect_protocol_fees_authority: Signer<'info>,
 
     #[account(mut, address = globalpool.token_vault_a)]

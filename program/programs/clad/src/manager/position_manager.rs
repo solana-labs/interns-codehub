@@ -1,16 +1,16 @@
 use crate::{
     errors::ErrorCode,
     math::{add_liquidity_delta, checked_mul_shift_right},
-    state::{Position, PositionUpdate},
+    state::{LiquidityPosition, LiquidityPositionUpdate},
 };
 
 pub fn next_position_modify_liquidity_update(
-    position: &Position,
+    position: &LiquidityPosition,
     liquidity_delta: i128,
     fee_growth_inside_a: u128,
     fee_growth_inside_b: u128,
-) -> Result<PositionUpdate, ErrorCode> {
-    let mut update = PositionUpdate::default();
+) -> Result<LiquidityPositionUpdate, ErrorCode> {
+    let mut update = LiquidityPositionUpdate::default();
 
     // Calculate fee deltas.
     // If fee deltas overflow, default to a zero value. This means the position loses
@@ -35,16 +35,16 @@ pub fn next_position_modify_liquidity_update(
 
 #[cfg(test)]
 mod position_manager_unit_tests {
-    use crate::{
-        math::{add_liquidity_delta, Q64_RESOLUTION},
-        state::{position_builder::PositionBuilder, Position},
+    use {
+        super::next_position_modify_liquidity_update,
+        crate::{
+            math::Q64_RESOLUTION, state::liquidity_position_builder::LiquidityPositionBuilder,
+        },
     };
-
-    use super::next_position_modify_liquidity_update;
 
     #[test]
     fn ok_positive_liquidity_delta_fee_growth() {
-        let position = PositionBuilder::new(-10, 10)
+        let position = LiquidityPositionBuilder::new(-10, 10)
             .liquidity(0)
             .fee_owed_a(10)
             .fee_owed_b(500)
@@ -68,7 +68,7 @@ mod position_manager_unit_tests {
 
     #[test]
     fn ok_negative_liquidity_delta_fee_growth() {
-        let position = PositionBuilder::new(-10, 10)
+        let position = LiquidityPositionBuilder::new(-10, 10)
             .liquidity(10000)
             .fee_growth_checkpoint_a(100 << Q64_RESOLUTION)
             .fee_growth_checkpoint_b(100 << Q64_RESOLUTION)
@@ -91,20 +91,22 @@ mod position_manager_unit_tests {
     #[test]
     #[should_panic(expected = "LiquidityUnderflow")]
     fn liquidity_underflow() {
-        let position = PositionBuilder::new(-10, 10).build();
+        let position = LiquidityPositionBuilder::new(-10, 10).build();
         next_position_modify_liquidity_update(&position, -100, 0, 0).unwrap();
     }
 
     #[test]
     #[should_panic(expected = "LiquidityOverflow")]
     fn liquidity_overflow() {
-        let position = PositionBuilder::new(-10, 10).liquidity(u128::MAX).build();
+        let position = LiquidityPositionBuilder::new(-10, 10)
+            .liquidity(u128::MAX)
+            .build();
         next_position_modify_liquidity_update(&position, i128::MAX, 0, 0).unwrap();
     }
 
     #[test]
     fn fee_delta_overflow_defaults_zero() {
-        let position = PositionBuilder::new(-10, 10)
+        let position = LiquidityPositionBuilder::new(-10, 10)
             .liquidity(i64::MAX as u128)
             .fee_owed_a(10)
             .fee_owed_b(20)

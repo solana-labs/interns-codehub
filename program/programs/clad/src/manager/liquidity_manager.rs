@@ -1,23 +1,24 @@
-use super::{
-    position_manager::next_position_modify_liquidity_update,
-    tick_manager::{
-        next_fee_growths_inside, next_tick_modify_liquidity_update,
+use {
+    super::{
+        globalpool_manager::next_globalpool_liquidity,
+        loan_manager::ModifyLoanUpdate,
+        position_manager::next_position_modify_liquidity_update,
+        tick_manager::{next_fee_growths_inside, next_tick_modify_liquidity_update},
     },
-    globalpool_manager::{next_globalpool_liquidity},
+    crate::{
+        errors::ErrorCode,
+        math::{get_amount_delta_a, get_amount_delta_b, sqrt_price_from_tick_index},
+        state::*,
+    },
+    anchor_lang::prelude::{AccountLoader, *},
 };
-use crate::{
-    errors::ErrorCode,
-    math::{get_amount_delta_a, get_amount_delta_b, sqrt_price_from_tick_index},
-    state::*,
-};
-use anchor_lang::prelude::{AccountLoader, *};
 
 #[derive(Debug)]
 pub struct ModifyLiquidityUpdate {
     pub globalpool_liquidity: u128,
     pub tick_lower_update: TickUpdate,
     pub tick_upper_update: TickUpdate,
-    pub position_update: PositionUpdate,
+    pub position_update: LiquidityPositionUpdate,
 }
 
 // Calculates state after modifying liquidity by the liquidity_delta for the given positon.
@@ -57,7 +58,7 @@ pub fn calculate_fee_growths<'info>(
     tick_array_lower: &AccountLoader<'info, TickArray>,
     tick_array_upper: &AccountLoader<'info, TickArray>,
     timestamp: u64,
-) -> Result<PositionUpdate> {
+) -> Result<LiquidityPositionUpdate> {
     let tick_array_lower = tick_array_lower.load()?;
     let tick_lower =
         tick_array_lower.get_tick(position.tick_lower_index, globalpool.tick_spacing)?;
@@ -202,6 +203,30 @@ pub fn sync_modify_liquidity_values<'info>(
         position.tick_upper_index,
         globalpool.tick_spacing,
         &modify_liquidity_update.tick_upper_update,
+    )?;
+
+    Ok(())
+}
+
+pub fn sync_modify_liquidity_values_from_loan<'info>(
+    globalpool: &mut Globalpool,
+    position: &mut TradePosition,
+    tick_array_lower: &AccountLoader<'info, TickArray>,
+    tick_array_upper: &AccountLoader<'info, TickArray>,
+    modify_loan_update: ModifyLoanUpdate,
+) -> Result<()> {
+    position.update(&modify_loan_update.position_update);
+
+    tick_array_lower.load_mut()?.update_tick(
+        position.tick_lower_index,
+        globalpool.tick_spacing,
+        &modify_loan_update.tick_lower_update,
+    )?;
+
+    tick_array_upper.load_mut()?.update_tick(
+        position.tick_upper_index,
+        globalpool.tick_spacing,
+        &modify_loan_update.tick_upper_update,
     )?;
 
     Ok(())
@@ -385,7 +410,7 @@ mod calculate_modify_liquidity_unit_tests {
                             liquidity_net: -10,
                             ..Default::default()
                         },
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -424,7 +449,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -470,12 +495,12 @@ mod calculate_modify_liquidity_unit_tests {
                 });
                 test.cross_tick(TickLabel::Upper, Direction::Left);
                 // Check crossing an upper tick with liquidity added new globalpool liquidity
-                assert_eq!(test.globalpool.liquidity, 110);
+                assert_eq!(test.globalpool.liquidity_available, 110);
                 // 1 = 0 + (100/100)
                 test.increment_globalpool_fee_growths(to_x64(10), to_x64(10));
                 test.cross_tick(TickLabel::Lower, Direction::Left);
                 // Lower tick has 0 net liquidity, so crossing does not affect globalpool liquidity
-                assert_eq!(test.globalpool.liquidity, 110);
+                assert_eq!(test.globalpool.liquidity_available, 110);
                 // 1.909 = 1 + (100/110)
 
                 // Create position which initializes the lower tick
@@ -496,7 +521,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &ModifyLiquidityExpectation {
                         // Current tick below position, so does not add to globalpool liquidity
                         globalpool_liquidity: 110,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             // Wrapped underflow -10 = 20 - (20 - 0) - (10)
                             fee_growth_checkpoint_a: 340282366920938463278907166694672695296,
@@ -553,7 +578,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -604,7 +629,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -664,7 +689,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 110,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -716,7 +741,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 110,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -764,7 +789,7 @@ mod calculate_modify_liquidity_unit_tests {
                 });
                 test.cross_tick(TickLabel::Upper, Direction::Left);
                 // Check crossing an upper tick with liquidity added new globalpool liquidity
-                assert_eq!(test.globalpool.liquidity, 110);
+                assert_eq!(test.globalpool.liquidity_available, 110);
 
                 // Create position which initializes the lower tick
                 let update = _calculate_modify_liquidity(
@@ -784,7 +809,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &ModifyLiquidityExpectation {
                         // Current tick inside position, so globalpool liquidity increases
                         globalpool_liquidity: 120,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             // Wrapped underflow -10
                             fee_growth_checkpoint_a: 340282366920938463278907166694672695296,
@@ -843,7 +868,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 110,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             fee_growth_checkpoint_a: to_x64(10),
                             fee_growth_checkpoint_b: to_x64(20),
@@ -897,7 +922,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 110,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             fee_growth_checkpoint_a: to_x64(10),
                             fee_growth_checkpoint_b: to_x64(20),
@@ -957,7 +982,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -1011,7 +1036,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             // Wrapped underflow -10
                             fee_growth_checkpoint_a: 340282366920938463278907166694672695296,
@@ -1073,7 +1098,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             // Wrapped underflow -10
                             fee_growth_checkpoint_a: 340282366920938463278907166694672695296,
@@ -1159,7 +1184,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             fee_growth_checkpoint_a: to_x64(5),
                             fee_owed_a: 150,
@@ -1218,7 +1243,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             fee_growth_checkpoint_a: to_x64(10),
                             fee_growth_checkpoint_b: to_x64(20),
@@ -1272,7 +1297,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             ..Default::default()
                         },
@@ -1335,7 +1360,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 10,
                             fee_growth_checkpoint_a: to_x64(10),
                             fee_growth_checkpoint_b: to_x64(10),
@@ -1399,7 +1424,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate::default(),
+                        position_update: LiquidityPositionUpdate::default(),
                         tick_lower_update: TickUpdate::default(),
                         tick_upper_update: TickUpdate::default(),
                     },
@@ -1433,7 +1458,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate::default(),
+                        position_update: LiquidityPositionUpdate::default(),
                         tick_lower_update: TickUpdate {
                             initialized: true,
                             liquidity_net: 10,
@@ -1491,7 +1516,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 1000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 0,
                             fee_growth_checkpoint_a: to_x64(50),
                             fee_owed_a: 500,
@@ -1551,7 +1576,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 90,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 0,
                             fee_growth_checkpoint_a: to_x64(10),
                             fee_owed_a: 100,
@@ -1591,7 +1616,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 90,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 0,
                             fee_growth_checkpoint_a: to_x64(10),
                             fee_owed_a: 100,
@@ -1647,7 +1672,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate::default(),
+                        position_update: LiquidityPositionUpdate::default(),
                         tick_lower_update: TickUpdate::default(),
                         tick_upper_update: TickUpdate::default(),
                     },
@@ -1681,7 +1706,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 100,
-                        position_update: PositionUpdate::default(),
+                        position_update: LiquidityPositionUpdate::default(),
                         tick_lower_update: TickUpdate {
                             initialized: true,
                             liquidity_net: 10,
@@ -1734,7 +1759,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 100,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 10,
                         ..Default::default()
                     },
@@ -1781,7 +1806,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 100,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 10,
                         fee_growth_checkpoint_a: to_x64(10),
                         fee_owed_a: 100,
@@ -1831,7 +1856,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 100,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 10,
                         ..Default::default()
                     },
@@ -1879,7 +1904,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 100,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 20,
                         ..Default::default()
                     },
@@ -1926,7 +1951,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 110,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 20,
                         fee_growth_checkpoint_a: to_x64(10),
                         fee_owed_a: 100,
@@ -1976,7 +2001,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 100,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 20,
                         ..Default::default()
                     },
@@ -2024,7 +2049,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 100,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 5,
                         ..Default::default()
                     },
@@ -2071,7 +2096,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 95,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 5,
                         fee_growth_checkpoint_a: to_x64(10),
                         fee_owed_a: 100,
@@ -2121,7 +2146,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 100,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 5,
                         ..Default::default()
                     },
@@ -2184,7 +2209,7 @@ mod calculate_modify_liquidity_unit_tests {
 
             assert_eq!(
                 update.position_update,
-                PositionUpdate {
+                LiquidityPositionUpdate {
                     liquidity: 100,
                     fee_growth_checkpoint_a: to_x64(89), // 100 - 10 - 1
                     fee_growth_checkpoint_b: to_x64(178), // 200 - 20 - 2
@@ -2209,7 +2234,7 @@ mod calculate_modify_liquidity_unit_tests {
 
             assert_eq!(
                 update.position_update,
-                PositionUpdate {
+                LiquidityPositionUpdate {
                     liquidity: 150,
                     fee_growth_checkpoint_a: to_x64(99), // 110 - 10 - 1
                     fee_owed_a: 1000,
@@ -2237,7 +2262,7 @@ mod calculate_modify_liquidity_unit_tests {
                 &update,
                 &ModifyLiquidityExpectation {
                     globalpool_liquidity: 1000,
-                    position_update: PositionUpdate {
+                    position_update: LiquidityPositionUpdate {
                         liquidity: 0,
                         fee_growth_checkpoint_a: to_x64(109), // 120 - 10 - 1
                         fee_owed_a: 2500,
@@ -2302,7 +2327,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -2352,7 +2377,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             fee_growth_checkpoint_a: to_x64(20),
                             fee_owed_a: 20000,
@@ -2412,7 +2437,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 11000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -2462,7 +2487,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             fee_growth_checkpoint_a: to_x64(20),
                             fee_owed_a: 20000,
@@ -2522,7 +2547,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -2577,7 +2602,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             fee_growth_checkpoint_a: to_x64(20),
                             fee_owed_a: 20000,
@@ -2638,7 +2663,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -2685,7 +2710,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 11000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             fee_growth_checkpoint_a: to_x64(90),
                             fee_owed_a: 90000,
@@ -2744,7 +2769,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -2790,7 +2815,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             fee_growth_checkpoint_a: to_x64(110),
                             fee_owed_a: 110000,
@@ -2849,7 +2874,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 9000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -2899,7 +2924,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             fee_growth_checkpoint_a: to_x64(90),
                             fee_owed_a: 90000,
@@ -2961,7 +2986,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -3010,7 +3035,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             // 20 = 10 - (-80) - (10 - (-60))
                             fee_growth_checkpoint_a: to_x64(20),
@@ -3073,7 +3098,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 11000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -3123,7 +3148,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             fee_growth_checkpoint_a: to_x64(20),
                             fee_owed_a: 20000,
@@ -3185,7 +3210,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             ..Default::default()
                         },
@@ -3240,7 +3265,7 @@ mod calculate_modify_liquidity_unit_tests {
                     &update,
                     &ModifyLiquidityExpectation {
                         globalpool_liquidity: 10000,
-                        position_update: PositionUpdate {
+                        position_update: LiquidityPositionUpdate {
                             liquidity: 1000,
                             // 20 = 10 - (-100) - (10 - (-80))
                             fee_growth_checkpoint_a: to_x64(20),

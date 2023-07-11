@@ -1,4 +1,3 @@
-pub mod add_custody;
 pub mod close_liquidity_position;
 pub mod close_trade_position;
 pub mod collect_fees;
@@ -13,7 +12,7 @@ pub mod open_trade_position;
 pub mod swap;
 
 pub use {
-    add_custody::*, close_liquidity_position::*, close_trade_position::*, collect_fees::*,
+    close_liquidity_position::*, close_trade_position::*, collect_fees::*,
     collect_protocol_fees::*, create_pool::*, decrease_liquidity::*, increase_liquidity::*,
     initialize_clad::*, initialize_tick_array::*, open_liquidity_position::*,
     open_trade_position::*, swap::*,

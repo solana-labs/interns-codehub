@@ -21,10 +21,10 @@ pub struct ModifyLiquidity<'info> {
     pub globalpool: Account<'info, Globalpool>,
 
     #[account(mut, has_one = globalpool)]
-    pub position: Account<'info, Position>,
+    pub position: Account<'info, LiquidityPosition>,
 
     #[account(
-        constraint = position_token_account.mint == liquidity_position.position_mint,
+        constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
     pub position_token_account: Box<Account<'info, TokenAccount>>,

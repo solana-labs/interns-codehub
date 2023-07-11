@@ -21,14 +21,14 @@ pub struct InitializeClad<'info> {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct InitializeParams {
+pub struct InitializeCladParams {
     permissions: Permissions,
     protocol_fee_rate: u16,
 }
 
 pub fn initialize_clad(
     ctx: Context<InitializeClad>,
-    params: &InitializeParams,
+    params: &InitializeCladParams,
 ) -> Result<()> {
     let clad = &mut ctx.accounts.clad;
 

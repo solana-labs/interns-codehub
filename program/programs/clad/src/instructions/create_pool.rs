@@ -20,8 +20,8 @@ pub struct CreatePool<'info> {
         init,
         seeds = [
             b"globalpool".as_ref(),
-            params.token_mint_a.key().as_ref(),
-            params.token_mint_b.key().as_ref(),
+            token_mint_a.key().as_ref(),
+            token_mint_b.key().as_ref(),
             params.fee_rate.to_le_bytes().as_ref(),
             params.tick_spacing.to_le_bytes().as_ref(),
         ],
@@ -31,18 +31,6 @@ pub struct CreatePool<'info> {
     )]
     pub globalpool: Box<Account<'info, Globalpool>>,
 
-    // CHECK: empty PDA, will be set as authority for token accounts
-    // #[account(
-    //     init,
-    //     payer = funder,
-    //     space = 0,
-    //     seeds = [
-    //         b"transfer_authority",
-    //         globalpool.key().as_ref()
-    //     ],
-    //     bump
-    // )]
-    // pub transfer_authority: AccountInfo<'info>,
     pub token_mint_a: Account<'info, Mint>,
 
     pub token_mint_b: Account<'info, Mint>,
@@ -78,25 +66,21 @@ pub struct CreatePoolParams {
 }
 
 pub fn create_pool(ctx: Context<CreatePool>, params: &CreatePoolParams) -> Result<()> {
-    let clad = ctx.accounts.clad;
+    let clad = &ctx.accounts.clad;
 
     let globalpool = &mut ctx.accounts.globalpool;
     let globalpool_bump = *ctx
         .bumps
         .get("globalpool")
         .ok_or(ProgramError::InvalidSeeds)?;
-    let transfer_authority_bump = *ctx
-        .bumps
-        .get("transfer_authority")
-        .ok_or(ProgramError::InvalidSeeds)?;
 
     Ok(globalpool.initialize(
         globalpool_bump,
-        transfer_authority_bump,
         params.tick_spacing,
         params.initial_sqrt_price,
         params.fee_rate,
         clad.protocol_fee_rate,
+        ctx.accounts.funder.key(),
         ctx.accounts.token_mint_a.key(),
         ctx.accounts.token_vault_a.key(),
         ctx.accounts.token_mint_b.key(),
