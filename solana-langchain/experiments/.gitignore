@@ -1,4 +1,21 @@
+.DS_Store
 keys.py
+# Ignore JPEG files, mostly NFTs here
+*.jpeg 
+test-ledger/
+keys/
+**/.DS_Store
+# Ignore Node.js related files
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn.lock
+
+# Ignore TypeScript related files
+*.tsbuildinfo
+# Ignore JS because we're using TS
+*.js
+*.map
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
