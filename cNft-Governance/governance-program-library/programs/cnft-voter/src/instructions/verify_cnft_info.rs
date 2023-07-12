@@ -1,6 +1,7 @@
 /// USE FOR TESTING ONLY
 use crate::error::CompressedNftVoterError;
-use crate::utils::cnft_verification::CompressedNftAsset;
+// use crate::utils::cnft_verification::CompressedNftAsset;
+use crate::state::*;
 use anchor_lang::prelude::*;
 use mpl_bubblegum::error::BubblegumError;
 use mpl_bubblegum::hash_metadata;
