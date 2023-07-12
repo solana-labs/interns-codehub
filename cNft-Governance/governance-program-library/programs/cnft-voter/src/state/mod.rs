@@ -12,3 +12,5 @@ pub mod max_voter_weight_record;
 
 pub use cnft_vote_record::*;
 pub mod cnft_vote_record;
+
+pub mod idl_types;
