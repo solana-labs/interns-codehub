@@ -1,78 +1,70 @@
 # cNFT Gonvernance
+
 Reference(fork): [nft-voter](https://github.com/solana-labs/governance-program-library/tree/master/programs/nft-voter)
 
-### Question
-1. how to get cNFT' collenction.verifird from ReadAPI?
-2. why cast_nft_vote's payer is not the nft_owner but the bench.payer?
-3. how to deal with nft in different tree
+### create-cnft
+
+This code base contain basic:
+
+- Create merkle tree and collection
+- Mint a cNFT
+- Fetch cNFT's info (ReadApi) from endpointRPC
+
+### governance-program-library/programs/cnft-voter
+
+This project include the cnft-voter plugin for governance.(To be merge into nft-voter after evaluation) The main difference of cnft-voter compare to nft-voter
+is that how to verified cNFT belongs to the registrar collections and how the ownership of cNFT is valid. Unlike regular NFT able to collect NFT metadata from program accounts; instead, we require rpc that support ReadAPI to fetch cNFT metadata. Then reproduce the metadata, which type is MetadataArgs, and send it to on-chain program to verify it. Other functions and actions should be same as nft-voter.
+
+**CLI version**
+
+1. cargo(rustc): 1.65.0
+2. anchor: 0.26.0
+3. solana-cli: 1.14.18
+
+**Instructions**
+
+```cmd
+# build
+cd /programs/cnft-voter
+cargo build-sbf
+# or
+anchor build --arch sbf
+
+# create idl-ts
+anchor build --arch sbf -t <output dir>
+
+# test
+cd /programs/cnft-voter
+cargo test-sbf
+```
+
+### File to explore in this project
+
+1. ./instructions/cast_cnft_vote.rs
+2. ./instructions/update_voter_weight_record.rs
+3. ./state/cnft_vote_record.rs
+4. ./state/registrar.rs
+
+### Questiona
+
 4. how to check nft amount
-5. can regret vote?
 
 ### Steps to create a goverance (from governance-ui)
+
 1. Prepare realm configs: ./tools/governance/prepareRealmCreation.ts
-    - program_id: create with new PublicKey()
-    - community mint account
-    - council mint account
-    - realm authority: who create the gov
-    - signer
-    - return realm public key (a PDA where the seeds is based on the name of realm from program_id)
+
+   - program_id: create with new PublicKey()
+   - community mint account
+   - council mint account
+   - realm authority: who create the gov
+   - signer
+   - return realm public key (a PDA where the seeds is based on the name of realm from program_id)
 
 2. Create Registrar for nft
-    - get registrar PDA address
-    - need program_id, realm account pk, realm authority(the creater)
+
+   - get registrar PDA address
+   - need program_id, realm account pk, realm authority(the creater)
 
 3. Configure collection
-    - set max voter weight record's weight
-    - configure the weight and size of collection
-
-### Governance UI
-1. connect to wallet
-2. Helius RPI search for cNFT's asset_id and metadata
-3. Helius RPI search for cNFT's proof
-
-Input:
-1. collection_mint
-2. asset_id
-3. owner
-4. metadata_args
-5. leaf_owner: Signer
-6. leaf_delegate: AccountInfo<'info>
-7. merkle_tree: UncheckedAccount<'info>
-8. tree_root
-
-### Function to be modify
-1. [o]./cnft-voter/src/state/registrar.rs - resolve_nft_vote_weight_and_mint
-    - we need nft_owner, nft_owner == governing_token_owner
-    - nft_mint_address not in unique_nft_mint, maybe change it to asset_id
-    - check nft belongs to collection and is verified
-    - get nft_metadata, but check owner before getting it. Does cNFT have owner? prob not
-    - use "create_and_serialize_account_signed" to create vote for that nft
-2. ./cnft-voter/src/instructions/update_voter_weight_record.rs - update_voter_weight_record
-3. ./cnft-voter/src/instructions/relinquish_nft_vote.rs - relinquish_nft_vote
-4. [v]./cnft-voter/src/state/nft_vote_record.rs -> cnft_vote_record
-5. [o]./cnft-voter/src/instructions/cast-nft-voter.rs - cast-nft-voter
-    - reference governance_ui/utils/uiTypes/VotePlugin.ts (line 472)
-    - the "resolve_nft_weight_and_mint" function will also be involved
-    - remaining_accounts: nfts mint
-    - 1 nft 3 account: nft_info, nft_metadata_info, vote_record_info
-    - verify and get info from "resolve_nft_weight_and_mint" function
-    - use "create_and_serialize_account_signed" to create vote for that nft
-
-### Types
-1. TokenOwnerRecord(vote_token_owner_record): oyster/packages/governance-sdk/src/governance/accounts/ts (line569)
-
-### Thoughts
-1. Can we also store votes as a merkle tree?
-2. How to verify nft owner address
-3. How to verify nft amount == 1
-
-### Tests
-1. Mint Compressed NFT (to be refactored)
-    - token_metadata_test.rs
-    - merkle_tree_test.rs
-    - mint_compressed_nft.rs
-    - get cnft proofs
-2. Cast cNFT vote
-    - cast one cnft vote
-    - cast vote with multiple cnft
-    - test with different canopy!!
+   - set max voter weight record's weight
+   - configure the weight and size of collection
