@@ -26,7 +26,7 @@ pub struct CastCompressedNftVote<'info> {
         owner = registrar.governance_program_id
      )]
     voter_token_owner_record: UncheckedAccount<'info>,
-    
+
     /// CHECK: This account is checked in the instruction
     pub collection_mint: UncheckedAccount<'info>,
     /// CHECK: unsafe
@@ -49,7 +49,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
     cnft_info_len: u32,
-    params: &Vec<VerifyParams2>,
+    params: &Vec<CompressedNftAsset>,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
@@ -74,7 +74,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     //     leaf_owner.key(),
     //     CompressedNftVoterError::VoterDoesNotOwnNft
     // );
-    
+
     for i in 0..params.len() {
         // let cnft_vote_record_info = remaining_accounts.pop().unwrap();
         // let proofs = remaining_accounts.to_vec();
@@ -82,10 +82,11 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         // let cnft_vote_record_info = remaining_accounts[(cnft_info_len as usize) - 1].clone();
         // let proofs = remaining_accounts[0..(cnft_info_len - 1) as usize].to_vec();
         let param = &params[i];
-        let cnft_info = &remaining_accounts[(i * cnft_info_len as usize)..((i + 1) * cnft_info_len as usize)];
+        let cnft_info =
+            &remaining_accounts[(i * cnft_info_len as usize)..((i + 1) * cnft_info_len as usize)];
         let proofs = cnft_info[0..(cnft_info_len - 1) as usize].to_vec();
         let cnft_vote_record_info = cnft_info[(cnft_info_len - 1) as usize].clone();
-        let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight2(
+        let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight(
             &registrar,
             &governing_token_owner,
             &collection.key(),
@@ -121,7 +122,6 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
             0,
         )?;
     }
-    
 
     if voter_weight_record.weight_action_target == Some(proposal)
         && voter_weight_record.weight_action == Some(VoterWeightAction::CastVote)
@@ -135,7 +135,6 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         voter_weight_record.voter_weight = voter_weight;
     }
 
-    
     voter_weight_record.voter_weight_expiry = Some(Clock::get()?.slot);
 
     // The record is only valid for casting vote on the given Proposal

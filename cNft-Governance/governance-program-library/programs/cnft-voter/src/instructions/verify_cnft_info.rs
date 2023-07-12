@@ -1,6 +1,6 @@
 /// USE FOR TESTING ONLY
 use crate::error::CompressedNftVoterError;
-use crate::utils::cnft_verification::VerifyParams2;
+use crate::utils::cnft_verification::CompressedNftAsset;
 use anchor_lang::prelude::*;
 use mpl_bubblegum::error::BubblegumError;
 use mpl_bubblegum::hash_metadata;
@@ -24,7 +24,7 @@ pub struct VerifyCompressedNftInfo<'info> {
 
 pub fn verify_compressed_nft_info<'info>(
     ctx: Context<'_, '_, '_, 'info, VerifyCompressedNftInfo<'info>>,
-    params: &VerifyParams2,
+    params: &CompressedNftAsset,
 ) -> Result<()> {
     let merkle_tree = ctx.accounts.merkle_tree.to_account_info();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();

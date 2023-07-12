@@ -4,7 +4,7 @@ use anchor_lang::err;
 use anchor_lang::error::Error;
 use anchor_lang::prelude::Pubkey;
 use bytemuck::try_from_bytes;
-use gpl_cnft_voter::utils::cnft_verification::VerifyParams2 as LeafVerificationCookie;
+use gpl_cnft_voter::utils::cnft_verification::CompressedNftAsset as LeafVerificationCookie;
 use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 use mpl_bubblegum::state::TreeConfig;
 use mpl_bubblegum::utils::get_asset_id;

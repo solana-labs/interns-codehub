@@ -25,23 +25,36 @@ async fn test_configure_collection() -> Result<(), TransportError> {
         .with_max_voter_weight_record(&registrar_cookie)
         .await?;
 
-    let collection_config_cookie = cnft_voter_test.with_collection(
+    let collection_config_cookie = cnft_voter_test
+        .with_collection(
             &registrar_cookie,
             &cnft_collection_cookie,
             &max_voter_weight_record_cookie,
-            None
-        ).await?;
-    
-    let registrar = cnft_voter_test.get_registrar_account(&registrar_cookie.address).await;
+            None,
+        )
+        .await?;
+
+    let registrar = cnft_voter_test
+        .get_registrar_account(&registrar_cookie.address)
+        .await;
 
     assert_eq!(registrar.collection_configs.len(), 1);
 
-    assert_eq!(registrar.collection_configs[0], collection_config_cookie.collection_config);
+    assert_eq!(
+        registrar.collection_configs[0],
+        collection_config_cookie.collection_config
+    );
 
-    let max_voter_weight_record = cnft_voter_test.get_max_voter_weight_record(&max_voter_weight_record_cookie.address).await;
+    let max_voter_weight_record = cnft_voter_test
+        .get_max_voter_weight_record(&max_voter_weight_record_cookie.address)
+        .await;
 
     assert_eq!(max_voter_weight_record.max_voter_weight_expiry, None);
-    assert_eq!(max_voter_weight_record.max_voter_weight, (registrar.collection_configs[0].weight as u32 * registrar.collection_configs[0].size) as u64);
+    assert_eq!(
+        max_voter_weight_record.max_voter_weight,
+        (registrar.collection_configs[0].weight as u32 * registrar.collection_configs[0].size)
+            as u64
+    );
 
     Ok(())
 }
@@ -54,26 +67,39 @@ async fn test_configure_multiple_collections() -> Result<(), TransportError> {
     let cnft_collection_cookie1 = cnft_voter_test.token_metadata.with_nft_collection().await?;
     let cnft_collection_cookie2 = cnft_voter_test.token_metadata.with_nft_collection().await?;
 
-    let max_voter_weight_record_cookie = cnft_voter_test.with_max_voter_weight_record(&registrar_cookie).await?;
+    let max_voter_weight_record_cookie = cnft_voter_test
+        .with_max_voter_weight_record(&registrar_cookie)
+        .await?;
 
-    cnft_voter_test.with_collection(
-        &registrar_cookie,
-        &cnft_collection_cookie1,
-        &max_voter_weight_record_cookie,
-        Some(ConfigureCollectionArgs{weight:1, size: 8})
-    ).await?;
+    cnft_voter_test
+        .with_collection(
+            &registrar_cookie,
+            &cnft_collection_cookie1,
+            &max_voter_weight_record_cookie,
+            Some(ConfigureCollectionArgs { weight: 1, size: 8 }),
+        )
+        .await?;
 
-    cnft_voter_test.with_collection(
-        &registrar_cookie, 
-        &cnft_collection_cookie2,
-        &max_voter_weight_record_cookie,
-        Some(ConfigureCollectionArgs{weight:2, size: 10})
-    ).await?;
+    cnft_voter_test
+        .with_collection(
+            &registrar_cookie,
+            &cnft_collection_cookie2,
+            &max_voter_weight_record_cookie,
+            Some(ConfigureCollectionArgs {
+                weight: 2,
+                size: 10,
+            }),
+        )
+        .await?;
 
-    let registrar = cnft_voter_test.get_registrar_account(&registrar_cookie.address).await;
+    let registrar = cnft_voter_test
+        .get_registrar_account(&registrar_cookie.address)
+        .await;
     assert_eq!(registrar.collection_configs.len(), 2);
 
-    let max_voter_weight_record = cnft_voter_test.get_max_voter_weight_record(&max_voter_weight_record_cookie.address).await;
+    let max_voter_weight_record = cnft_voter_test
+        .get_max_voter_weight_record(&max_voter_weight_record_cookie.address)
+        .await;
     assert_eq!(max_voter_weight_record.max_voter_weight_expiry, None);
     assert_eq!(max_voter_weight_record.max_voter_weight, 28);
     Ok(())
@@ -84,22 +110,33 @@ async fn test_configure_max_collections() -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;
-    let max_voter_weight_record_cookie = cnft_voter_test.with_max_voter_weight_record(&registrar_cookie).await?;
+    let max_voter_weight_record_cookie = cnft_voter_test
+        .with_max_voter_weight_record(&registrar_cookie)
+        .await?;
 
     for _ in 0..registrar_cookie.max_collections {
         let cnft_collection_cookit = cnft_voter_test.token_metadata.with_nft_collection().await?;
-        cnft_voter_test.with_collection(
-            &registrar_cookie,
-            &cnft_collection_cookit,
-            &max_voter_weight_record_cookie,
-            None,
-        ).await?;
+        cnft_voter_test
+            .with_collection(
+                &registrar_cookie,
+                &cnft_collection_cookit,
+                &max_voter_weight_record_cookie,
+                None,
+            )
+            .await?;
     }
 
-    let registrar = cnft_voter_test.get_registrar_account(&registrar_cookie.address).await;
-    assert_eq!(registrar.collection_configs.len(), registrar_cookie.max_collections as usize);
+    let registrar = cnft_voter_test
+        .get_registrar_account(&registrar_cookie.address)
+        .await;
+    assert_eq!(
+        registrar.collection_configs.len(),
+        registrar_cookie.max_collections as usize
+    );
 
-    let max_voter_weight_record = cnft_voter_test.get_max_voter_weight_record(&max_voter_weight_record_cookie.address).await;
+    let max_voter_weight_record = cnft_voter_test
+        .get_max_voter_weight_record(&max_voter_weight_record_cookie.address)
+        .await;
     assert_eq!(max_voter_weight_record.max_voter_weight_expiry, None);
     assert_eq!(max_voter_weight_record.max_voter_weight, 30);
 
@@ -130,7 +167,6 @@ async fn test_configure_colelction_with_invalid_error() -> Result<(), TransportE
         .err()
         .unwrap();
 
-
     assert_cnft_voter_err(err, CompressedNftVoterError::InvalidRealmForRegistrar);
     Ok(())
 }
@@ -152,7 +188,7 @@ async fn test_configure_collection_with_realm_authority_must_sign_error(
             &cnft_collection_cookie,
             &max_voter_weight_record_cookie,
             None,
-            |i| i.accounts[2].is_signer = false, // why realm_authority is the signer
+            |i| i.accounts[3].is_signer = false, // why realm_authority is the signer
             Some(&[]),
         )
         .await
@@ -182,13 +218,13 @@ async fn test_configure_collection_with_invalid_realm_authority_error() -> Resul
             &cnft_collection_cookie,
             &max_voter_weight_record_cookie,
             None,
-            |i| i.accounts[2].pubkey = realm_authority.pubkey(), // realm_authority
+            |i| i.accounts[3].pubkey = realm_authority.pubkey(), // realm_authority
             Some(&[&realm_authority]),
         )
         .await
         .err()
         .unwrap();
-
+    println!("{:?}", err);
     assert_cnft_voter_err(err, CompressedNftVoterError::InvalidRealmAuthority);
 
     Ok(())
@@ -220,6 +256,9 @@ async fn test_configure_collection_with_invalid_max_voter_weight_mint_error(
         .err()
         .unwrap();
 
-    assert_cnft_voter_err(err, CompressedNftVoterError::InvalidMaxVoterWeightRecordMint);
+    assert_cnft_voter_err(
+        err,
+        CompressedNftVoterError::InvalidMaxVoterWeightRecordMint,
+    );
     Ok(())
 }
