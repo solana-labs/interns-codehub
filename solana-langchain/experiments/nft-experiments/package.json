@@ -1,0 +1,15 @@
+{
+  "name": "nft-experiments",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@metaplex-foundation/js": "^0.19.4",
+    "@solana/wallet-adapter-base": "^0.9.22",
+    "@solana/wallet-adapter-react": "^0.15.32",
+    "@solana/wallet-adapter-react-ui": "^0.9.31",
+    "@solana/wallet-adapter-wallets": "^0.19.18",
+    "@solana/web3.js": "^1.78.0",
+    "arweave": "^1.13.7"
+  }
+}
