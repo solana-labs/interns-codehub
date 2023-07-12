@@ -1,9 +1,9 @@
 [features]
 seeds = false
 [programs.localnet]
-clad = "Bmr31xzZYYVUdoHmAJL1DAp2anaitW8Tw9YfASS94MKJ"
+clad = "GH4aPZ5bXQr3MhN6MrejxKLTj6gUdyrGZvieagrfA3ke"
 [programs.devnet]
-clad = "Bmr31xzZYYVUdoHmAJL1DAp2anaitW8Tw9YfASS94MKJ"
+clad = "GH4aPZ5bXQr3MhN6MrejxKLTj6gUdyrGZvieagrfA3ke"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,4 +1,10 @@
 {
+  "name": "clad",
+  "private": true,
+  "workspaces": [
+    "scripts",
+    "sdk"
+  ],
   "devDependencies": {
     "prettier": "^2.8.8"
   }

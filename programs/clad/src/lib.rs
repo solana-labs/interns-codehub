@@ -1,6 +1,6 @@
 //! Leveraged trading with concentrated liquidity AMM positions as loan source.
 
-declare_id!("Bt6okjbFCJwgbuxm3z78XS9i8VZxPkooCiVVyadazKM3");
+declare_id!("GH4aPZ5bXQr3MhN6MrejxKLTj6gUdyrGZvieagrfA3ke");
 
 #[doc(hidden)]
 pub mod errors;

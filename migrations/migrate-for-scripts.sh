@@ -1,7 +1,7 @@
 #!/bin/bash
 
 GIT_ROOT=$(git rev-parse --show-cdup)
-DIR_PRG_TGT="${GIT_ROOT}program/target"
+DIR_PRG_TGT="${GIT_ROOT}target"
 DIR_SCRIPTS="${GIT_ROOT}scripts/src"
 
 rm -rf "${DIR_SCRIPTS}/*"

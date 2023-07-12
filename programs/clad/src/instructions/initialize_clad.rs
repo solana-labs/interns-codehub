@@ -18,6 +18,7 @@ pub struct InitializeClad<'info> {
     pub clad: Account<'info, Clad>,
 
     pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]

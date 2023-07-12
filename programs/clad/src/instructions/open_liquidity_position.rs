@@ -28,6 +28,7 @@ pub struct OpenLiquidityPosition<'info> {
             position_mint.key().as_ref(),
         ],
         bump,
+        has_one = globalpool,
     )]
     pub position: Box<Account<'info, LiquidityPosition>>,
 

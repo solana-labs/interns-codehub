@@ -1,6 +1,4 @@
 {
-  "rust-analyzer.rustfmt.extraArgs": ["+nightly"],
-
   // The number of spaces a tab is equal to. This setting is overridden
   // based on the file contents when `editor.detectIndentation` is true.
   "editor.tabSize": 4,
@@ -12,5 +10,10 @@
   // When opening a file, `editor.tabSize` and `editor.insertSpaces`
   // will be detected based on the file contents. Set to false to keep
   // the values you've explicitly set, above.
-  "editor.detectIndentation": false
+  "editor.detectIndentation": false,
+
+  "eslint.format.enable": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
 }
