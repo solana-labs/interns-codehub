@@ -32,11 +32,11 @@ pub mod cnft_voter {
     pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, UpdateVoterWeightRecord<'info>>,
         voter_weight_action: VoterWeightAction,
-        cnft_info_len: u32,
+        // cnft_info_len: u32,
         params: Vec<utils::cnft_verification::CompressedNftAsset>,
     ) -> Result<()> {
         log_version();
-        instructions::update_voter_weight_record(ctx, voter_weight_action, cnft_info_len, &params)
+        instructions::update_voter_weight_record(ctx, voter_weight_action, &params)
     }
 
     pub fn configure_collection(
@@ -51,11 +51,11 @@ pub mod cnft_voter {
     pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
         proposal: Pubkey,
-        cnft_info_len: u32,
+        // cnft_info_len: u32,
         params: Vec<utils::cnft_verification::CompressedNftAsset>,
     ) -> Result<()> {
         log_version();
-        instructions::cast_compressed_nft_vote(ctx, proposal, cnft_info_len, &params)
+        instructions::cast_compressed_nft_vote(ctx, proposal, &params)
     }
 
     pub fn verify_compressed_nft_info<'a, 'b, 'c, 'info>(

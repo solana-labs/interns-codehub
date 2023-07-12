@@ -284,6 +284,7 @@ impl MerkleTreeTest {
                 nonce: args.nonce,
                 index: args.index,
                 metadata: args.metadata.clone(),
+                proof_len: proofs.len() as u8,
             },
             proofs,
         ))

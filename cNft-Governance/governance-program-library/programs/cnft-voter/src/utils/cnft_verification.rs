@@ -14,6 +14,7 @@ pub struct CompressedNftAsset {
     pub creator_hash: [u8; 32],
     pub nonce: u64,
     pub index: u32,
+    pub proof_len: u8,
 }
 
 pub fn verify_cnft<'info>(

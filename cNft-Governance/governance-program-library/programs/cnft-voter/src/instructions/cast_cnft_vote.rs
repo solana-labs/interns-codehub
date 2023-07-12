@@ -48,7 +48,7 @@ pub struct CastCompressedNftVote<'info> {
 pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
-    cnft_info_len: u32,
+    // cnft_info_len: u32, //maybe this should be in the param
     params: &Vec<CompressedNftAsset>,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
@@ -74,18 +74,14 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     //     leaf_owner.key(),
     //     CompressedNftVoterError::VoterDoesNotOwnNft
     // );
-
+    let mut start: usize = 0;
     for i in 0..params.len() {
-        // let cnft_vote_record_info = remaining_accounts.pop().unwrap();
-        // let proofs = remaining_accounts.to_vec();
-
-        // let cnft_vote_record_info = remaining_accounts[(cnft_info_len as usize) - 1].clone();
-        // let proofs = remaining_accounts[0..(cnft_info_len - 1) as usize].to_vec();
         let param = &params[i];
+        let proof_len = param.proof_len;
         let cnft_info =
-            &remaining_accounts[(i * cnft_info_len as usize)..((i + 1) * cnft_info_len as usize)];
-        let proofs = cnft_info[0..(cnft_info_len - 1) as usize].to_vec();
-        let cnft_vote_record_info = cnft_info[(cnft_info_len - 1) as usize].clone();
+            &remaining_accounts[start..(start + proof_len as usize + 1)];
+        let proofs = cnft_info[0..proof_len as usize].to_vec();
+        let cnft_vote_record_info = cnft_info[proof_len as usize].clone();
         let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight(
             &registrar,
             &governing_token_owner,
@@ -121,6 +117,8 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
             &rent,
             0,
         )?;
+        
+        start += proof_len as usize + 1;
     }
 
     if voter_weight_record.weight_action_target == Some(proposal)

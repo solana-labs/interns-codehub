@@ -5,7 +5,7 @@ pub enum CompressedNftVoterError {
     #[msg("Invalid instruction")]
     InvalidInstruction,
 
-    #[msg("Collection not fount")]
+    #[msg("Collection not found")]
     CollectionNotFound,
 
     #[msg("Invalid Realm Authoritu")]

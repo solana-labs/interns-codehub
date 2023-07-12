@@ -514,7 +514,6 @@ impl CompressedNftVoterTest {
         let data = anchor_lang::InstructionData::data(
             &gpl_cnft_voter::instruction::CastCompressedNftVote {
                 proposal: proposal_cookie.address,
-                cnft_info_len: (proofs[0].len() + 1) as u32,
                 params: params.to_vec(),
             },
         );
@@ -617,7 +616,6 @@ impl CompressedNftVoterTest {
         let data = anchor_lang::InstructionData::data(
             &gpl_cnft_voter::instruction::UpdateVoterWeightRecord {
                 voter_weight_action: voter_weight_action.into(),
-                cnft_info_len: proofs[0].len() as u32,
                 params,
             },
         );
