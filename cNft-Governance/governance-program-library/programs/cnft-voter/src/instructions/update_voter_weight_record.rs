@@ -1,6 +1,6 @@
 use crate::error::CompressedNftVoterError;
 use crate::state::*;
-// use crate::utils::cnft_verification::*;
+use crate::utils::cnft_verification::*;
 use anchor_lang::prelude::*;
 use spl_account_compression::program::SplAccountCompression;
 

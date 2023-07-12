@@ -4,6 +4,7 @@ mod instructions;
 use instructions::*;
 pub mod state;
 pub mod utils;
+use crate::utils::cnft_verification::CompressedNftAsset;
 use crate::state::*;
 
 declare_id!("GcNftdN8Fr2ejgQhxWpjogJYXwAVK9uHKow5eEfaZMaD");
@@ -11,7 +12,8 @@ declare_id!("GcNftdN8Fr2ejgQhxWpjogJYXwAVK9uHKow5eEfaZMaD");
 #[program]
 pub mod cnft_voter {
     use super::*; //use to bring the CPI struct into the scope of the program
-    use crate::state::{VoterWeightAction, CompressedNftAsset};
+    use crate::utils::cnft_verification::CompressedNftAsset;
+    use crate::state::VoterWeightAction;
 
     pub fn create_registrar(ctx: Context<CreateRegistrar>, max_collections: u8) -> Result<()> {
         log_version();

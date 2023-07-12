@@ -13,7 +13,4 @@ pub mod max_voter_weight_record;
 pub use cnft_vote_record::*;
 pub mod cnft_vote_record;
 
-pub use cnft_verification::*;
-pub mod cnft_verification;
-
 pub mod idl_types;

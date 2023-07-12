@@ -1,4 +1,5 @@
 use crate::error::CompressedNftVoterError;
+use crate::utils::cnft_verification::*;
 use crate::{id, state::*};
 use anchor_lang::prelude::*;
 use anchor_lang::Accounts;

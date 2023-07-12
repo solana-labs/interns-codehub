@@ -1,8 +1,8 @@
 use crate::{
     error::CompressedNftVoterError,
     id,
-    state::*,
     state::{CollectionConfig, VoterWeightRecord},
+    utils::cnft_verification::*,
     utils::constant::DISCRIMINATOR_SIZE,
 };
 use anchor_lang::prelude::*;
