@@ -8,7 +8,7 @@ pub mod utils;
 use crate::state::*;
 pub use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 
-declare_id!("GcNftdN8Fr2ejgQhxWpjogJYXwAVK9uHKow5eEfaZMaD");
+declare_id!("GcNftjiDYoAZpMRAQrYx51GJp7tEhSgMKqSfR4zeoCFV");
 
 #[program]
 pub mod cnft_voter {
