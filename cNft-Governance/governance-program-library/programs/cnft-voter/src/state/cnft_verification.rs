@@ -5,6 +5,7 @@ use mpl_bubblegum::state::leaf_schema::LeafSchema;
 use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct CompressedNftAsset {
     pub root: [u8; 32],

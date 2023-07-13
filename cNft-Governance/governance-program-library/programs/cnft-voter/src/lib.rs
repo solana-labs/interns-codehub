@@ -1,19 +1,20 @@
+#![allow(clippy::result_large_err)]
 use anchor_lang::prelude::*;
 pub mod error;
 mod instructions;
 use instructions::*;
 pub mod state;
 pub mod utils;
-use crate::utils::cnft_verification::CompressedNftAsset;
 use crate::state::*;
+pub use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 
 declare_id!("GcNftdN8Fr2ejgQhxWpjogJYXwAVK9uHKow5eEfaZMaD");
 
 #[program]
 pub mod cnft_voter {
     use super::*; //use to bring the CPI struct into the scope of the program
-    use crate::utils::cnft_verification::CompressedNftAsset;
-    use crate::state::VoterWeightAction;
+    use crate::state::{VoterWeightAction, CompressedNftAsset};
+    // use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 
     pub fn create_registrar(ctx: Context<CreateRegistrar>, max_collections: u8) -> Result<()> {
         log_version();

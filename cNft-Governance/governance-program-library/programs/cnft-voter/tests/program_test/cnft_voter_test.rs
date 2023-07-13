@@ -12,7 +12,7 @@ use gpl_cnft_voter::state::max_voter_weight_record::{
     get_max_voter_weight_record_address, MaxVoterWeightRecord,
 };
 use gpl_cnft_voter::state::*;
-use gpl_cnft_voter::utils::cnft_verification::CompressedNftAsset as LeafVerificationCookie;
+use gpl_cnft_voter::state::CompressedNftAsset as LeafVerificationCookie;
 use solana_program::instruction::AccountMeta;
 use solana_program_test::{BanksClientError, ProgramTest};
 use solana_sdk::instruction::Instruction;
