@@ -1,6 +1,6 @@
 import * as anchor from '@coral-xyz/anchor'
 import { MathUtil, Percentage, TransactionBuilder } from '@orca-so/common-sdk'
-import { Mint, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { getMint, Mint, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import {
   Keypair,
   PublicKey,
@@ -11,6 +11,7 @@ import * as assert from 'assert'
 import Decimal from 'decimal.js'
 
 import { Clad } from '@/target/types/clad'
+import { PriceMath } from '@orca-so/whirlpools-sdk'
 
 async function main() {
   const provider = anchor.AnchorProvider.local('http://127.0.0.1:8899', {
@@ -29,9 +30,21 @@ async function main() {
     'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
   ) // USDC
 
+  const tokenMintA = await getMint(connection, tokenMintAKey)
+  const tokenMintB = await getMint(connection, tokenMintBKey)
+
   const feeRate = 500 // bps
   const tickSpacing = 64
-  const initSqrtPrice = MathUtil.toX64(new Decimal(5))
+
+  const initTickIndex = -39424 // 19.4054 B/A (USDC/SOL)
+  const initPrice = PriceMath.tickIndexToPrice(
+    initTickIndex,
+    tokenMintA.decimals,
+    tokenMintB.decimals,
+  );
+  const initSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(initTickIndex);
+
+  console.log('Init B/A Price: ', initPrice.toString())
 
   //
   // Create Clad account
@@ -131,9 +144,6 @@ async function main() {
 
   const txIdCreatePool = await txCreatePool.buildAndExecute()
   console.log(txIdCreatePool)
-
-  // const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } =
-  //   await initTestPool(ctx, tickSpacing, initSqrtPrice, undefined, reuseTokenA)
 }
 
 main().catch((err) => {

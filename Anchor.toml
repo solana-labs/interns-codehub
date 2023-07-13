@@ -14,3 +14,9 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 programs/clad/tests/anchor/*.ts"
+create-pool = "ts-node scripts/src/create-pool.ts"
+create-lp = "ts-node scripts/src/create-liquidity-position.ts"
+
+[[test.validator.account]]
+address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+filename = "scripts/accounts/usdc.json"

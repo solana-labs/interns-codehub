@@ -4,10 +4,12 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.28.1-beta.1",
     "@orca-so/common-sdk": "^0.3.1",
+    "@orca-so/whirlpools-sdk": "^0.11.1",
     "@solana/spl-token": "^0.3.8",
     "@solana/web3.js": "^1.78.0",
     "bn.js": "^5.2.1",
-    "decimal.js": "^10.4.3"
+    "decimal.js": "^10.4.3",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.1",

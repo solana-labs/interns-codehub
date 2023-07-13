@@ -1,3 +1,4 @@
+import { AnchorProvider } from '@coral-xyz/anchor'
 import { ParsableEntity } from '@orca-so/common-sdk'
 import { Connection, PublicKey } from '@solana/web3.js'
 import * as util from 'util'
@@ -16,6 +17,10 @@ export async function getAccountData<T>(
 		throw new Error(`Could not parse account data ${publicKey.toBase58()}`)
 	}
   return parsed
+}
+
+export async function getTokenBalance(provider: AnchorProvider, vault: PublicKey) {
+  return (await provider.connection.getTokenAccountBalance(vault, "confirmed")).value.amount;
 }
 
 export function consoleLogFull(obj: any) {

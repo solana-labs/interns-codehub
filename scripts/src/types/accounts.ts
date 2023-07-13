@@ -71,7 +71,7 @@ export type TickData = {
 
 // TODO: update
 export type TickArrayData = {
-  whirlpool: PublicKey
+  globalpool: PublicKey
   startTickIndex: number
   ticks: TickData[]
 }
