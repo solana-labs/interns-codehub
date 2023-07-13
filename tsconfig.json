@@ -1,14 +1,11 @@
 {
- "exclude": [
-   "/**/tests/**",
-   "/**/dist/**"
-],
- "references": [
-  {
-     "path": "./sdk/src"
-  },
-  {
-     "path": "./scripts/src"
-  }
-]
+  "exclude": ["/**/tests/**", "/**/dist/**"],
+  "references": [
+    {
+      "path": "./sdk/src"
+    },
+    {
+      "path": "./scripts/src"
+    }
+  ]
 }

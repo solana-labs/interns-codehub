@@ -115,6 +115,31 @@ async function main() {
       '  range',
       `[${priceRange[0]}, ${priceRange[1]})`.padEnd(22, '')
     )
+
+    if (!ta.data) continue
+
+    const { ticks } = ta.data
+    for (let i = 0; i < ticks.length; i++) {
+      const tick = ticks[i]
+      if (!tick.initialized) continue
+
+      // const liquidityNet = PriceMath.sqrtPriceX64ToPrice(tick.liquidityBorrowed)
+      console.log(
+        ' '.repeat(4),
+        `tick ${String(i).padEnd(2, ' ')}  `,
+        `net:      ${tick.liquidityNet.toLocaleString().padStart(30, ' ')}  `
+      )
+      console.log(
+        ' '.repeat(14),
+        `gross:    ${tick.liquidityGross.toLocaleString().padStart(30, ' ')}  `
+      )
+      console.log(
+        ' '.repeat(14),
+        `borrowed: ${tick.liquidityBorrowed
+          .toLocaleString()
+          .padStart(30, ' ')}  `
+      )
+    }
   }
 }
 

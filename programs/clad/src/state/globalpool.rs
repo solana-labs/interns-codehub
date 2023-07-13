@@ -149,6 +149,10 @@ impl Globalpool {
         Ok(())
     }
 
+    pub fn update_liquidity(&mut self, liquidity: u128) {
+        self.liquidity_available = liquidity;
+    }
+
     pub fn update_after_swap(
         &mut self,
         liquidity_available: u128,

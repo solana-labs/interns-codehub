@@ -317,3 +317,22 @@ export async function burnToken(
   tx.add(createBurnInstruction(account, mint, ownerKey, amountVal))
   return provider.sendAndConfirm(tx, [], { commitment: 'confirmed' })
 }
+
+export async function createAndMintToManyATAs(
+  provider: AnchorProvider,
+  mints: web3.PublicKey[],
+  amount: number | BN,
+  funder?: web3.PublicKey
+): Promise<web3.PublicKey[]> {
+  return Promise.all(
+    mints.map((mint) =>
+      createAndMintToAssociatedTokenAccount(
+        provider,
+        mint,
+        amount,
+        funder,
+        funder
+      )
+    )
+  )
+}

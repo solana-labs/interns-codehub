@@ -205,6 +205,8 @@ pub fn sync_modify_liquidity_values<'info>(
         &modify_liquidity_update.tick_upper_update,
     )?;
 
+    globalpool.update_liquidity(modify_liquidity_update.globalpool_liquidity);
+
     Ok(())
 }
 

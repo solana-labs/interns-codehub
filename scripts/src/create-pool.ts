@@ -1,61 +1,36 @@
 import * as anchor from '@coral-xyz/anchor'
-import { MathUtil, Percentage, TransactionBuilder } from '@orca-so/common-sdk'
-import { getMint, Mint, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { TransactionBuilder } from '@orca-so/common-sdk'
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import {
   Keypair,
   PublicKey,
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
 } from '@solana/web3.js'
-import * as assert from 'assert'
-import Decimal from 'decimal.js'
 
-import { Clad } from '@/target/types/clad'
-import { PriceMath } from '@orca-so/whirlpools-sdk'
+import { getConstantParams } from './params'
+import { createTransactionChained } from './utils/txix'
 
 async function main() {
-  const provider = anchor.AnchorProvider.local('http://127.0.0.1:8899', {
-    commitment: 'confirmed',
-    preflightCommitment: 'confirmed',
-  })
-  const { connection, wallet } = provider
-
-  const program = anchor.workspace.Clad as anchor.Program<Clad>
-  const programId = program.programId
-
-  const tokenMintAKey = new PublicKey(
-    'So11111111111111111111111111111111111111112'
-  ) // SOL
-  const tokenMintBKey = new PublicKey(
-    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
-  ) // USDC
-
-  const tokenMintA = await getMint(connection, tokenMintAKey)
-  const tokenMintB = await getMint(connection, tokenMintBKey)
-
-  const feeRate = 500 // bps
-  const tickSpacing = 64
-
-  const initTickIndex = -39424 // 19.4054 B/A (USDC/SOL)
-  const initPrice = PriceMath.tickIndexToPrice(
-    initTickIndex,
-    tokenMintA.decimals,
-    tokenMintB.decimals,
-  );
-  const initSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(initTickIndex);
+  const {
+    program,
+    programId,
+    connection,
+    wallet,
+    feeRate,
+    tickSpacing,
+    tokenMintAKey,
+    tokenMintBKey,
+    cladKey,
+    initPrice,
+    initSqrtPrice,
+  } = await getConstantParams()
 
   console.log('Init B/A Price: ', initPrice.toString())
 
   //
   // Create Clad account
   //
-
-  const cladSeeds = [Buffer.from('clad')]
-
-  const [cladKey, cladBump] = PublicKey.findProgramAddressSync(
-    cladSeeds,
-    programId
-  )
 
   const initializeCladParams = {
     permissions: {
@@ -88,7 +63,7 @@ async function main() {
   })
 
   const txIdInitializeClad = await txInitializeClad.buildAndExecute()
-  console.log(txIdInitializeClad)
+  console.log('Initialized Clad: ', txIdInitializeClad)
 
   //
   // Create Pool
@@ -129,21 +104,16 @@ async function main() {
     rent: SYSVAR_RENT_PUBKEY,
   }
 
-  const txCreatePool = new TransactionBuilder(
+  const txIdCreatePool = await createTransactionChained(
     connection,
-    wallet
-  ).addInstruction({
-    instructions: [
-      program.instruction.createPool(createPoolParams, {
-        accounts: createPoolAccounts,
-      }),
-    ],
-    cleanupInstructions: [],
-    signers: [tokenVaultAKeypair, tokenVaultBKeypair],
-  })
+    wallet,
+    program.instruction.createPool(createPoolParams, {
+      accounts: createPoolAccounts,
+    }),
+    [tokenVaultAKeypair, tokenVaultBKeypair]
+  ).buildAndExecute()
 
-  const txIdCreatePool = await txCreatePool.buildAndExecute()
-  console.log(txIdCreatePool)
+  console.log('Created Pool: ', txIdCreatePool)
 }
 
 main().catch((err) => {

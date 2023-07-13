@@ -37,7 +37,6 @@ export type GlobalpoolData = {
 	feeAuthority: PublicKey
 }
 
-// TODO: update
 export type LiquidityPositionData = {
   whirlpool: PublicKey
   positionMint: PublicKey
@@ -50,7 +49,6 @@ export type LiquidityPositionData = {
   feeOwedB: BN
 }
 
-// TODO: update
 export type TradePositionData = {
   whirlpool: PublicKey
   positionMint: PublicKey
@@ -59,7 +57,6 @@ export type TradePositionData = {
   tickUpperIndex: number
 }
 
-// TODO: update
 export type TickData = {
   initialized: boolean
   liquidityNet: BN
@@ -69,7 +66,6 @@ export type TickData = {
   feeGrowthOutsideB: BN
 }
 
-// TODO: update
 export type TickArrayData = {
   globalpool: PublicKey
   startTickIndex: number
@@ -85,19 +81,16 @@ export type CladSupportedTypes =
 
 /**
  * Extended Mint type to host token info.
- * @category WhirlpoolClient
  */
 export type TokenInfo = Mint & { mint: PublicKey };
 
 /**
  * Extended (token) Account type to host account info for a Token.
- * @category WhirlpoolClient
  */
 export type TokenAccountInfo = Account;
 
 /**
- * A wrapper class of a TickArray on a Whirlpool
- * @category WhirlpoolClient
+ * A wrapper class of a TickArray on a Globalpool
  */
 export type TickArray = {
   address: PublicKey;

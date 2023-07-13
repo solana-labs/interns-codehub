@@ -1,5 +1,7 @@
+import { Percentage } from '@orca-so/common-sdk'
 import { getMint } from '@solana/spl-token'
 import { PublicKey } from '@solana/web3.js'
+import BN from 'bn.js'
 import Decimal from 'decimal.js'
 
 import {
@@ -13,6 +15,8 @@ import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import { getPostPoolInitParams } from './params'
 import { TickArrayData } from './types/accounts'
 import { TICK_ARRAY_SIZE } from './constants'
+import { getTickArrayKeysForSwap } from './utils/tick-arrays'
+import { swapQuoteByInputToken } from './utils/swap'
 
 type TickArrayInfo = {
   tickArrayKey: PublicKey
@@ -39,6 +43,8 @@ async function main() {
   console.log(`Clad: ${cladKey.toBase58()}`)
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
+  const swapA2B = true // swap A to B (SOL to USDC)
+
   const globalpoolInfo = await getAccountData(
     globalpoolKey,
     ParsableGlobalpool,
@@ -51,71 +57,79 @@ async function main() {
   const mintA = await getMint(connection, globalpoolInfo.tokenMintA)
   const mintB = await getMint(connection, globalpoolInfo.tokenMintB)
 
-  const neighboringTickArrayInfos: TickArrayInfo[] = []
-  for (let offset = -6; offset <= +6; offset++) {
-    const startTickIndex = TickUtil.getStartTickIndex(
-      globalpoolInfo.tickCurrentIndex,
-      tickSpacing,
-      offset
-    )
+  console.log(`Token A: ${mintA.address.toBase58()}`)
+  console.log(`Token B: ${mintB.address.toBase58()}`)
 
-    const [tickArrayKey] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('tick_array'),
-        globalpoolKey.toBuffer(),
-        Buffer.from(startTickIndex.toString()),
-      ],
-      programId
-    )
-    //  PDAUtil.getTickArray(programId, whirlpoolPubkey, startTickIndex);
+  const tickArrayKeys = getTickArrayKeysForSwap(
+    globalpoolInfo.tickCurrentIndex,
+    tickSpacing,
+    swapA2B,
+    globalpoolKey,
+    programId
+  )
 
-    const endTickIndex = startTickIndex + tickSpacing * TICK_ARRAY_SIZE
+  //
+  // Log tick array data
+  //
 
-    const startPrice = PriceMath.tickIndexToPrice(
-      startTickIndex,
-      mintA.decimals,
-      mintB.decimals
-    )
+  console.log(
+    `${swapA2B ? 'A' : 'B'} to ${swapA2B ? 'B' : 'A'} tick array keys`
+  )
 
-    const endPrice = PriceMath.tickIndexToPrice(
-      endTickIndex,
-      mintA.decimals,
-      mintB.decimals
-    )
-
+  for (const tickArrayKey of tickArrayKeys) {
     const tickArrayData = await getAccountData(
       tickArrayKey,
       ParsableTickArray,
       connection
     )
+    if (!tickArrayData) {
+			console.log(
+				tickArrayKey.toBase58().padEnd(16, ' '),
+				'  uninit',
+			)
+			continue
+		}
 
-    neighboringTickArrayInfos.push({
-      tickArrayKey,
+    const { startTickIndex } = tickArrayData
+    const endTickIndex =
+      tickArrayData.startTickIndex + tickSpacing * TICK_ARRAY_SIZE
+
+    const startPrice = PriceMath.tickIndexToPrice(
       startTickIndex,
-      startPrice,
-      endPrice,
-      isCurrent: offset == 0,
-      data: tickArrayData,
-    })
-  }
+      mintA.decimals,
+      mintB.decimals
+    ).toFixed(mintB.decimals - 4) // denominated in B (price: x B per 1 A)
 
-  console.log('neighboring tickarrays...')
+    const endPrice = PriceMath.tickIndexToPrice(
+      endTickIndex,
+      mintA.decimals,
+      mintB.decimals
+    ).toFixed(mintB.decimals - 4) // denominated in B (price: x B per 1 A)
 
-  for (const ta of neighboringTickArrayInfos) {
-    const priceRange = [
-      ta.startPrice.toFixed(mintB.decimals - 4),
-      ta.endPrice.toFixed(mintB.decimals - 4),
-    ]
     console.log(
-      ta.isCurrent ? '>>' : ' '.repeat(2),
-      truncatedAddress(ta.tickArrayKey.toBase58()).padEnd(16, ' '),
-      ta.data ? '(init)' : ' '.repeat(6),
-      '  start tick',
-      ta.startTickIndex.toString().padStart(8, ' '),
+      tickArrayKey.toBase58().padEnd(16, ' '),
+      '    init',
+			'  start tick',
+      startTickIndex.toString().padStart(8, ' '),
       '  range',
-      `[${priceRange[0]}, ${priceRange[1]})`.padEnd(22, '')
+      `[${startPrice}, ${endPrice})`.padEnd(22, '')
     )
   }
+
+  //
+  // Swap steps
+  //
+
+  const quote = await swapQuoteByInputToken(
+    globalpoolKey,
+    swapA2B ? tokenMintAKey : tokenMintBKey,
+    new BN(100000),
+    Percentage.fromFraction(1, 100),
+    connection,
+    programId
+  )
+
+  console.log(quote)
 }
 
 main().catch((err) => {

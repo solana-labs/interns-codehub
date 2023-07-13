@@ -82,6 +82,16 @@ pub fn increase_liquidity(
         timestamp,
     )?;
 
+    msg!("Current Tick Index: {:?}", ctx.accounts.globalpool.tick_current_index);
+    msg!("Position Tick Lower: {:?}", ctx.accounts.position.tick_lower_index);
+    msg!("Position Tick Upper: {:?}", ctx.accounts.position.tick_upper_index);
+    let tick_array_lower_start = ctx.accounts.tick_array_lower.load()?.start_tick_index;
+    let tick_array_upper_start = ctx.accounts.tick_array_upper.load()?.start_tick_index;
+    msg!("TickArray Lower Tick: {:?}", tick_array_lower_start);
+    msg!("TickArray Upper Tick: {:?}", tick_array_upper_start);
+
+    msg!("Msg:\n {:?}", update);
+
     sync_modify_liquidity_values(
         &mut ctx.accounts.globalpool,
         &mut ctx.accounts.position,
@@ -96,6 +106,9 @@ pub fn increase_liquidity(
         &ctx.accounts.position,
         liquidity_delta,
     )?;
+
+    msg!("Delta A: {:?}", delta_a);
+    msg!("Delta B: {:?}", delta_b);
 
     if delta_a > params.token_max_a {
         return Err(ErrorCode::TokenMaxExceeded.into());
