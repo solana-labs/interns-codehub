@@ -10,6 +10,7 @@ use spl_account_compression::cpi::accounts::VerifyLeaf;
 use spl_account_compression::program::SplAccountCompression;
 
 #[derive(Accounts)]
+#[instruction(params: CompressedNftAsset)]
 pub struct VerifyCompressedNftInfo<'info> {
     /// CHECK: unsafe
     pub merkle_tree: UncheckedAccount<'info>,
@@ -24,7 +25,7 @@ pub struct VerifyCompressedNftInfo<'info> {
 
 pub fn verify_compressed_nft_info<'info>(
     ctx: Context<'_, '_, '_, 'info, VerifyCompressedNftInfo<'info>>,
-    params: &CompressedNftAsset,
+    params: CompressedNftAsset,
 ) -> Result<()> {
     let merkle_tree = ctx.accounts.merkle_tree.to_account_info();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();

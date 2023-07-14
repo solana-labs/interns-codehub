@@ -6,7 +6,7 @@ use spl_account_compression::program::SplAccountCompression;
 use spl_governance_tools::account::create_and_serialize_account_signed;
 
 #[derive(Accounts)]
-#[instruction(proposal: Pubkey)]
+#[instruction(proposal: Pubkey, params: Vec<CompressedNftAsset>)]
 pub struct CastCompressedNftVote<'info> {
     pub registrar: Account<'info, Registrar>,
 
@@ -47,7 +47,7 @@ pub struct CastCompressedNftVote<'info> {
 pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
-    params: &Vec<CompressedNftAsset>,
+    params: Vec<CompressedNftAsset>,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;

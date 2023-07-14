@@ -69,7 +69,6 @@ async fn test_cast_cnft_vote() -> Result<(), TransportError> {
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -174,7 +173,6 @@ async fn test_cast_cnft_vote_with_multiple_nfts() -> Result<(), TransportError> 
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie1, &leaf_cookie2],
             &[&leaf_verification_cookie1, &leaf_verification_cookie2],
@@ -272,7 +270,6 @@ async fn test_cast_cnft_vote_with_cnft_already_voted_error() -> Result<(), Trans
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -291,7 +288,6 @@ async fn test_cast_cnft_vote_with_cnft_already_voted_error() -> Result<(), Trans
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -368,7 +364,6 @@ async fn test_cast_cnft_vote_with_invalid_voter_error() -> Result<(), TransportE
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie2,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -446,7 +441,6 @@ async fn test_cast_cnft_vote_unverified_collection_error() -> Result<(), Transpo
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -525,7 +519,6 @@ async fn test_cast_cnft_vote_with_invalid_owner_error() -> Result<(), TransportE
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -607,7 +600,6 @@ async fn test_cast_cnft_vote_with_invalid_collection_error() -> Result<(), Trans
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -690,7 +682,6 @@ async fn test_cast_cnft_vote_with_invalid_metadata_error() -> Result<(), Transpo
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -766,7 +757,6 @@ async fn test_cast_cnft_vote_with_same_nft_error() -> Result<(), TransportError>
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie, &leaf_cookie],
             &[&leaf_verification_cookie, &leaf_verification_cookie],
@@ -781,8 +771,10 @@ async fn test_cast_cnft_vote_with_same_nft_error() -> Result<(), TransportError>
     Ok(())
 }
 
+
+/// max 4 cnft will be allowed when 5 proofs for each cnft
 #[tokio::test]
-async fn test_cast_cnft_vote_with_max_5_nfts() -> Result<(), TransportError> {
+async fn test_cast_cnft_vote_with_max_4_nfts() -> Result<(), TransportError> {
     let mut cnft_voter_test = CompressedNftVoterTest::start_new().await;
     let realm_cookie = cnft_voter_test.governance.with_realm().await?;
     let registrar_cookie = cnft_voter_test.with_registrar(&realm_cookie).await?;
@@ -826,7 +818,7 @@ async fn test_cast_cnft_vote_with_max_5_nfts() -> Result<(), TransportError> {
     let mut leaf_verification_cookies = vec![];
     let mut proofs = vec![];
 
-    for _ in 0..5 {
+    for _ in 0..4 {
         let leaf_cookie = cnft_voter_test
             .token_metadata
             .with_compressed_nft_to_collection(
@@ -836,30 +828,29 @@ async fn test_cast_cnft_vote_with_max_5_nfts() -> Result<(), TransportError> {
             )
             .await?;
 
-        cnft_voter_test.bench.advance_clock().await;
-
-        let (leaf_verification_cookie, proofs_i) = cnft_voter_test
-            .merkle_tree
-            .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
-            .await?;
-
         leaf_cookies.push(leaf_cookie);
-        leaf_verification_cookies.push(leaf_verification_cookie);
-        proofs.push(proofs_i);
     }
 
     cnft_voter_test.bench.advance_clock().await;
     let clock = cnft_voter_test.bench.get_clock().await;
 
-    let cnft_vote_record_cookies = cnft_voter_test
-        .cast_cnft_vote(
+
+    for leaf_cookie in leaf_cookies.iter() {
+        let (leaf_verification_cookie, proofs_i) = cnft_voter_test
+            .merkle_tree
+            .get_leaf_verification_info(&mut tree_cookie, &leaf_cookie, 5, 8)
+            .await?;
+
+        leaf_verification_cookies.push(leaf_verification_cookie);
+        proofs.push(proofs_i);
+    }
+    let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_token_owner_record_cookie,
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &leaf_cookies.iter().collect::<Vec<_>>(),
             &leaf_verification_cookies.iter().collect::<Vec<_>>(),
@@ -884,7 +875,7 @@ async fn test_cast_cnft_vote_with_max_5_nfts() -> Result<(), TransportError> {
         .get_voter_weight_record(&voter_weight_record_cookie.address)
         .await;
 
-    assert_eq!(voter_weight_record.voter_weight, 15);
+    assert_eq!(voter_weight_record.voter_weight, 12);
     assert_eq!(voter_weight_record.voter_weight_expiry, Some(clock.slot));
     assert_eq!(
         voter_weight_record.weight_action,
@@ -972,7 +963,6 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie1],
             &[&leaf_verification_cookie1],
@@ -989,7 +979,6 @@ async fn test_cast_cnft_vote_using_multiple_instructions() -> Result<(), Transpo
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie2],
             &[&leaf_verification_cookie2],
@@ -1080,7 +1069,6 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -1097,7 +1085,6 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_nft_already_voted_
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -1178,7 +1165,6 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_attempted_sandwich
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -1208,7 +1194,6 @@ async fn test_cast_cnft_vote_using_multiple_instructions_with_attempted_sandwich
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -1297,7 +1282,6 @@ async fn test_cast_cnft_vote_using_delegate() -> Result<(), TransportError> {
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &delegate_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
@@ -1378,7 +1362,6 @@ async fn test_cast_cnft_vote_with_invalid_voter_weight_token_owner_error(
             &max_voter_weight_record_cookie,
             &proposal_cookie,
             &voter_cookie,
-            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
