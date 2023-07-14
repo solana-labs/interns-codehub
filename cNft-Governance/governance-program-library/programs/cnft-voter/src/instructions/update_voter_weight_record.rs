@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use spl_account_compression::program::SplAccountCompression;
 
 #[derive(Accounts)]
-#[instruction(voter_weight_action: VoterWeightAction)]
+#[instruction(voter_weight_action: VoterWeightAction, params: Vec<CompressedNftAsset>)]
 pub struct UpdateVoterWeightRecord<'info> {
     pub registrar: Account<'info, Registrar>,
 
@@ -30,7 +30,7 @@ pub struct UpdateVoterWeightRecord<'info> {
 pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, UpdateVoterWeightRecord<'info>>,
     voter_weight_action: VoterWeightAction,
-    params: &Vec<CompressedNftAsset>,
+    params: Vec<CompressedNftAsset>,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
