@@ -47,7 +47,6 @@ pub struct CastCompressedNftVote<'info> {
 pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
-    // cnft_info_len: u32, //maybe this should be in the param
     params: &Vec<CompressedNftAsset>,
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
@@ -55,7 +54,6 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     let merkle_tree = &ctx.accounts.merkle_tree.to_account_info();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let leaf_delegate = &ctx.accounts.leaf_delegate.to_account_info();
-    // let collection = &ctx.accounts.collection_mint.to_account_info();
     let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
     let rent = Rent::get()?;
     let mut voter_weight = 0u64;
@@ -68,11 +66,6 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         voter_weight_record,
     )?;
 
-    // require_eq!(
-    //     voter_authority.key(),
-    //     leaf_owner.key(),
-    //     CompressedNftVoterError::VoterDoesNotOwnNft
-    // );
     let mut start: usize = 0;
     for i in 0..params.len() {
         let param = &params[i];
