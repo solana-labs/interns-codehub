@@ -18,7 +18,7 @@ is that how to verified cNFT belongs to the registrar collections and how the ow
 **CLI version**
 
 1. cargo(rustc): 1.65.0
-2. anchor: 0.26.0
+2. anchor: 0.27.0
 3. solana-cli: 1.14.18
 
 **Instructions**
@@ -31,7 +31,7 @@ cargo build-sbf
 anchor build --arch sbf
 
 # create idl-ts
-anchor build --arch sbf -t <output dir>
+anchor build --arch sbf
 
 # test
 cd /programs/cnft-voter

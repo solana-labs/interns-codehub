@@ -7,7 +7,7 @@ import {
 } from "@metaplex-foundation/js";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { Connection, Keypair, PublicKey, clusterApiUrl } from "@solana/web3.js";
-import { getAssetsByOwner, getAsset } from "@/utils/read-api";
+import { getAssetsByOwner, getAsset, getAssetProof } from "@/utils/read-api";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -44,21 +44,41 @@ dotenv.config();
     console.log("Total assets returned: ", res.total);
 
     res.items
-      ?.filter((asset) => asset.compression.tree === treeAddress.toBase58())
+      // ?.filter((asset) => asset.compression.tree === treeAddress.toBase58())
+      ?.filter(
+        (asset) =>
+          asset.compression.compressed &&
+          asset.content.json_uri ===
+            "https://supersweetcollection.notarealurl/token.json"
+      )
       ?.map((asset) => {
         // display some info about the asset
         console.log("assetId:", asset.id);
-        console.log("ownership:", asset.ownership);
-        console.log("compression:", asset.compression);
-        console.log("collection:", asset.grouping[0].group_value);
-        console.log(asset);
+        console.log("treeAddress", asset.compression.tree);
+        console.log("====================");
+        // console.log("ownership:", asset.ownership);
+        // console.log("compression:", asset.compression);
+        // console.log("collection:", asset.grouping[0].group_value);
+        // console.log(asset);
+        getAssetProof(connection, new PublicKey(asset.id)).then((res) => {
+          console.log(res);
+        });
       });
   });
 
-  // await getAsset(connection, new PublicKey("24WmsGtDvDpgywdgYxPYNxE55hbEcP9pPYzvzAbsj2Zh"))
-  //     .then((res) => {
-  //         console.log(res);
-  //     })
+  // await getAsset(
+  //   connection,
+  //   new PublicKey("4bCPfvu7JWGcFpZzpD6QAkYA5GNXsN7dpvqyFrYhGtzC")
+  // ).then((res) => {
+  //   console.log(res);
+  // });
+
+  // await getAssetProof(
+  //   connection,
+  //   new PublicKey("4bCPfvu7JWGcFpZzpD6QAkYA5GNXsN7dpvqyFrYhGtzC")
+  // ).then((res) => {
+  //   console.log(res);
+  // });
 })();
 
 // (async () => {

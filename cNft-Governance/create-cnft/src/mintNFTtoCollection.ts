@@ -129,7 +129,7 @@ dotenv.config();
   console.log(
     `Minting a single compressed NFT to ${receiverAddress.toBase58()}...`
   );
-  console.log("transacition hash ", mintToWallet);
+  // console.log("transacition hash ", mintToWallet);
 
   saveNonceToFile(nonce.nonce + 1);
 })();

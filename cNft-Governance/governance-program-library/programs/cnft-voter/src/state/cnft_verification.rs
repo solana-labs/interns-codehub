@@ -9,13 +9,13 @@ use spl_account_compression::cpi::accounts::VerifyLeaf;
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct CompressedNftAsset {
     pub root: [u8; 32],
-    pub asset_id: Pubkey,
-    pub metadata: MetadataArgs,
     pub data_hash: [u8; 32],
     pub creator_hash: [u8; 32],
-    pub nonce: u64,
-    pub index: u32,
+    pub asset_id: Pubkey,
     pub proof_len: u8,
+    pub index: u32,
+    pub nonce: u64,
+    pub metadata: MetadataArgs,
 }
 
 pub fn verify_cnft<'info>(
