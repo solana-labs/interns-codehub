@@ -87,7 +87,6 @@ pub fn resolve_governing_token_owner(
 pub fn resolve_cnft_vote_weight<'info>(
     registrar: &Registrar,
     governing_token_owner: &Pubkey,
-    collection_mint: &Pubkey,
     merkle_tree: &AccountInfo<'info>,
     unique_asset_ids: &mut Vec<Pubkey>,
     leaf_owner: &AccountInfo<'info>,
@@ -110,11 +109,6 @@ pub fn resolve_cnft_vote_weight<'info>(
         .as_ref()
         .ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
 
-    require_eq!(
-        *collection_mint,
-        collection.key,
-        CompressedNftVoterError::InvalidCollectionMint
-    );
     require!(
         collection.verified,
         CompressedNftVoterError::CollectionMustBeVerified

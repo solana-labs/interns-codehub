@@ -55,7 +55,7 @@ async fn test_update_voter_weight_record() -> Result<(), TransportError> {
         &registrar_cookie,
         &voter_weight_record_cookie,
         VoterWeightAction::CreateProposal,
-        &cnft_collection_cookie,
+        // &cnft_collection_cookie,
         &tree_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
@@ -137,7 +137,7 @@ async fn test_update_voter_weight_record_with_multiple_nfts() -> Result<(), Tran
         &registrar_cookie,
         &voter_weight_record_cookie,
         VoterWeightAction::CreateProposal,
-        &cnft_collection_cookie,
+        // &cnft_collection_cookie,
         &tree_cookie,
         &[&leaf_cookie1, &leaf_cookie2],
         &[&leaf_verification_cookie1, &leaf_verification_cookie2],
@@ -208,7 +208,7 @@ async fn test_update_voter_weight_with_cast_vote_not_allowed_error() -> Result<(
         &registrar_cookie,
         &voter_weight_record_cookie,
         VoterWeightAction::CastVote,
-        &cnft_collection_cookie,
+        // &cnft_collection_cookie,
         &tree_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
@@ -272,7 +272,7 @@ async fn test_update_voter_weight_with_inverified_collection_error() -> Result<(
         &registrar_cookie,
         &voter_weight_record_cookie,
         VoterWeightAction::CreateGovernance,
-        &cnft_collection_cookie,
+        // &cnft_collection_cookie,
         &tree_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
@@ -330,7 +330,7 @@ async fn test_update_voter_weight_with_invalid_owner_error() -> Result<(), Trans
         &registrar_cookie,
         &voter_weight_record_cookie,
         VoterWeightAction::CreateGovernance,
-        &cnft_collection_cookie,
+        // &cnft_collection_cookie,
         &tree_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
@@ -392,14 +392,15 @@ async fn test_update_voter_weight_with_invalid_collection_error() -> Result<(), 
             &registrar_cookie,
             &voter_weight_record_cookie,
             VoterWeightAction::CreateGovernance,
-            &cnft_collection_cookie,
+            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie],
             &[&leaf_verification_cookie],
             &[&proofs],
         ).await.err().unwrap();
-    
-    assert_cnft_voter_err(err, CompressedNftVoterError::InvalidCollectionMint);
+        
+    // assert_cnft_voter_err(err, CompressedNftVoterError::InvalidCollectionMint);
+    assert_cnft_voter_err(err, CompressedNftVoterError::CollectionNotFound);
     Ok(())
 }
 
@@ -457,7 +458,7 @@ async fn test_update_voter_weight_with_invalid_metadata_error() -> Result<(), Tr
         &registrar_cookie,
         &voter_weight_record_cookie,
         VoterWeightAction::CreateGovernance,
-        &cnft_collection_cookie,
+        // &cnft_collection_cookie,
         &tree_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
@@ -516,7 +517,7 @@ async fn test_update_voter_weight_with_same_nft_error() -> Result<(), TransportE
             &registrar_cookie,
             &voter_weight_record_cookie,
             VoterWeightAction::CreateGovernance,
-            &cnft_collection_cookie,
+            // &cnft_collection_cookie,
             &tree_cookie,
             &[&leaf_cookie, &leaf_cookie],
             &[&leaf_verification_cookie, &leaf_verification_cookie],

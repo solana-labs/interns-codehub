@@ -26,8 +26,8 @@ pub struct CastCompressedNftVote<'info> {
      )]
     voter_token_owner_record: UncheckedAccount<'info>,
 
-    /// CHECK: This account is checked in the instruction
-    pub collection_mint: UncheckedAccount<'info>,
+    // /// CHECK: This account is checked in the instruction
+    // pub collection_mint: UncheckedAccount<'info>,
     /// CHECK: unsafe
     pub merkle_tree: UncheckedAccount<'info>,
     /// CHECK: This account is checked in the instruction
@@ -55,7 +55,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     let merkle_tree = &ctx.accounts.merkle_tree.to_account_info();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let leaf_delegate = &ctx.accounts.leaf_delegate.to_account_info();
-    let collection = &ctx.accounts.collection_mint.to_account_info();
+    // let collection = &ctx.accounts.collection_mint.to_account_info();
     let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
     let rent = Rent::get()?;
     let mut voter_weight = 0u64;
@@ -84,7 +84,6 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight(
             &registrar,
             &governing_token_owner,
-            &collection.key(),
             &merkle_tree,
             &mut unique_asset_ids,
             &leaf_owner,
