@@ -1,9 +1,11 @@
 import * as anchor from '@coral-xyz/anchor'
+import { DecimalUtil, Percentage } from '@orca-so/common-sdk'
 import { TickUtil } from '@orca-so/whirlpools-sdk'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
+  getMint,
 } from '@solana/spl-token'
 import {
   Keypair,
@@ -11,7 +13,9 @@ import {
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
 } from '@solana/web3.js'
+import Decimal from 'decimal.js'
 
+import { TICK_ARRAY_SIZE } from './constants'
 import { getConstantParams } from './params'
 import { ParsableGlobalpool } from './types/parsing'
 import {
@@ -19,6 +23,9 @@ import {
   OpenLiquidityPositionAccounts,
 } from './types/instructions'
 import { consoleLogFull, getAccountData } from './utils'
+import { increaseLiquidityQuoteByInputToken } from './utils/liquidity-position/quote'
+import { PositionStatus } from './utils/liquidity-position/types'
+import { PositionUtil } from './utils/liquidity-position/utils'
 import { createAndMintToManyATAs } from './utils/token'
 import { createTransactionChained } from './utils/txix'
 import { initTickArrayRange } from './utils/tick-arrays'
@@ -32,13 +39,16 @@ async function main() {
     wallet,
     feeRate,
     tickSpacing,
-    tokenMintAKey,
-    tokenMintBKey,
+    tokenMintA,
+    tokenMintB,
     cladKey,
   } = await getConstantParams()
 
-  const mintAmount = new anchor.BN('15000000000')
+  const mintAmount = new anchor.BN(String(1e15))
   const positionAuthority = wallet.publicKey
+
+  const tokenMintAKey = tokenMintA.address
+  const tokenMintBKey = tokenMintB.address
 
   const [authorityTokenAccountA, authorityTokenAccountB] =
     await createAndMintToManyATAs(
@@ -74,7 +84,7 @@ async function main() {
     throw new Error('Globalpool not found')
   }
 
-  const { tokenVaultA, tokenVaultB } = globalpoolInfo
+  const { tokenVaultA, tokenVaultB, tickCurrentIndex } = globalpoolInfo
   console.log(`Token Vault A: ${tokenVaultA.toBase58()}`)
   console.log(`Token Vault B: ${tokenVaultB.toBase58()}`)
 
@@ -82,9 +92,22 @@ async function main() {
   // Init Tick Array Range
   //
 
-  const startTickIndex = -50688 // -50688, -45056, -39424, -33792, -28160
-  const initArrayCount = 5
-  const aToB = false
+  const aToB = false // determines direction of tick array
+
+  const initArrayCount = 3 // 3 to left of, 3 to right of, and 1 array containing current tick
+  const currentTickArrayStartIndex = TickUtil.getStartTickIndex(
+    tickCurrentIndex,
+    tickSpacing
+  )
+
+  // reverse direction of `aToB` because `initTickArrayRange` will init in the direction
+  // of `aToB` (left if false, right if true)
+  const startTickIndex =
+    currentTickArrayStartIndex +
+    (aToB ? 1 : -1) *
+      Math.floor(initArrayCount / 2) *
+      tickSpacing *
+      TICK_ARRAY_SIZE
 
   await initTickArrayRange(
     globalpoolKey,
@@ -102,24 +125,24 @@ async function main() {
 
   // positions to create
   const preparedLiquiditiyPositions: OpenPositionParams[] = [
+    // Deposit only Token B (USDC)
+    // {
+    //   tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 2) * tickSpacing,
+    //   tickUpperIndex: tickCurrentIndex,
+    //   liquidityAmount: new anchor.BN(1_000_000),
+    // },
     // Deposit only Token A (SOL)
     {
-      tickLowerIndex: -47872, // -45056 - 44*64
-      tickUpperIndex: -42240, // -45056 + 44*64
+      tickLowerIndex: tickCurrentIndex,
+      tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE/2) * tickSpacing,
       liquidityAmount: new anchor.BN(1_000_000),
     },
-    // Deposit only Token B (USDC)
-    {
-      tickLowerIndex: -42240, // -45056 + 44*64
-      tickUpperIndex: -39424, // -45056 + 88*64
-      liquidityAmount: new anchor.BN(1_000_000),
-    },
-    // Deposit both Token A and B (SOL & USDC)
-    {
-      tickLowerIndex: -42240, // -39424 - 44*64
-      tickUpperIndex: -36608, // -39424 + 44*64
-      liquidityAmount: new anchor.BN(2_000_000),
-    },
+    // // Deposit both Token A and B (SOL & USDC)
+    // {
+    //   tickLowerIndex: tickCurrentIndex - Math.floor(TICK_ARRAY_SIZE/3) * tickSpacing,
+    //   tickUpperIndex: tickCurrentIndex + Math.ceil(TICK_ARRAY_SIZE/3) * tickSpacing,
+    //   liquidityAmount: new anchor.BN(2_000_000),
+    // },
   ]
 
   const defaultOpenLiquidityPositionAccounts: Omit<
@@ -162,10 +185,40 @@ async function main() {
     }
     // console.log(openLiquidityPositionAccounts)
 
+    const { tickLowerIndex, tickUpperIndex, liquidityAmount } =
+      openLiquidityPositionParams
+
+    const positionStatus = PositionUtil.getPositionStatus(
+      tickCurrentIndex,
+      tickLowerIndex,
+      tickUpperIndex
+    )
+    const inputTokenMint =
+      positionStatus === PositionStatus.AboveRange ? tokenMintB : tokenMintA
+
+    const quote = increaseLiquidityQuoteByInputToken(
+      globalpoolInfo,
+      inputTokenMint,
+      new Decimal(liquidityAmount.toString()),
+      tickLowerIndex,
+      tickUpperIndex,
+      Percentage.fromFraction(5, 100) // 0.05% slippage
+    )
+
+    console.log(
+      'tokenA max input',
+      DecimalUtil.fromBN(quote.tokenMaxA, tokenMintA.decimals).toString()
+    )
+    console.log(
+      'tokenB max input',
+      DecimalUtil.fromBN(quote.tokenMaxB, tokenMintB.decimals).toString()
+    )
+    console.log('liquidity', quote.liquidityAmount.toString())
+
     const increaseLiquidityPositionParams = {
-      liquidityAmount: openLiquidityPositionParams.liquidityAmount,
-      tokenMaxA: new anchor.BN(1_000_000_000_000_000),
-      tokenMaxB: new anchor.BN(1_000_000_000_000_000),
+      liquidityAmount: quote.liquidityAmount,
+      tokenMaxA: quote.tokenMaxA,
+      tokenMaxB: quote.tokenMaxB,
     }
 
     const [tickArrayLowerKey] = PublicKey.findProgramAddressSync(

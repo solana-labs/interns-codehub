@@ -3,6 +3,7 @@ use crate::{
     math::add_liquidity_delta,
     state::{Tick, TickUpdate},
 };
+use anchor_lang::prelude::msg;
 
 pub fn next_tick_cross_update(
     tick: &Tick,
@@ -28,6 +29,7 @@ pub fn next_tick_modify_liquidity_update(
 ) -> Result<TickUpdate, ErrorCode> {
     // noop if there is no change in liquidity
     if liquidity_delta == 0 {
+        msg!("tick {:?} has liquidity delta = 0", tick_index);
         return Ok(TickUpdate::from(tick));
     }
 
@@ -35,7 +37,10 @@ pub fn next_tick_modify_liquidity_update(
 
     // Update to an uninitialized tick if remaining liquidity is being removed
     if liquidity_gross == 0 {
-        return Ok(TickUpdate { liquidity_borrowed: tick.liquidity_borrowed, ..Default::default() });
+        // return Ok(TickUpdate { liquidity_borrowed: tick.liquidity_borrowed, ..Default::default() });
+        msg!("tick {:?} has liquidity gross = 0", tick_index);
+        // return Ok(TickUpdate::default());
+        return Ok(TickUpdate::from(tick));
     }
 
     let (fee_growth_outside_a, fee_growth_outside_b) =
@@ -66,11 +71,12 @@ pub fn next_tick_modify_liquidity_update(
             .ok_or(ErrorCode::LiquidityNetError)?
     };
 
+    msg!("liquidity (tick {:?}): gross {:?}  /  net {:?}", tick_index, liquidity_gross, liquidity_net);
+
     Ok(TickUpdate {
         initialized: true,
         liquidity_net,
         liquidity_gross,
-        // TODO: verify correctness
         liquidity_borrowed: tick.liquidity_borrowed,
         fee_growth_outside_a,
         fee_growth_outside_b,

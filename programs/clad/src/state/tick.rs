@@ -32,6 +32,11 @@ impl Tick {
     /// # Parameters
     /// - `update` - An update object to update the values in this tick
     pub fn update(&mut self, update: &TickUpdate) {
+        msg!(
+            "updating tick with liquidity_net: {:?} / liquidity_gross: {:?}",
+            update.liquidity_net,
+            update.liquidity_gross
+        );
         self.initialized = update.initialized;
         self.liquidity_net = update.liquidity_net;
         self.liquidity_gross = update.liquidity_gross;
@@ -150,7 +155,7 @@ impl Default for TickArray {
 }
 
 impl TickArray {
-    pub const LEN: usize = 8 + 36 + (Tick::LEN * TICK_ARRAY_SIZE_USIZE);
+    pub const LEN: usize = 8 + std::mem::size_of::<TickArray>();
 
     /// Search for the next initialized tick in this array.
     ///
@@ -274,7 +279,19 @@ impl TickArray {
         if offset < 0 {
             return Err(ErrorCode::TickNotFound.into());
         }
+        msg!(
+            "Updating tick {:?} (offset {:?})",
+            self.start_tick_index + (offset as i32 * tick_spacing as i32),
+            offset
+        );
         self.ticks.get_mut(offset as usize).unwrap().update(update);
+
+        for tick in self.ticks.iter() {
+            if tick.liquidity_gross != 0 || tick.liquidity_net != 0 {
+                msg!("Tick: {:?}", tick);
+            }
+        }
+
         Ok(())
     }
 

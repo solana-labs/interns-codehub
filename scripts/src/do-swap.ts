@@ -1,5 +1,5 @@
 import { Percentage } from '@orca-so/common-sdk'
-import { getMint } from '@solana/spl-token'
+import { PriceMath } from '@orca-so/whirlpools-sdk'
 import { PublicKey } from '@solana/web3.js'
 import BN from 'bn.js'
 import Decimal from 'decimal.js'
@@ -11,7 +11,6 @@ import {
   truncatedAddress,
 } from './utils'
 import { ParsableGlobalpool, ParsableTickArray } from './types/parsing'
-import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import { getPostPoolInitParams } from './params'
 import { TickArrayData } from './types/accounts'
 import { TICK_ARRAY_SIZE } from './constants'
@@ -34,8 +33,8 @@ async function main() {
     connection,
     feeRate,
     tickSpacing,
-    tokenMintAKey,
-    tokenMintBKey,
+    tokenMintA: mintA,
+    tokenMintB: mintB,
     cladKey,
     globalpoolKey,
   } = await getPostPoolInitParams()
@@ -44,6 +43,8 @@ async function main() {
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
   const swapA2B = true // swap A to B (SOL to USDC)
+  const swapInputAmount = new BN(1) // 1 SOL
+  const maxSlippage = Percentage.fromFraction(1, 100)
 
   const globalpoolInfo = await getAccountData(
     globalpoolKey,
@@ -54,8 +55,9 @@ async function main() {
     throw new Error('globalpool not found')
   }
 
-  const mintA = await getMint(connection, globalpoolInfo.tokenMintA)
-  const mintB = await getMint(connection, globalpoolInfo.tokenMintB)
+  const tokenMintAKey = mintA.address
+  const tokenMintBKey = mintB.address
+  const swapInputMint = swapA2B ? mintA : mintB
 
   console.log(`Token A: ${mintA.address.toBase58()}`)
   console.log(`Token B: ${mintB.address.toBase58()}`)
@@ -83,12 +85,9 @@ async function main() {
       connection
     )
     if (!tickArrayData) {
-			console.log(
-				tickArrayKey.toBase58().padEnd(16, ' '),
-				'  uninit',
-			)
-			continue
-		}
+      console.log(tickArrayKey.toBase58().padEnd(16, ' '), '  uninit')
+      continue
+    }
 
     const { startTickIndex } = tickArrayData
     const endTickIndex =
@@ -109,7 +108,7 @@ async function main() {
     console.log(
       tickArrayKey.toBase58().padEnd(16, ' '),
       '    init',
-			'  start tick',
+      '  start tick',
       startTickIndex.toString().padStart(8, ' '),
       '  range',
       `[${startPrice}, ${endPrice})`.padEnd(22, '')
@@ -120,11 +119,15 @@ async function main() {
   // Swap steps
   //
 
+  const swapInputAmountAdjusted = swapInputAmount.mul(
+    new BN(10 ** swapInputMint.decimals)
+  )
+
   const quote = await swapQuoteByInputToken(
     globalpoolKey,
     swapA2B ? tokenMintAKey : tokenMintBKey,
-    new BN(100000),
-    Percentage.fromFraction(1, 100),
+    swapInputAmountAdjusted,
+    maxSlippage,
     connection,
     programId
   )

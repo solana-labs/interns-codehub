@@ -82,15 +82,21 @@ pub fn increase_liquidity(
         timestamp,
     )?;
 
-    msg!("Current Tick Index: {:?}", ctx.accounts.globalpool.tick_current_index);
-    msg!("Position Tick Lower: {:?}", ctx.accounts.position.tick_lower_index);
-    msg!("Position Tick Upper: {:?}", ctx.accounts.position.tick_upper_index);
+    msg!(
+        "Current Tick Index: {:?}",
+        ctx.accounts.globalpool.tick_current_index
+    );
+    msg!(
+        "Position Ticks: [{:?}, {:?})",
+        ctx.accounts.position.tick_lower_index,
+        ctx.accounts.position.tick_upper_index
+    );
     let tick_array_lower_start = ctx.accounts.tick_array_lower.load()?.start_tick_index;
     let tick_array_upper_start = ctx.accounts.tick_array_upper.load()?.start_tick_index;
-    msg!("TickArray Lower Tick: {:?}", tick_array_lower_start);
-    msg!("TickArray Upper Tick: {:?}", tick_array_upper_start);
+    msg!("TickArray Lower: {:?}", tick_array_lower_start);
+    msg!("TickArray Upper: {:?}", tick_array_upper_start);
 
-    msg!("Msg:\n {:?}", update);
+    // msg!("Msg:\n {:?}", update);
 
     sync_modify_liquidity_values(
         &mut ctx.accounts.globalpool,

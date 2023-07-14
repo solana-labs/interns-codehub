@@ -19,12 +19,15 @@ async function main() {
     wallet,
     feeRate,
     tickSpacing,
-    tokenMintAKey,
-    tokenMintBKey,
+    tokenMintA,
+    tokenMintB,
     cladKey,
     initPrice,
     initSqrtPrice,
   } = await getConstantParams()
+
+  const tokenMintAKey = tokenMintA.address
+  const tokenMintBKey = tokenMintB.address
 
   console.log('Init B/A Price: ', initPrice.toString())
 

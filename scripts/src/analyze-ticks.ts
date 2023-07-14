@@ -25,13 +25,9 @@ type TickArrayInfo = {
 
 async function main() {
   const {
-    provider,
     programId,
     connection,
-    feeRate,
     tickSpacing,
-    tokenMintAKey,
-    tokenMintBKey,
     cladKey,
     globalpoolKey,
   } = await getPostPoolInitParams()
@@ -121,24 +117,46 @@ async function main() {
     const { ticks } = ta.data
     for (let i = 0; i < ticks.length; i++) {
       const tick = ticks[i]
-      if (!tick.initialized) continue
+      let [zeroNet, zeroGross, zeroBorrowed] = [
+        tick.liquidityNet,
+        tick.liquidityGross,
+        tick.liquidityBorrowed,
+      ].map((x) => x.isZero())
+      let isZero = zeroNet && zeroGross && zeroBorrowed
+
+      if (!isZero) {
+        console.log(
+          `tick ${ta.startTickIndex + i * tickSpacing} (offset: ${i})`
+        )
+      }
+
+      if (tick.initialized) {
+        console.log(' '.repeat(4), 'initialized')
+      }
 
       // const liquidityNet = PriceMath.sqrtPriceX64ToPrice(tick.liquidityBorrowed)
-      console.log(
-        ' '.repeat(4),
-        `tick ${String(i).padEnd(2, ' ')}  `,
-        `net:      ${tick.liquidityNet.toLocaleString().padStart(30, ' ')}  `
-      )
-      console.log(
-        ' '.repeat(14),
-        `gross:    ${tick.liquidityGross.toLocaleString().padStart(30, ' ')}  `
-      )
-      console.log(
-        ' '.repeat(14),
-        `borrowed: ${tick.liquidityBorrowed
-          .toLocaleString()
-          .padStart(30, ' ')}  `
-      )
+      if (!zeroNet) {
+        console.log(
+          ' '.repeat(4),
+          `net:      ${tick.liquidityNet.toLocaleString().padStart(30, ' ')}  `
+        )
+      }
+      if (!zeroGross) {
+        console.log(
+          ' '.repeat(4),
+          `gross:    ${tick.liquidityGross
+            .toLocaleString()
+            .padStart(30, ' ')}  `
+        )
+      }
+      if (!zeroBorrowed) {
+        console.log(
+          ' '.repeat(4),
+          `borrowed: ${tick.liquidityBorrowed
+            .toLocaleString()
+            .padStart(30, ' ')}  `
+        )
+      }
     }
   }
 }

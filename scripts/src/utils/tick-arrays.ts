@@ -105,7 +105,7 @@ export async function initTickArrayRange(
         console.log(
           'Init TickArray from tick index: ',
           startTickIndex + direction * ticksInArray * i,
-          ` \t (${params.tickArray})`
+          ` \t ${params.tickArray}`
         )
 
         return params.tickArray
@@ -126,7 +126,7 @@ export function getTickArrayKeysForSwap(
   const tickArrayKeys: PublicKey[] = []
   let offset = 0
 
-  console.log('aToB: ', aToB)
+  // console.log('aToB: ', aToB)
   for (let i = 0; i < MAX_SWAP_TICK_ARRAYS; i++) {
     let startIndex: number
     try {
@@ -136,9 +136,9 @@ export function getTickArrayKeysForSwap(
         tickSpacing,
         offset
       )
-      console.log('find: ', tickCurrentIndex + shift)
-      console.log('offset: ', offset)
-      console.log('>> found: ', startIndex)
+      // console.log('find: ', tickCurrentIndex + shift)
+      // console.log('offset: ', offset)
+      // console.log('>> found: ', startIndex)
     } catch {
       return tickArrayKeys
     }

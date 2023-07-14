@@ -38,7 +38,7 @@ export type GlobalpoolData = {
 }
 
 export type LiquidityPositionData = {
-  whirlpool: PublicKey
+  globalpool: PublicKey
   positionMint: PublicKey
   liquidity: BN
   tickLowerIndex: number
@@ -50,7 +50,7 @@ export type LiquidityPositionData = {
 }
 
 export type TradePositionData = {
-  whirlpool: PublicKey
+  globalpool: PublicKey
   positionMint: PublicKey
   liquidity: BN
   tickLowerIndex: number

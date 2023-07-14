@@ -54,8 +54,8 @@ export async function getConstantParams() {
     wallet,
     feeRate,
     tickSpacing,
-    tokenMintAKey,
-    tokenMintBKey,
+    tokenMintA,
+    tokenMintB,
     cladKey,
     initTickIndex,
     initPrice,
@@ -68,8 +68,8 @@ export async function getPostPoolInitParams() {
 
   const globalpoolSeeds = [
     Buffer.from('globalpool'),
-    cParams.tokenMintAKey.toBuffer(),
-    cParams.tokenMintBKey.toBuffer(),
+    cParams.tokenMintA.address.toBuffer(),
+    cParams.tokenMintB.address.toBuffer(),
     new anchor.BN(cParams.feeRate).toArrayLike(Buffer, 'le', 2),
     new anchor.BN(cParams.tickSpacing).toArrayLike(Buffer, 'le', 2),
   ]

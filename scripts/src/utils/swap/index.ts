@@ -1,5 +1,5 @@
 import { Percentage } from '@orca-so/common-sdk'
-import { ParsableTickArray, SwapUtils } from '@orca-so/whirlpools-sdk'
+import { SwapUtils } from '@orca-so/whirlpools-sdk'
 import { Connection, PublicKey } from '@solana/web3.js'
 import BN from 'bn.js'
 
@@ -8,7 +8,7 @@ import { simulateSwap } from './simulate-swap'
 import { getTickArrayKeysForSwap } from '../tick-arrays'
 import { SwapQuote, SwapQuoteParam } from './types'
 import { TickArray } from '../../types/accounts'
-import { ParsableGlobalpool } from '../../types/parsing'
+import { ParsableGlobalpool, ParsableTickArray } from '../../types/parsing'
 
 /**
  * Get an estimated swap quote using input token amount.

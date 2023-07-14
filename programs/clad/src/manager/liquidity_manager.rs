@@ -193,12 +193,14 @@ pub fn sync_modify_liquidity_values<'info>(
 ) -> Result<()> {
     position.update(&modify_liquidity_update.position_update);
 
+    msg!("Position tick: {:?}", position.tick_lower_index);
     tick_array_lower.load_mut()?.update_tick(
         position.tick_lower_index,
         globalpool.tick_spacing,
         &modify_liquidity_update.tick_lower_update,
     )?;
 
+    msg!("Position tick: {:?}", position.tick_upper_index);
     tick_array_upper.load_mut()?.update_tick(
         position.tick_upper_index,
         globalpool.tick_spacing,
