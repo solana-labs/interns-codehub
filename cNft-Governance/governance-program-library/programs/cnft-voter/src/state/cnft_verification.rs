@@ -6,7 +6,7 @@ use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
 pub struct CompressedNftAsset {
     pub root: [u8; 32],
     pub data_hash: [u8; 32],
@@ -18,7 +18,7 @@ pub struct CompressedNftAsset {
     pub metadata: MetadataArgs,
 }
 
-pub fn verify_cnft<'info>(
+pub fn verify_compressed_nft<'info>(
     merkle_tree: &AccountInfo<'info>,
     leaf_owner: &AccountInfo<'info>,
     leaf_delegate: &AccountInfo<'info>,
@@ -27,10 +27,6 @@ pub fn verify_cnft<'info>(
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>,
 ) -> Result<()> {
-    // require!(
-    //     leaf_owner.is_signer || leaf_delegate.is_signer,
-    //     BubblegumError::LeafAuthorityMustSign
-    // );
     require_eq!(
         *asset_id,
         params.asset_id,

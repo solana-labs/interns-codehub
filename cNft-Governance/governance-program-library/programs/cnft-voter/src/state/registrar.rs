@@ -114,7 +114,7 @@ pub fn resolve_cnft_vote_weight<'info>(
         CompressedNftVoterError::CollectionMustBeVerified
     );
 
-    verify_cnft(
+    verify_compressed_nft(
         merkle_tree,
         leaf_owner,
         leaf_delegate,

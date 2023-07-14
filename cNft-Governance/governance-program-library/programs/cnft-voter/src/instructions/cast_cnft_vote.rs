@@ -26,8 +26,6 @@ pub struct CastCompressedNftVote<'info> {
      )]
     voter_token_owner_record: UncheckedAccount<'info>,
 
-    // /// CHECK: This account is checked in the instruction
-    // pub collection_mint: UncheckedAccount<'info>,
     /// CHECK: unsafe
     pub merkle_tree: UncheckedAccount<'info>,
     /// CHECK: This account is checked in the instruction
