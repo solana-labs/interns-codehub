@@ -1,6 +1,6 @@
 // use crate::error::CompressedNftVoterError;
 use anchor_lang::prelude::*;
-use mpl_bubblegum::hash_metadata;
+use mpl_bubblegum::{ hash_metadata, hash_creators };
 use mpl_bubblegum::state::leaf_schema::LeafSchema;
 use mpl_bubblegum::state::metaplex_adapter::{ MetadataArgs, TokenProgramVersion, TokenStandard };
 use mpl_bubblegum::state::metaplex_adapter::{
@@ -88,7 +88,7 @@ pub struct CompressedNftAsset {
     pub edition_nonce: Option<u8>,
     pub creators: Vec<Creator>,
     pub root: [u8; 32],
-    pub creator_hash: [u8; 32],
+    pub leaf_delegate: Pubkey,
     pub index: u32,
     pub nonce: u64,
     pub proof_len: u8,
@@ -118,43 +118,34 @@ impl CompressedNftAsset {
 }
 
 pub fn verify_compressed_nft<'info>(
-    collection: &Collection,
     merkle_tree: &AccountInfo<'info>,
-    leaf_owner: &AccountInfo<'info>,
-    leaf_delegate: &AccountInfo<'info>,
     asset_id: &Pubkey,
+    leaf_owner: &Pubkey,
     params: &CompressedNftAsset,
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>
 ) -> Result<()> {
+    let root = &params.root;
+    let leaf_delegate = &params.leaf_delegate;
+    let nonce = params.nonce;
+    let index = params.index;
+
     let mut creators = vec![];
     for creator in params.creators.clone().iter() {
         creators.push(creator.to_bubblegum());
     }
 
-    let metadata = MetadataArgs {
-        name: params.name.clone(),
-        symbol: params.symbol.clone(),
-        uri: params.uri.clone(),
-        seller_fee_basis_points: params.seller_fee_basis_points,
-        creators,
-        primary_sale_happened: params.primary_sale_happened,
-        is_mutable: params.is_mutable,
-        edition_nonce: params.edition_nonce,
-        collection: Some(collection.to_bubblegum()),
-        uses: None,
-        token_program_version: TokenProgramVersion::Original,
-        token_standard: Some(TokenStandard::NonFungible),
-    };
+    let metadata = params.to_metadata_args();
     let data_hash = hash_metadata(&metadata).unwrap();
+    let creator_hash = hash_creators(&creators).unwrap();
 
     let leaf = LeafSchema::new_v0(
         *asset_id,
-        leaf_owner.key(),
-        leaf_delegate.key(),
-        params.nonce,
+        *leaf_owner,
+        *leaf_delegate,
+        nonce,
         data_hash,
-        params.creator_hash
+        creator_hash
     );
 
     let cpi_ctx = CpiContext::new(compression_program.clone(), VerifyLeaf {
@@ -167,7 +158,7 @@ pub fn verify_compressed_nft<'info>(
     //         .is_ok(),
     //     AccountCompressionError::ConcurrentMerkleTreeError
     // );
-    spl_account_compression::cpi::verify_leaf(cpi_ctx, params.root, leaf.to_node(), params.index)?;
+    spl_account_compression::cpi::verify_leaf(cpi_ctx, *root, leaf.to_node(), index)?;
 
     Ok(())
 }

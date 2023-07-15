@@ -84,7 +84,6 @@ pub fn resolve_cnft_vote_weight<'info>(
     merkle_tree: &AccountInfo<'info>,
     unique_asset_ids: &mut Vec<Pubkey>,
     leaf_owner: &AccountInfo<'info>,
-    leaf_delegate: &AccountInfo<'info>,
     params: &CompressedNftAsset,
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>
@@ -104,10 +103,8 @@ pub fn resolve_cnft_vote_weight<'info>(
     require!(collection.verified, CompressedNftVoterError::CollectionMustBeVerified);
 
     verify_compressed_nft(
-        collection,
         merkle_tree,
-        leaf_owner,
-        leaf_delegate,
+        &leaf_owner.key(),
         &asset_id,
         params,
         proofs,
