@@ -10,12 +10,12 @@ export async function getAccountData<T>(
 ): Promise<T | null> {
   const accountInfo = await connection.getAccountInfo(publicKey)
   if (accountInfo === null) {
-    // throw new Error(`Account does not exist ${publicKey.toBase58()}`)
+    // console.error(`Account does not exist ${publicKey.toBase58()}`)
     return null
   }
 	const parsed = parser.parse(publicKey, accountInfo)
 	if (parsed === null) {
-		// throw new Error(`Could not parse account data ${publicKey.toBase58()}`)
+		console.error(`Could not parse account data ${publicKey.toBase58()}`)
     return null
 	}
   return parsed

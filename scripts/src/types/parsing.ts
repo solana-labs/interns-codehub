@@ -104,7 +104,7 @@ function parseAnchorAccount(
 ) {
   const data = accountData.data
   const discriminator = BorshAccountsCoder.accountDiscriminator(accountName)
-  if (discriminator.compare(data.slice(0, 8))) {
+  if (discriminator.compare(data.subarray(0, 8))) {
     console.error('incorrect account name during parsing')
     return null
   }

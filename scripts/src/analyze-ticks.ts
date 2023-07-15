@@ -24,13 +24,8 @@ type TickArrayInfo = {
 }
 
 async function main() {
-  const {
-    programId,
-    connection,
-    tickSpacing,
-    cladKey,
-    globalpoolKey,
-  } = await getPostPoolInitParams()
+  const { programId, connection, tickSpacing, cladKey, globalpoolKey } =
+    await getPostPoolInitParams()
 
   console.log(`Clad: ${cladKey.toBase58()}`)
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
@@ -124,6 +119,11 @@ async function main() {
       ].map((x) => x.isZero())
       let isZero = zeroNet && zeroGross && zeroBorrowed
 
+      // const liquidityNet = tick.liquidityNet.ishrn(64) // from X64
+      // const liquidityGross = tick.liquidityGross.ushrn(64) // from X64
+      const liquidityNet = tick.liquidityNet
+      const liquidityGross = tick.liquidityGross
+
       if (!isZero) {
         console.log(
           `tick ${ta.startTickIndex + i * tickSpacing} (offset: ${i})`
@@ -138,15 +138,13 @@ async function main() {
       if (!zeroNet) {
         console.log(
           ' '.repeat(4),
-          `net:      ${tick.liquidityNet.toLocaleString().padStart(30, ' ')}  `
+          `net:      ${liquidityNet.toLocaleString().padStart(30, ' ')}  `
         )
       }
       if (!zeroGross) {
         console.log(
           ' '.repeat(4),
-          `gross:    ${tick.liquidityGross
-            .toLocaleString()
-            .padStart(30, ' ')}  `
+          `gross:    ${liquidityGross.toLocaleString().padStart(30, ' ')}  `
         )
       }
       if (!zeroBorrowed) {

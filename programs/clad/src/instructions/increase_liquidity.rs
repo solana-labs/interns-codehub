@@ -91,10 +91,10 @@ pub fn increase_liquidity(
         ctx.accounts.position.tick_lower_index,
         ctx.accounts.position.tick_upper_index
     );
-    let tick_array_lower_start = ctx.accounts.tick_array_lower.load()?.start_tick_index;
-    let tick_array_upper_start = ctx.accounts.tick_array_upper.load()?.start_tick_index;
-    msg!("TickArray Lower: {:?}", tick_array_lower_start);
-    msg!("TickArray Upper: {:?}", tick_array_upper_start);
+    // let tick_array_lower_start = ctx.accounts.tick_array_lower.load()?.start_tick_index;
+    // let tick_array_upper_start = ctx.accounts.tick_array_upper.load()?.start_tick_index;
+    // msg!("TickArray Lower: {:?}", tick_array_lower_start);
+    // msg!("TickArray Upper: {:?}", tick_array_upper_start);
 
     // msg!("Msg:\n {:?}", update);
 

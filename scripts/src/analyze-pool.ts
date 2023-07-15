@@ -8,12 +8,7 @@ import { getPostPoolInitParams } from './params'
 async function main() {
   const {
     provider,
-    programId,
     connection,
-    feeRate,
-    tickSpacing,
-    tokenMintAKey,
-    tokenMintBKey,
     cladKey,
     globalpoolKey,
   } = await getPostPoolInitParams()
@@ -39,8 +34,8 @@ async function main() {
     await getTokenBalance(provider, globalpoolInfo.tokenVaultB)
   )
 
-  console.log('token Vault A before: ', tokenVaultABefore.toString())
-  console.log('token Vault B before: ', tokenVaultBBefore.toString())
+  console.log('token Vault A before: ', tokenVaultABefore.div(new anchor.BN(10 ** 6)).toString())
+  console.log('token Vault B before: ', tokenVaultBBefore.div(new anchor.BN(10 ** 6)).toString())
 }
 
 main().catch((err) => {

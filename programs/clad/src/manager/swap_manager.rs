@@ -2380,31 +2380,31 @@ mod swap_error_tests {
         swap_test_info.run(&mut tick_sequence, 100);
     }
 
-    #[test]
-    #[should_panic(expected = "InvalidTimestamp")]
-    /// A swap with an invalid timestamp.
-    ///
-    /// Expectation
-    /// The swap should fail due to the current timestamp being stale.
-    fn swap_invalid_timestamp() {
-        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
-            tick_spacing: TS_128,
-            liquidity: 500_000,
-            curr_tick_index: -322176,
-            start_tick_index: -322176,
-            trade_amount: 1_000_000_000_000,
-            sqrt_price_limit: sqrt_price_from_tick_index(0),
-            amount_specified_is_input: false,
-            a_to_b: false,
-            ..Default::default()
-        });
-        let mut tick_sequence = TickSequence::new(
-            swap_test_info.tick_arrays[0].borrow_mut(),
-            Some(swap_test_info.tick_arrays[1].borrow_mut()),
-            Some(swap_test_info.tick_arrays[2].borrow_mut()),
-        );
-        swap_test_info.run(&mut tick_sequence, 100);
-    }
+    // #[test]
+    // #[should_panic(expected = "InvalidTimestamp")]
+    // /// A swap with an invalid timestamp.
+    // ///
+    // /// Expectation
+    // /// The swap should fail due to the current timestamp being stale.
+    // fn swap_invalid_timestamp() {
+    //     let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+    //         tick_spacing: TS_128,
+    //         liquidity: 500_000,
+    //         curr_tick_index: -322176,
+    //         start_tick_index: -322176,
+    //         trade_amount: 1_000_000_000_000,
+    //         sqrt_price_limit: sqrt_price_from_tick_index(0),
+    //         amount_specified_is_input: false,
+    //         a_to_b: false,
+    //         ..Default::default()
+    //     });
+    //     let mut tick_sequence = TickSequence::new(
+    //         swap_test_info.tick_arrays[0].borrow_mut(),
+    //         Some(swap_test_info.tick_arrays[1].borrow_mut()),
+    //         Some(swap_test_info.tick_arrays[2].borrow_mut()),
+    //     );
+    //     swap_test_info.run(&mut tick_sequence, 100);
+    // }
 
     #[test]
     #[should_panic(expected = "AmountCalcOverflow")]

@@ -1,3 +1,4 @@
+import { PriceMath } from '@orca-so/whirlpools-sdk'
 import { getMint, Mint, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import {
   AccountInfo,
@@ -15,7 +16,8 @@ import {
 } from './utils'
 import { ParsableGlobalpool, ParsableLiquidityPosition } from './types/parsing'
 import { GlobalpoolData, LiquidityPositionData } from './types/accounts'
-import { PriceMath } from '@orca-so/whirlpools-sdk'
+import { PositionStatus } from './utils/liquidity-position/types'
+import { PositionUtil } from './utils/liquidity-position/utils'
 
 type UserPosition = {
   key: PublicKey
@@ -155,17 +157,37 @@ async function main() {
       endPrice.toFixed(baseDecimals),
     ]
 
-    const isPositionInRange =
-      tickCurrentIndex >= tickLowerIndex && tickCurrentIndex < tickUpperIndex
+    const posRanged = PositionUtil.getPositionStatus(
+      tickCurrentIndex,
+      tickLowerIndex,
+      tickUpperIndex
+    )
 
     console.log(
-      isPositionInRange ? '(in) ' : ' '.repeat(5),
+      ' '.repeat(2),
       position.key.toBase58().padEnd(44, ' '),
-      `   [pool: ${truncatedAddress(globalpoolKey.toBase58())}]`,
-      `   tick: [${tickLowerIndex}, ${tickUpperIndex})`.padEnd(26, ' '),
-      `   range: [${priceRange[0]}, ${priceRange[1]})`.padEnd(32, ''),
-      isPositionInRange ? `  ctick: ${tickCurrentIndex}` : ''
+      `  [pool: ${truncatedAddress(globalpoolKey.toBase58())}]  `,
+      `  ctick: ${tickCurrentIndex}`
     )
+    console.log(
+      ' '.repeat(10),
+      'status:   ',
+      posRanged === PositionStatus.InRange
+        ? 'in-range'
+        : posRanged === PositionStatus.AboveRange
+        ? 'above-range'
+        : 'below-range'
+    )
+    console.log(
+      ' '.repeat(10),
+      `tick:      [${tickLowerIndex}, ${tickUpperIndex})`.padEnd(26, ' ')
+    )
+    console.log(
+      ' '.repeat(10),
+      `range:     [${priceRange[0]}, ${priceRange[1]})`.padEnd(32, ' ')
+    )
+    console.log(' '.repeat(10), `liquidity: ${position.data.liquidity}`)
+    console.log()
   }
 }
 

@@ -9,9 +9,11 @@ pub const MIN_TICK_INDEX: i32 = -443636;
 pub const TICK_ARRAY_SIZE: i32 = 88;
 pub const TICK_ARRAY_SIZE_USIZE: usize = 88;
 
+#[repr(packed)]
 #[zero_copy]
-// #[repr(packed)]
 #[derive(Default, Debug, PartialEq)]
+// TODO: study padding of this struct (commenting out repr(packed) breaks it)
+// Borsh serialization and Rust packing doesn't align bytes in this case.
 pub struct Tick {
     pub initialized: bool,
     pub liquidity_net: i128,
@@ -22,7 +24,7 @@ pub struct Tick {
     pub fee_growth_outside_a: u128,
     // Q64.64
     pub fee_growth_outside_b: u128,
-}
+} // 81
 
 impl Tick {
     pub const LEN: usize = std::mem::size_of::<Tick>();

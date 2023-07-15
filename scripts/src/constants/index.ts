@@ -46,3 +46,21 @@ export const tokenMintSOL = new PublicKey(
 export const tokenMintUSDC = new PublicKey(
   'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 )
+
+export const ORCA = new PublicKey('orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE')
+
+export const WBTC = new PublicKey(
+  '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E'
+)
+
+export const WETH = new PublicKey(
+  '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs'
+)
+
+export const MSOL = new PublicKey('mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So')
+
+export const MNDE = new PublicKey('MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey')
+
+export const SAMO = new PublicKey(
+  '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'
+)

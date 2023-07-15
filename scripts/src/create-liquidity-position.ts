@@ -94,7 +94,7 @@ async function main() {
 
   const aToB = false // determines direction of tick array
 
-  const initArrayCount = 3 // 3 to left of, 3 to right of, and 1 array containing current tick
+  const initArrayCount = 5 // 3 to left of, 3 to right of, and 1 array containing current tick
   const currentTickArrayStartIndex = TickUtil.getStartTickIndex(
     tickCurrentIndex,
     tickSpacing
@@ -125,23 +125,33 @@ async function main() {
 
   // positions to create
   const preparedLiquiditiyPositions: OpenPositionParams[] = [
-    // Deposit only Token B (USDC)
-    // {
-    //   tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 2) * tickSpacing,
-    //   tickUpperIndex: tickCurrentIndex,
-    //   liquidityAmount: new anchor.BN(1_000_000),
-    // },
     // Deposit only Token A (SOL)
+    // {
+    //   tickLowerIndex: tickCurrentIndex,
+    //   tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE/2) * tickSpacing,
+    //   liquidityAmount: new anchor.BN(100), // 100 SOL
+    // },
+    // Deposit only Token B (USDC)
     {
-      tickLowerIndex: tickCurrentIndex,
-      tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE/2) * tickSpacing,
-      liquidityAmount: new anchor.BN(1_000_000),
+      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 2) * tickSpacing,
+      tickUpperIndex: tickCurrentIndex,
+      liquidityAmount: new anchor.BN(100), // 100 USDC
+    },
+    {
+      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing,
+      tickUpperIndex: tickCurrentIndex + 64,
+      liquidityAmount: new anchor.BN(100), // 100 USDC
+    },
+    {
+      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE) * tickSpacing,
+      tickUpperIndex: tickCurrentIndex - 128,
+      liquidityAmount: new anchor.BN(100), // 100 USDC
     },
     // // Deposit both Token A and B (SOL & USDC)
     // {
     //   tickLowerIndex: tickCurrentIndex - Math.floor(TICK_ARRAY_SIZE/3) * tickSpacing,
     //   tickUpperIndex: tickCurrentIndex + Math.ceil(TICK_ARRAY_SIZE/3) * tickSpacing,
-    //   liquidityAmount: new anchor.BN(2_000_000),
+    //   liquidityAmount: new anchor.BN(100), // 100 SOL worth of both
     // },
   ]
 
