@@ -2,13 +2,12 @@ import * as anchor from '@coral-xyz/anchor'
 import { MathUtil, Percentage, TransactionBuilder } from '@orca-so/common-sdk'
 import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import { getMint } from '@solana/spl-token'
-import { Connection, Keypair, PublicKey } from '@solana/web3.js'
-import * as fs from 'fs'
+import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
 
 import { Clad } from '@/target/types/clad'
 import { tokenMintSOL, tokenMintUSDC } from './constants'
-
-const fsp = fs.promises
+import DummyWallet from './utils/wallet'
+import { requestAirdrop } from './utils/token'
 
 export function getPDA(
   seeds: (Buffer | Uint8Array)[],
@@ -18,18 +17,31 @@ export function getPDA(
 }
 
 export async function getConstantParams() {
+  // const dummyWallet = new DummyWallet()
+  // const provider = new anchor.AnchorProvider(
+  //   new Connection('http://127.0.0.1:8899'),
+  //   dummyWallet,
+  //   {
+  //     commitment: 'confirmed',
+  //     preflightCommitment: 'confirmed',
+  //   }
+  // )
   const provider = anchor.AnchorProvider.local('http://127.0.0.1:8899', {
     commitment: 'confirmed',
     preflightCommitment: 'confirmed',
   })
 
-  // TODO: use dummy keypair as signer & wallet (NodeWallet)
-  //       need to modify all provider.wallet and transactionbuilder instances
-
   const { connection, wallet } = provider
 
   const program = anchor.workspace.Clad as anchor.Program<Clad>
   const programId = program.programId
+
+  const fundedSigner = Keypair.generate()
+
+  // airdrop SOL
+  if ((await connection.getBalance(fundedSigner.publicKey)) === 0) {
+    await requestAirdrop(provider, { receiver: fundedSigner.publicKey })
+  }
 
   const tickSpacing = 64
   const feeRate = 3000 // per 1_000_000 (3000 => 0.3%)
@@ -55,11 +67,11 @@ export async function getConstantParams() {
 
   return {
     provider,
+    fundedSigner,
     program,
     programId,
     connection,
     wallet,
-    keypair,
     feeRate,
     tickSpacing,
     tokenMintA,

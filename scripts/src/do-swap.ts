@@ -1,9 +1,10 @@
 import { Percentage } from '@orca-so/common-sdk'
 import { PriceMath } from '@orca-so/whirlpools-sdk'
-import { PublicKey } from '@solana/web3.js'
-import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from '@solana/spl-token'
+import {
+  TOKEN_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount,
+} from '@solana/spl-token'
 import BN from 'bn.js'
-import Decimal from 'decimal.js'
 
 import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
 import { ParsableGlobalpool, ParsableTickArray } from './types/parsing'
@@ -12,11 +13,12 @@ import { TICK_ARRAY_SIZE } from './constants'
 import { getTickArrayKeysForSwap } from './utils/tick-arrays'
 import { swapQuoteByInputToken } from './utils/swap'
 import { createTransactionChained } from './utils/txix'
-import { createAssociatedTokenAccount } from './utils/token'
+import { createAndMintToManyATAs } from './utils/token'
 
 async function main() {
   const {
     provider,
+    fundedSigner,
     program,
     programId,
     connection,
@@ -25,7 +27,6 @@ async function main() {
     tokenMintB: mintB,
     cladKey,
     globalpoolKey,
-    keypair,
   } = await getPostPoolInitParams()
 
   console.log(`Clad: ${cladKey.toBase58()}`)
@@ -55,19 +56,21 @@ async function main() {
 
   const tokenAuthority = provider.wallet.publicKey
 
-  const authorityTokenAccountA = await getOrCreateAssociatedTokenAccount(
-    connection,
-    keypair,
-    tokenMintAKey,
-    tokenAuthority
-  )
-  
-  const authorityTokenAccountB = await getOrCreateAssociatedTokenAccount(
-    connection,
-    keypair,
-    tokenMintBKey,
-    tokenAuthority
-  )
+  const mintAmount = new BN(100_000) // mint 100k of each token
+  const [authorityTokenAccountA, authorityTokenAccountB] =
+    await createAndMintToManyATAs(provider, [mintA, mintB], mintAmount)
+
+  // const [authorityTokenAccountA, authorityTokenAccountB] = await Promise.all(
+  //   [tokenMintAKey, tokenMintBKey].map((tokenMintKey) =>
+  //     getOrCreateAssociatedTokenAccount(
+  //       connection,
+  //       fundedSigner,
+  //       tokenMintKey,
+  //       tokenAuthority
+  //     ).then((res) => res.address)
+  //   )
+  // )
+  // console.log(authorityTokenAccountA, authorityTokenAccountB)
 
   const tickArrayKeys = getTickArrayKeysForSwap(
     globalpoolInfo.tickCurrentIndex,
@@ -139,29 +142,58 @@ async function main() {
     programId
   )
 
-  console.log(quote)
+  console.log('Swap quote:')
+  console.log(
+    `  estimatedAmountIn: ${quote.estimatedAmountIn
+      .div(new BN(10 ** mintA.decimals))
+      .toLocaleString()}`
+  )
+  console.log(
+    `  estimatedAmountOut: ${quote.estimatedAmountOut
+      .div(new BN(10 ** mintB.decimals))
+      .toLocaleString()}`
+  )
+  console.log(`  estimatedEndTickIndex: ${quote.estimatedEndTickIndex}`)
+  console.log(`  estimatedEndSqrtPrice: ${quote.estimatedEndSqrtPrice}`)
+  console.log(
+    `  estimatedFeeAmount: ${quote.estimatedFeeAmount.toLocaleString()}`
+  )
+  console.log(
+    `  amount: ${quote.amount
+      .div(new BN(10 ** mintA.decimals))
+      .toLocaleString()}`
+  )
+  console.log(`  amountSpecifiedIsInput: ${quote.amountSpecifiedIsInput}`)
+  console.log(`  aToB: ${quote.aToB}`)
+  console.log(
+    `  otherAmountThreshold: ${quote.otherAmountThreshold.toLocaleString()}`
+  )
+  console.log(`  sqrtPriceLimit: ${quote.sqrtPriceLimit}`)
+  console.log(`  tickArray0: ${quote.tickArray0.toBase58()}`)
+  console.log(`  tickArray1: ${quote.tickArray1.toBase58()}`)
+  console.log(`  tickArray2: ${quote.tickArray2.toBase58()}`)
 
   const tokenVaultABefore = new BN(
-    await getTokenBalance(provider, authorityTokenAccountA.address)
+    await getTokenBalance(provider, authorityTokenAccountA)
   )
   const tokenVaultBBefore = new BN(
-    await getTokenBalance(provider, authorityTokenAccountB.address)
+    await getTokenBalance(provider, authorityTokenAccountB)
   )
 
   console.log(
     'token Vault A before: ',
-    tokenVaultABefore.div(new BN(10 ** 6)).toString()
+    tokenVaultABefore.div(new BN(10 ** mintA.decimals)).toString()
   )
   console.log(
     'token Vault B before: ',
-    tokenVaultBBefore.div(new BN(10 ** 6)).toString()
+    tokenVaultBBefore.div(new BN(10 ** mintB.decimals)).toString()
   )
 
   const swapAccounts = {
     tokenAuthority,
     globalpool: globalpoolKey,
-    tokenOwnerAccountA: authorityTokenAccountA.address,
-    tokenOwnerAccountB: authorityTokenAccountB.address,
+    tokenOwnerAccountA: authorityTokenAccountA,
+    tokenOwnerAccountB: authorityTokenAccountB,
     tokenVaultA,
     tokenVaultB,
     tickArray0: tickArrayKeys[0],
@@ -193,19 +225,19 @@ async function main() {
   console.log(txId)
 
   const tokenVaultAAfter = new BN(
-    await getTokenBalance(provider, authorityTokenAccountA.address)
+    await getTokenBalance(provider, authorityTokenAccountA)
   )
   const tokenVaultBAfter = new BN(
-    await getTokenBalance(provider, authorityTokenAccountB.address)
+    await getTokenBalance(provider, authorityTokenAccountB)
   )
 
   console.log(
     'token Vault A after: ',
-    tokenVaultAAfter.div(new BN(10 ** 6)).toString()
+    tokenVaultAAfter.div(new BN(10 ** mintA.decimals)).toString()
   )
   console.log(
     'token Vault B after: ',
-    tokenVaultBAfter.div(new BN(10 ** 6)).toString()
+    tokenVaultBAfter.div(new BN(10 ** mintB.decimals)).toString()
   )
 }
 

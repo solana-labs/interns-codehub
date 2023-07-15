@@ -15,23 +15,23 @@ export function getAmountDeltaA(
     targetSqrtPrice
   )
   let sqrtPriceDiff = sqrtPriceUpper.sub(sqrtPriceLower)
-  console.log('sqrtPriceLower', sqrtPriceLower.toString())
-  console.log('sqrtPriceUpper', sqrtPriceUpper.toString())
-  console.log('sqrtPriceDiff', sqrtPriceDiff.toString())
+  // console.log('sqrtPriceLower', sqrtPriceLower.toString())
+  // console.log('sqrtPriceUpper', sqrtPriceUpper.toString())
+  // console.log('sqrtPriceDiff', sqrtPriceDiff.toString())
 
   let numerator = currLiquidity.mul(sqrtPriceDiff).shln(64)
   let denominator = sqrtPriceLower.mul(sqrtPriceUpper)
-  console.log('numerator', numerator.toString())
-  console.log('denominator', denominator.toString())
+  // console.log('numerator', numerator.toString())
+  // console.log('denominator', denominator.toString())
 
   let quotient = numerator.div(denominator)
   let remainder = numerator.mod(denominator)
-  console.log('quotient', quotient.toString())
-  console.log('remainder', remainder.toString())
+  // console.log('quotient', quotient.toString())
+  // console.log('remainder', remainder.toString())
 
   let result =
     roundUp && !remainder.eq(ZERO_BN) ? quotient.add(new BN(1)) : quotient
-  console.log('result', result.toString())
+  // console.log('result', result.toString())
 
   if (result.gt(U64_MAX)) {
     throw new Error('Results larger than U64')

@@ -1,5 +1,10 @@
 import { TransactionBuilder, Wallet } from '@orca-so/common-sdk'
-import { Connection, Signer, TransactionInstruction } from '@solana/web3.js'
+import {
+  Connection,
+  PublicKey,
+  Signer,
+  TransactionInstruction,
+} from '@solana/web3.js'
 
 export function createTransactionChained(
   conenction: Connection,
@@ -34,8 +39,12 @@ export function createTransactionChained(
   let _signers: Signer[] = []
 
   if (Array.isArray(cleanupInstructionsOrSigners)) {
-    if ((cleanupInstructionsOrSigners as Signer[])[0].publicKey !== undefined) {
-      _signers = cleanupInstructionsOrSigners as Signer[]
+    const potentialSigners = cleanupInstructionsOrSigners as Signer[]
+    if (
+      potentialSigners.length &&
+      potentialSigners[0].publicKey instanceof PublicKey
+    ) {
+      _signers = potentialSigners
     } else {
       _cleanupInstructions =
         cleanupInstructionsOrSigners as TransactionInstruction[]

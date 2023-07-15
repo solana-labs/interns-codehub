@@ -149,7 +149,6 @@ async function main() {
     if (!tickArrayRaw) {
       continue
     }
-    console.log(tickArrayRaw.data.length)
 
     const tickArrayData = await getAccountData(
       tickArrayKey,

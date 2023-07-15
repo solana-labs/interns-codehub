@@ -44,7 +44,7 @@ async function main() {
     cladKey,
   } = await getConstantParams()
 
-  const mintAmount = new anchor.BN(String(1e15))
+  const mintAmount = new anchor.BN(100_000) // 100k of each tokens
   const positionAuthority = wallet.publicKey
 
   const tokenMintAKey = tokenMintA.address
@@ -53,7 +53,7 @@ async function main() {
   const [authorityTokenAccountA, authorityTokenAccountB] =
     await createAndMintToManyATAs(
       provider,
-      [tokenMintAKey, tokenMintBKey],
+      [tokenMintA, tokenMintB],
       mintAmount,
       positionAuthority
     )
@@ -94,7 +94,7 @@ async function main() {
 
   const aToB = false // determines direction of tick array
 
-  const initArrayCount = 5 // 3 to left of, 3 to right of, and 1 array containing current tick
+  const initArrayCount = 7 // 3 to left of, 3 to right of, and 1 array containing current tick
   const currentTickArrayStartIndex = TickUtil.getStartTickIndex(
     tickCurrentIndex,
     tickSpacing

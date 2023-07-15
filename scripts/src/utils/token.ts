@@ -3,6 +3,7 @@ import { TokenUtil, TransactionBuilder } from '@orca-so/common-sdk'
 import {
   AccountLayout,
   AuthorityType,
+  Mint,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   createApproveInstruction,
@@ -14,7 +15,14 @@ import {
   createSetAuthorityInstruction,
   createTransferInstruction,
   getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount,
 } from '@solana/spl-token'
+import {
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  Signer,
+} from '@solana/web3.js'
 
 export async function createMint(
   provider: AnchorProvider,
@@ -168,9 +176,20 @@ export async function createAndMintToTokenAccount(
   return tokenAccount
 }
 
+/**
+ * Get or Create an associated token account for the specified token mint and owner.
+ * Then, mint the specified amount of token into the created or retrieved associated token account.
+ *
+ * @param provider
+ * @param mint
+ * @param amount Amount to mint without decimals multipled. For example, 100 to mint 100 SOL.
+ * @param destinationWallet Receiver of the tokens. Defaults to the provider's wallet.
+ * @param payer Pays for transactions and rent. Defaults to the provider's wallet.
+ * @returns
+ */
 export async function createAndMintToAssociatedTokenAccount(
   provider: AnchorProvider,
-  mint: web3.PublicKey,
+  mint: Mint,
   amount: number | BN,
   destinationWallet?: web3.PublicKey,
   payer?: web3.PublicKey
@@ -179,10 +198,12 @@ export async function createAndMintToAssociatedTokenAccount(
     ? destinationWallet
     : provider.wallet.publicKey
   const payerKey = payer ? payer : provider.wallet.publicKey
+  const amountWithDecimals = new BN(amount).mul(new BN(10 ** mint.decimals))
 
   // Workaround For SOL - just create a wSOL account to satisfy the rest of the test building pipeline.
   // Tests who want to test with SOL will have to request their own airdrop.
-  if (mint.equals(NATIVE_MINT)) {
+  if (TokenUtil.isNativeMint(mint.address)) {
+    // mint.address === NATIVE_MINT
     const rentExemption =
       await provider.connection.getMinimumBalanceForRentExemption(
         AccountLayout.span,
@@ -195,11 +216,17 @@ export async function createAndMintToAssociatedTokenAccount(
     const { address: tokenAccount, ...ix } =
       TokenUtil.createWrappedNativeAccountInstruction(
         destinationWalletKey,
-        new BN(amount.toString()),
+        amountWithDecimals,
         rentExemption
       )
     txBuilder.addInstruction({ ...ix, cleanupInstructions: [] })
-    await txBuilder.buildAndExecute()
+
+    try {
+      await txBuilder.buildAndExecute()
+    } catch (err) {
+      // ignore error as the error is likely that the account already exists
+    }
+
     return tokenAccount
   }
 
@@ -212,7 +239,7 @@ export async function createAndMintToAssociatedTokenAccount(
 
   let tokenAccount = tokenAccounts.value
     .map((account) => {
-      if (account.account.data.parsed.info.mint === mint.toString()) {
+      if (account.account.data.parsed.info.mint === mint.address.toString()) {
         return account.pubkey
       }
     })
@@ -221,7 +248,7 @@ export async function createAndMintToAssociatedTokenAccount(
   if (!tokenAccount) {
     tokenAccount = await createAssociatedTokenAccount(
       provider,
-      mint,
+      mint.address,
       destinationWalletKey,
       payerKey
     )
@@ -229,9 +256,9 @@ export async function createAndMintToAssociatedTokenAccount(
 
   await mintToDestination(
     provider,
-    mint,
+    mint.address,
     tokenAccount!,
-    new BN(amount.toString())
+    amountWithDecimals
   )
   return tokenAccount!
 }
@@ -320,7 +347,7 @@ export async function burnToken(
 
 export async function createAndMintToManyATAs(
   provider: AnchorProvider,
-  mints: web3.PublicKey[],
+  mints: Mint[],
   amount: number | BN,
   funder?: web3.PublicKey
 ): Promise<web3.PublicKey[]> {
@@ -335,4 +362,27 @@ export async function createAndMintToManyATAs(
       )
     )
   )
+}
+
+type RequestAirdropOpts = {
+  amount?: number // in SOL
+  receiver?: web3.PublicKey
+}
+
+export async function requestAirdrop(
+  provider: AnchorProvider,
+  opts?: RequestAirdropOpts
+): Promise<void> {
+  const numSol = opts?.amount || 1_000
+  const receiver = opts?.receiver || provider.wallet.publicKey
+
+  const signature = await provider.connection.requestAirdrop(
+    receiver,
+    numSol * LAMPORTS_PER_SOL
+  )
+  const latestBlockhash = await provider.connection.getLatestBlockhash()
+  await provider.connection.confirmTransaction({
+    signature,
+    ...latestBlockhash,
+  })
 }
