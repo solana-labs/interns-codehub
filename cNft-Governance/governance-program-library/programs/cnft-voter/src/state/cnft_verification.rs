@@ -1,4 +1,4 @@
-use crate::error::CompressedNftVoterError;
+// use crate::error::CompressedNftVoterError;
 use anchor_lang::prelude::*;
 use mpl_bubblegum::hash_metadata;
 use mpl_bubblegum::state::leaf_schema::LeafSchema;
@@ -7,6 +7,7 @@ use mpl_bubblegum::state::metaplex_adapter::{
     Creator as MetaplexCreator,
     Collection as MetaplexCollection,
 };
+// use spl_account_compression::AccountCompressionError;
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
@@ -146,10 +147,6 @@ pub fn verify_compressed_nft<'info>(
         token_standard: Some(TokenStandard::NonFungible),
     };
     let data_hash = hash_metadata(&metadata).unwrap();
-    // require!(
-    //     data_hash == params.data_hash,
-    //     CompressedNftVoterError::TokenMetadataDoesNotMatch
-    // );
 
     let leaf = LeafSchema::new_v0(
         *asset_id,
@@ -164,12 +161,13 @@ pub fn verify_compressed_nft<'info>(
         merkle_tree: merkle_tree.clone(),
     }).with_remaining_accounts(proofs);
 
-    require!(
-        spl_account_compression::cpi
-            ::verify_leaf(cpi_ctx, params.root, leaf.to_node(), params.index)
-            .is_ok(),
-        CompressedNftVoterError::TokenMetadataDoesNotMatch
-    );
+    // require!(
+    //     spl_account_compression::cpi
+    //         ::verify_leaf(cpi_ctx, params.root, leaf.to_node(), params.index)
+    //         .is_ok(),
+    //     AccountCompressionError::ConcurrentMerkleTreeError
+    // );
+    spl_account_compression::cpi::verify_leaf(cpi_ctx, params.root, leaf.to_node(), params.index)?;
 
     Ok(())
 }

@@ -72,14 +72,14 @@ pub fn verify_compressed_nft_info<'info>(
         token_program_version: TokenProgramVersion::Original,
         token_standard: Some(TokenStandard::NonFungible),
     };
-    let data_hash = hash_metadata(&metadata).unwrap();
+    let incoming_data_hash = hash_metadata(&metadata).unwrap();
 
     let leaf = LeafSchema::new_v0(
         asset_id,
         leaf_owner.key(),
         leaf_delegate.key(),
         params.nonce,
-        data_hash,
+        incoming_data_hash,
         params.creator_hash
     );
 
