@@ -19,14 +19,14 @@ pub fn verify_compressed_nft_info<'info>(
     params: CompressedNftAsset
 ) -> Result<()> {
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
-    let merkle_tree = ctx.remaining_accounts[0].clone();
+    let tree_account = ctx.remaining_accounts[0].clone();
     let proofs = ctx.remaining_accounts[1..].to_vec();
     let compression_program = &ctx.accounts.compression_program.to_account_info();
     require!(leaf_owner.is_signer, BubblegumError::LeafAuthorityMustSign);
 
-    let asset_id = get_asset_id(&merkle_tree.key(), params.nonce);
+    let asset_id = get_asset_id(&tree_account.key(), params.nonce);
     verify_compressed_nft(
-        &merkle_tree,
+        &tree_account,
         &asset_id,
         &leaf_owner.key(),
         &params,

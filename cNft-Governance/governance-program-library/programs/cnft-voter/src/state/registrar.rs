@@ -81,14 +81,14 @@ pub fn resolve_governing_token_owner(
 pub fn resolve_cnft_vote_weight<'info>(
     registrar: &Registrar,
     governing_token_owner: &Pubkey,
-    merkle_tree: &AccountInfo<'info>,
+    tree_account: &AccountInfo<'info>,
     unique_asset_ids: &mut Vec<Pubkey>,
     leaf_owner: &AccountInfo<'info>,
     params: &CompressedNftAsset,
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>
 ) -> Result<(u64, Pubkey)> {
-    let asset_id = get_asset_id(&merkle_tree.key(), params.nonce);
+    let asset_id = get_asset_id(&tree_account.key(), params.nonce);
 
     require_eq!(
         *governing_token_owner,
@@ -103,7 +103,7 @@ pub fn resolve_cnft_vote_weight<'info>(
     require!(collection.verified, CompressedNftVoterError::CollectionMustBeVerified);
 
     verify_compressed_nft(
-        merkle_tree,
+        tree_account,
         &asset_id,
         &leaf_owner.key(),
         params,

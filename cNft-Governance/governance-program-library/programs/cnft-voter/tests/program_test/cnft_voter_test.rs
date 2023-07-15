@@ -454,8 +454,8 @@ impl CompressedNftVoterTest {
             data,
         };
 
-        let merkle_tree = leaf_cookie.tree_address;
-        verify_cnft_info_ix.accounts.push(AccountMeta::new_readonly(merkle_tree, false));
+        let tree_address = leaf_cookie.tree_address;
+        verify_cnft_info_ix.accounts.push(AccountMeta::new_readonly(tree_address, false));
         verify_cnft_info_ix.accounts.append(proofs);
 
         instruction_override(&mut verify_cnft_info_ix);

@@ -118,7 +118,7 @@ impl CompressedNftAsset {
 }
 
 pub fn verify_compressed_nft<'info>(
-    merkle_tree: &AccountInfo<'info>,
+    tree_account: &AccountInfo<'info>,
     asset_id: &Pubkey,
     leaf_owner: &Pubkey,
     params: &CompressedNftAsset,
@@ -149,7 +149,7 @@ pub fn verify_compressed_nft<'info>(
     );
 
     let cpi_ctx = CpiContext::new(compression_program.clone(), VerifyLeaf {
-        merkle_tree: merkle_tree.clone(),
+        merkle_tree: tree_account.clone(),
     }).with_remaining_accounts(proofs);
 
     // require!(

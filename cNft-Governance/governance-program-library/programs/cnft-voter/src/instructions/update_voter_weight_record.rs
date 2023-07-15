@@ -52,12 +52,12 @@ pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
         let proof_len = param.proof_len;
         let cnft_info = &remaining_accounts[start..start + (proof_len as usize) + 1];
 
-        let merkle_tree = cnft_info[0].clone();
+        let tree_account = cnft_info[0].clone();
         let proofs = cnft_info[1..].to_vec();
         let cnft_vote_weight = resolve_cnft_vote_weight(
             &registrar,
             &governing_token_owner,
-            &merkle_tree,
+            &tree_account,
             &mut unique_asset_ids,
             &leaf_owner,
             param,
