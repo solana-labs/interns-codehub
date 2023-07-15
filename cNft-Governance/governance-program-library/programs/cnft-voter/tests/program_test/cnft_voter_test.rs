@@ -4,7 +4,7 @@ use crate::program_test::governance_test::{
     RealmCookie,
     TokenOwnerRecordCookie,
 };
-use crate::program_test::merkle_tree_test::{ LeafArgs, MerkleTreeCookie, MerkleTreeTest };
+use crate::program_test::merkle_tree_test::{ LeafArgs, MerkleTreeTest };
 use crate::program_test::program_test_bench::ProgramTestBench;
 use crate::program_test::program_test_bench::WalletCookie;
 use crate::program_test::token_metadata_test::{ NftCollectionCookie, TokenMetadataTest };
@@ -409,14 +409,12 @@ impl CompressedNftVoterTest {
     pub async fn with_cnft_verification(
         &mut self,
         voter_cookie: &WalletCookie,
-        merkle_tree_cookie: &mut MerkleTreeCookie,
         leaf_cookie: &LeafArgs,
         leaf_verification_cookie: &LeafVerificationCookie,
         proofs: &Vec<AccountMeta>
     ) -> Result<(), BanksClientError> {
         self.with_cnft_verification_using_ix(
             voter_cookie,
-            merkle_tree_cookie,
             leaf_cookie,
             leaf_verification_cookie,
             &proofs,
@@ -429,7 +427,6 @@ impl CompressedNftVoterTest {
     pub async fn with_cnft_verification_using_ix<F: Fn(&mut Instruction)>(
         &mut self,
         voter_cookie: &WalletCookie,
-        tree_cookie: &mut MerkleTreeCookie,
         leaf_cookie: &LeafArgs,
         leaf_verification_cookie: &LeafVerificationCookie,
         proofs: &Vec<AccountMeta>,
@@ -440,14 +437,9 @@ impl CompressedNftVoterTest {
         let proofs = &mut proofs.clone();
 
         let accounts = gpl_cnft_voter::accounts::VerifyCompressedNftInfo {
-            // tree_authority: *tree_authority,
             leaf_owner: leaf_cookie.owner.pubkey(),
-            leaf_delegate: leaf_cookie.delegate.pubkey(),
-            merkle_tree: tree_cookie.address,
-            // payer: self.bench.payer.pubkey(),
             payer: leaf_cookie.owner.pubkey(),
             compression_program: spl_account_compression::id(),
-            system_program: solana_sdk::system_program::id(),
         };
 
         let data = anchor_lang::InstructionData::data(
@@ -462,6 +454,8 @@ impl CompressedNftVoterTest {
             data,
         };
 
+        let merkle_tree = leaf_cookie.tree_address;
+        verify_cnft_info_ix.accounts.push(AccountMeta::new_readonly(merkle_tree, false));
         verify_cnft_info_ix.accounts.append(proofs);
 
         instruction_override(&mut verify_cnft_info_ix);
@@ -482,7 +476,6 @@ impl CompressedNftVoterTest {
         max_voter_weight_record_cookie: &MaxVoterWeightRecordCookie,
         proposal_cookie: &ProposalCookie,
         voter_cookie: &WalletCookie,
-        tree_cookie: &MerkleTreeCookie,
         leaf_cookies: &[&LeafArgs],
         leaf_verification_cookies: &[&LeafVerificationCookie],
         asset_ids: &[&Pubkey],
@@ -507,9 +500,7 @@ impl CompressedNftVoterTest {
             voter_weight_record: voter_weight_record_cookie.address,
             voter_token_owner_record: voter_token_owner_record_cookie.address,
             voter_authority: voter_cookie.address,
-            merkle_tree: tree_cookie.address,
             leaf_owner: leaf_cookies[0].owner.pubkey(),
-            leaf_delegate: leaf_cookies[0].delegate.pubkey(),
             payer: self.bench.payer.pubkey(),
             compression_program: spl_account_compression::id(),
             system_program: solana_sdk::system_program::id(),
@@ -529,6 +520,9 @@ impl CompressedNftVoterTest {
             );
             let cnft_vote_record_info = AccountMeta::new(cnft_voter_record_key, false);
             let proof = &mut proofs[i].clone();
+            let tree_account = AccountMeta::new_readonly(leaf_cookies[i].tree_address, false);
+
+            cast_cnft_vote_ix.accounts.push(tree_account);
             cast_cnft_vote_ix.accounts.append(proof);
             cast_cnft_vote_ix.accounts.push(cnft_vote_record_info);
 
@@ -585,7 +579,6 @@ impl CompressedNftVoterTest {
         registrar_cookie: &RegistrarCookie,
         voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_weight_action: VoterWeightAction,
-        tree_cookie: &MerkleTreeCookie,
         leaf_cookies: &[&LeafArgs],
         leaf_verification_cookies: &[&LeafVerificationCookie],
         proofs: &[&Vec<AccountMeta>]
@@ -605,10 +598,7 @@ impl CompressedNftVoterTest {
         let accounts = gpl_cnft_voter::accounts::UpdateVoterWeightRecord {
             registrar: registrar_cookie.address,
             voter_weight_record: voter_weight_record_cookie.address,
-            // collection_mint: nft_collection_cookie.mint,
-            merkle_tree: tree_cookie.address,
             leaf_owner: leaf_cookies[0].owner.pubkey(),
-            leaf_delegate: leaf_cookies[0].delegate.pubkey(),
             compression_program: spl_account_compression::id(),
         };
 
@@ -620,6 +610,9 @@ impl CompressedNftVoterTest {
 
         for i in 0..leaf_verification_cookies.len() {
             let proof = &mut proofs[i].clone();
+            let tree_account = AccountMeta::new_readonly(leaf_cookies[i].tree_address, false);
+
+            update_voter_weight_record_ix.accounts.push(tree_account);
             update_voter_weight_record_ix.accounts.append(proof);
         }
 
