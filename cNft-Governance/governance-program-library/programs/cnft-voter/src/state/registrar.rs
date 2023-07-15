@@ -1,9 +1,4 @@
-use crate::{
-    error::CompressedNftVoterError,
-    id,
-    state::*,
-    utils::constant::DISCRIMINATOR_SIZE,
-};
+use crate::{ error::CompressedNftVoterError, id, state::*, utils::constant::DISCRIMINATOR_SIZE };
 use anchor_lang::prelude::*;
 use mpl_bubblegum::utils::get_asset_id;
 use solana_program::pubkey::PUBKEY_BYTES;
@@ -33,11 +28,11 @@ pub struct Registrar {
 
 impl Registrar {
     pub fn get_space(max_collections: u8) -> usize {
-        DISCRIMINATOR_SIZE
-            + PUBKEY_BYTES * 3
-            + 4
-            + (max_collections as usize) * (PUBKEY_BYTES + 4 + 8 + 8)
-            + 128
+        DISCRIMINATOR_SIZE +
+            PUBKEY_BYTES * 3 +
+            4 +
+            (max_collections as usize) * (PUBKEY_BYTES + 4 + 8 + 8) +
+            128
         // discriminator di + (3 pubkeys) + 4 bytes(Vec)) + max_collections * (pubkey + 4 bytes + 8 bytes + 8 bytes) + reserved
     }
 
@@ -54,23 +49,22 @@ impl Registrar {
 pub fn get_registrar_address(realm: &Pubkey, governing_token_mint: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[b"registrar", realm.as_ref(), governing_token_mint.as_ref()],
-        &id(),
-    )
-    .0
+        &id()
+    ).0
 }
 
 pub fn resolve_governing_token_owner(
     registrar: &Registrar,
     voter_token_owner_record_info: &AccountInfo,
     voter_authority_info: &AccountInfo,
-    voter_weight_record: &VoterWeightRecord,
+    voter_weight_record: &VoterWeightRecord
 ) -> Result<Pubkey> {
     let voter_token_owner_record =
         token_owner_record::get_token_owner_record_data_for_realm_and_governing_mint(
             &registrar.governance_program_id,
             voter_token_owner_record_info,
             &registrar.realm,
-            &registrar.governing_token_mint,
+            &registrar.governing_token_mint
         )?;
 
     voter_token_owner_record.assert_token_owner_or_delegate_is_signer(voter_authority_info)?;
@@ -78,7 +72,7 @@ pub fn resolve_governing_token_owner(
     require_eq!(
         voter_token_owner_record.governing_token_owner,
         voter_weight_record.governing_token_owner,
-        CompressedNftVoterError::InvalidTokenOwnerForVoterWeightRecord,
+        CompressedNftVoterError::InvalidTokenOwnerForVoterWeightRecord
     );
 
     Ok(voter_token_owner_record.governing_token_owner)
@@ -93,7 +87,7 @@ pub fn resolve_cnft_vote_weight<'info>(
     leaf_delegate: &AccountInfo<'info>,
     params: &CompressedNftAsset,
     proofs: Vec<AccountInfo<'info>>,
-    compression_program: &AccountInfo<'info>,
+    compression_program: &AccountInfo<'info>
 ) -> Result<(u64, Pubkey)> {
     let asset_id = get_asset_id(&merkle_tree.key(), params.nonce);
 
@@ -103,25 +97,21 @@ pub fn resolve_cnft_vote_weight<'info>(
         CompressedNftVoterError::VoterDoesNotOwnNft
     );
 
-    let collection = params
-        .metadata
-        .collection
+    let collection = params.collection
         .as_ref()
         .ok_or(CompressedNftVoterError::MissingMetadataCollection)?;
 
-    require!(
-        collection.verified,
-        CompressedNftVoterError::CollectionMustBeVerified
-    );
+    require!(collection.verified, CompressedNftVoterError::CollectionMustBeVerified);
 
     verify_compressed_nft(
+        collection,
         merkle_tree,
         leaf_owner,
         leaf_delegate,
         &asset_id,
         params,
         proofs,
-        compression_program,
+        compression_program
     )?;
 
     if unique_asset_ids.contains(&asset_id) {
@@ -135,7 +125,6 @@ pub fn resolve_cnft_vote_weight<'info>(
 
 #[cfg(test)]
 mod test {
-
     use super::*;
 
     #[test]
@@ -150,7 +139,7 @@ mod test {
             collection_configs: vec![
                 CollectionConfig::default(),
                 CollectionConfig::default(),
-                CollectionConfig::default(),
+                CollectionConfig::default()
             ],
             reserved: [0; 128],
         };

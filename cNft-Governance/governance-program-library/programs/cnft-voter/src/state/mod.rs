@@ -16,7 +16,5 @@ pub mod cnft_vote_record;
 pub use cnft_verification::*;
 pub mod cnft_verification;
 
-pub use metaplex_adapter::*;
-pub mod metaplex_adapter;
 
 pub mod idl_types;

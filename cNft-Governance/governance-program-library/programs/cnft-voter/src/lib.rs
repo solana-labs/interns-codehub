@@ -6,15 +6,13 @@ use instructions::*;
 pub mod state;
 pub mod utils;
 use crate::state::*;
-pub use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 
 declare_id!("GcNftjiDYoAZpMRAQrYx51GJp7tEhSgMKqSfR4zeoCFV");
 
 #[program]
 pub mod cnft_voter {
     use super::*; //use to bring the CPI struct into the scope of the program
-    use crate::state::{VoterWeightAction, CompressedNftAsset};
-    // use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
+    use crate::state::{ VoterWeightAction, CompressedNftAsset };
 
     pub fn create_registrar(ctx: Context<CreateRegistrar>, max_collections: u8) -> Result<()> {
         log_version();
@@ -23,7 +21,7 @@ pub mod cnft_voter {
 
     pub fn create_voter_weight_record(
         ctx: Context<CreateVoterWeightRecord>,
-        governing_token_owner: Pubkey,
+        governing_token_owner: Pubkey
     ) -> Result<()> {
         log_version();
         instructions::create_voter_weight_record(ctx, governing_token_owner)
@@ -38,7 +36,7 @@ pub mod cnft_voter {
         ctx: Context<'a, 'b, 'c, 'info, UpdateVoterWeightRecord<'info>>,
         voter_weight_action: VoterWeightAction,
         // cnft_info_len: u32,
-        params: Vec<CompressedNftAsset>,
+        params: Vec<CompressedNftAsset>
     ) -> Result<()> {
         log_version();
         instructions::update_voter_weight_record(ctx, voter_weight_action, params)
@@ -47,7 +45,7 @@ pub mod cnft_voter {
     pub fn configure_collection(
         ctx: Context<ConfigureCollection>,
         weight: u64,
-        size: u32,
+        size: u32
     ) -> Result<()> {
         log_version();
         instructions::configure_collection(ctx, weight, size)
@@ -57,7 +55,7 @@ pub mod cnft_voter {
         ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
         proposal: Pubkey,
         // cnft_info_len: u32,
-        params: Vec<CompressedNftAsset>,
+        params: Vec<CompressedNftAsset>
     ) -> Result<()> {
         log_version();
         instructions::cast_compressed_nft_vote(ctx, proposal, params)
@@ -65,7 +63,7 @@ pub mod cnft_voter {
 
     pub fn verify_compressed_nft_info<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, VerifyCompressedNftInfo<'info>>,
-        params: CompressedNftAsset,
+        params: CompressedNftAsset
     ) -> Result<()> {
         log_version();
         instructions::verify_compressed_nft_info(ctx, params)
