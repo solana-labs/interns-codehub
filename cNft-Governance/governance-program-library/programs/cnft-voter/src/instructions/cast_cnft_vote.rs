@@ -25,9 +25,6 @@ pub struct CastCompressedNftVote<'info> {
     voter_token_owner_record: UncheckedAccount<'info>,
     /// CHECK: This account is checked in the instruction
     pub leaf_owner: UncheckedAccount<'info>,
-    /// CHECK: This account is checked in the instruction
-    pub leaf_delegate: UncheckedAccount<'info>,
-
     pub voter_authority: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
