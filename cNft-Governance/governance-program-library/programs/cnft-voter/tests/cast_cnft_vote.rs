@@ -3,8 +3,8 @@ use program_test::cnft_voter_test::*;
 use solana_program_test::*;
 use solana_sdk::transport::TransportError;
 use spl_governance::error::GovernanceError;
-
-use crate::program_test::tools::{ assert_cnft_voter_err, assert_gov_err };
+use spl_account_compression::error::AccountCompressionError;
+use crate::program_test::tools::{ assert_cnft_voter_err, assert_gov_err, assert_compression_err };
 mod program_test;
 
 #[tokio::test]
@@ -649,7 +649,7 @@ async fn test_cast_cnft_vote_with_invalid_metadata_error() -> Result<(), Transpo
         .err()
         .unwrap();
 
-    // assert_cnft_voter_err(err, CompressedNftVoterError::TokenMetadataDoesNotMatch);
+    assert_compression_err(err, AccountCompressionError::ConcurrentMerkleTreeError);
     Ok(())
 }
 

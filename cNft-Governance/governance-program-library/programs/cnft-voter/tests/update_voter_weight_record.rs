@@ -475,7 +475,7 @@ async fn test_update_voter_weight_with_invalid_metadata_error() -> Result<(), Tr
         .unwrap();
 
     // dont know why returning my error
-    // assert_compression_err(err, AccountCompressionError::ConcurrentMerkleTreeError as u32);
+    assert_compression_err(err, AccountCompressionError::ConcurrentMerkleTreeError);
     Ok(())
 }
 
