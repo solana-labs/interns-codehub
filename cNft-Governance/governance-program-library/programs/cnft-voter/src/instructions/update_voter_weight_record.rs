@@ -30,6 +30,7 @@ pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
     let governing_token_owner = &voter_weight_record.governing_token_owner;
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
+    let compression_program = &ctx.accounts.compression_program.to_account_info();
 
     match voter_weight_action {
         // voter_weight for CastVote action can't be evaluated using this instruction
@@ -61,7 +62,7 @@ pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
             &leaf_owner,
             param,
             proofs,
-            &ctx.accounts.compression_program.to_account_info()
+            compression_program
         )?.0;
         // unwrap() is a method that can be called on Option or Result types.
         // When called on an Option<T>, it will return the value inside if it's Some(T). If it's None, it will panic and crash the program.

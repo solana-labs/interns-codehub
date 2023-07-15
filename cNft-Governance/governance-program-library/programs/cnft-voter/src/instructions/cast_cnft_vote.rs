@@ -33,7 +33,6 @@ pub struct CastCompressedNftVote<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// so far only one nft is supported
 pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
@@ -43,6 +42,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
+    let compression_program = &ctx.accounts.compression_program.to_account_info();
     let rent = Rent::get()?;
     let mut voter_weight = 0u64;
     let mut unique_asset_ids: Vec<Pubkey> = vec![];
@@ -61,7 +61,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         let cnft_info = &remaining_accounts[start..start + (proof_len as usize) + 2];
 
         let merkle_tree = cnft_info[0].clone();
-        let proofs = cnft_info[1..proof_len as usize].to_vec();
+        let proofs = cnft_info[1..(proof_len as usize) + 1].to_vec();
         let cnft_vote_record_info = cnft_info.last().unwrap().clone();
         let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight(
             &registrar,
@@ -71,7 +71,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
             &leaf_owner,
             param,
             proofs,
-            &ctx.accounts.compression_program.to_account_info()
+            compression_program
         )?;
 
         voter_weight = voter_weight.checked_add(cnft_vote_weight as u64).unwrap();

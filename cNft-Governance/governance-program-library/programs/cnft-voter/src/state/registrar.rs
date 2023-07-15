@@ -104,8 +104,8 @@ pub fn resolve_cnft_vote_weight<'info>(
 
     verify_compressed_nft(
         merkle_tree,
-        &leaf_owner.key(),
         &asset_id,
+        &leaf_owner.key(),
         params,
         proofs,
         compression_program
