@@ -111,13 +111,11 @@ async fn test_leaf_verification() -> Result<(), TransportError> {
 
     assert!(leaf_cookie.asset_id == asset_id);
     assert!(leaf_verification_cookie.root != [0u8; 32]);
-    assert!(leaf_verification_cookie.creator_hash != [0u8; 32]);
     assert!(leaf_verification_cookie.index == leaf_cookie.index);
     assert!(proofs.len() == max_depth - (tree_cookie.canopy_depth as usize));
 
     cnft_voter_test.with_cnft_verification(
         &voter_cookie,
-        &mut tree_cookie,
         &leaf_cookie,
         &leaf_verification_cookie,
         &proofs

@@ -1,5 +1,5 @@
 use crate::error::CompressedNftVoterError;
-use crate::{id, state::*};
+use crate::{ id, state::* };
 use anchor_lang::prelude::*;
 use anchor_lang::Accounts;
 use spl_account_compression::program::SplAccountCompression;
@@ -21,18 +21,10 @@ pub struct CastCompressedNftVote<'info> {
 
     // owner should be crate::id()
     /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
-    #[account(
-        owner = registrar.governance_program_id
-     )]
+    #[account(owner = registrar.governance_program_id)]
     voter_token_owner_record: UncheckedAccount<'info>,
-
-    /// CHECK: unsafe
-    pub merkle_tree: UncheckedAccount<'info>,
     /// CHECK: This account is checked in the instruction
     pub leaf_owner: UncheckedAccount<'info>,
-    /// CHECK: This account is checked in the instruction
-    pub leaf_delegate: UncheckedAccount<'info>,
-
     pub voter_authority: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -41,18 +33,16 @@ pub struct CastCompressedNftVote<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// so far only one nft is supported
 pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
     proposal: Pubkey,
-    params: Vec<CompressedNftAsset>,
+    params: Vec<CompressedNftAsset>
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
-    let merkle_tree = &ctx.accounts.merkle_tree.to_account_info();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
-    let leaf_delegate = &ctx.accounts.leaf_delegate.to_account_info();
     let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
+    let compression_program = &ctx.accounts.compression_program.to_account_info();
     let rent = Rent::get()?;
     let mut voter_weight = 0u64;
     let mut unique_asset_ids: Vec<Pubkey> = vec![];
@@ -61,27 +51,27 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         registrar,
         &ctx.accounts.voter_token_owner_record,
         &ctx.accounts.voter_authority,
-        voter_weight_record,
+        voter_weight_record
     )?;
 
     let mut start: usize = 0;
     for i in 0..params.len() {
         let param = &params[i];
         let proof_len = param.proof_len;
-        let cnft_info =
-            &remaining_accounts[start..(start + proof_len as usize + 1)];
-        let proofs = cnft_info[0..proof_len as usize].to_vec();
-        let cnft_vote_record_info = cnft_info[proof_len as usize].clone();
+        let cnft_info = &remaining_accounts[start..start + (proof_len as usize) + 2];
+
+        let tree_account = cnft_info[0].clone();
+        let proofs = cnft_info[1..(proof_len as usize) + 1].to_vec();
+        let cnft_vote_record_info = cnft_info.last().unwrap().clone();
         let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight(
             &registrar,
             &governing_token_owner,
-            &merkle_tree,
+            &tree_account,
             &mut unique_asset_ids,
             &leaf_owner,
-            &leaf_delegate,
             param,
             proofs,
-            &ctx.accounts.compression_program.to_account_info(),
+            compression_program
         )?;
 
         voter_weight = voter_weight.checked_add(cnft_vote_weight as u64).unwrap();
@@ -92,10 +82,7 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
             governing_token_owner,
             reserved: [0; 8],
         };
-        require!(
-            cnft_vote_record_info.data_is_empty(),
-            CompressedNftVoterError::NftAlreadyVoted
-        );
+        require!(cnft_vote_record_info.data_is_empty(), CompressedNftVoterError::NftAlreadyVoted);
         create_and_serialize_account_signed(
             &ctx.accounts.payer.to_account_info(),
             &cnft_vote_record_info,
@@ -104,18 +91,18 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
             &id(),
             &ctx.accounts.system_program.to_account_info(),
             &rent,
-            0,
+            0
         )?;
-        
-        start += proof_len as usize + 1;
+
+        start += (proof_len as usize) + 2;
     }
 
-    if voter_weight_record.weight_action_target == Some(proposal)
-        && voter_weight_record.weight_action == Some(VoterWeightAction::CastVote)
+    if
+        voter_weight_record.weight_action_target == Some(proposal) &&
+        voter_weight_record.weight_action == Some(VoterWeightAction::CastVote)
     {
         // add up if there are more than one nft
-        voter_weight_record.voter_weight = voter_weight_record
-            .voter_weight
+        voter_weight_record.voter_weight = voter_weight_record.voter_weight
             .checked_add(voter_weight)
             .unwrap();
     } else {

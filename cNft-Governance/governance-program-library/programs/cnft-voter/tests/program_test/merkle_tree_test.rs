@@ -8,7 +8,6 @@ use gpl_cnft_voter::state::CompressedNftAsset as LeafVerificationCookie;
 use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 use mpl_bubblegum::state::TreeConfig;
 use mpl_bubblegum::utils::get_asset_id;
-use mpl_bubblegum::hash_creators;
 use solana_program::instruction::{ AccountMeta, Instruction };
 use solana_program::{ msg, system_instruction, system_program };
 use solana_program_test::ProgramTest;
@@ -251,12 +250,13 @@ impl MerkleTreeTest {
         max_buffer_size: usize
     ) -> Result<(LeafVerificationCookie, Vec<AccountMeta>, Pubkey), TransportError> {
         let root = self.decode_root(&tree_cookie.address, max_depth, max_buffer_size).await?;
-        let creator_hash = hash_creators(&args.metadata.creators.as_slice()).unwrap();
         let asset_id = get_asset_id(&tree_cookie.address, args.nonce);
+
         // let max_num = 1 << max_depth - 1;
         let nodes: Vec<Node> = tree_cookie.proof_tree.get_proof_of_leaf(
             usize::try_from(args.index).unwrap()
         );
+
         let mut proofs: Vec<AccountMeta> = nodes
             .into_iter()
             .map(|node| AccountMeta::new_readonly(Pubkey::new_from_array(node), false))
@@ -282,7 +282,7 @@ impl MerkleTreeTest {
                 edition_nonce: args.metadata.edition_nonce,
                 creators,
                 root,
-                creator_hash,
+                leaf_delegate: args.delegate.pubkey(),
                 nonce: args.nonce,
                 index: args.index,
                 proof_len: proofs.len() as u8,
@@ -295,6 +295,7 @@ impl MerkleTreeTest {
 
 #[derive(Debug)]
 pub struct LeafArgs {
+    pub tree_address: Pubkey,
     pub asset_id: Pubkey,
     pub owner: Keypair,
     pub delegate: Keypair,
@@ -306,6 +307,7 @@ pub struct LeafArgs {
 impl Clone for LeafArgs {
     fn clone(&self) -> Self {
         LeafArgs {
+            tree_address: self.tree_address.clone(),
             asset_id: self.asset_id.clone(),
             owner: clone_keypair(&self.owner),
             delegate: clone_keypair(&self.delegate),
@@ -320,6 +322,7 @@ impl LeafArgs {
     // Creates a new object with some default values.
     pub fn new(owner: &Keypair, tree_address: &Pubkey, metadata: MetadataArgs) -> Self {
         LeafArgs {
+            tree_address: tree_address.clone(),
             asset_id: get_asset_id(tree_address, 0),
             owner: clone_keypair(owner),
             delegate: clone_keypair(owner),

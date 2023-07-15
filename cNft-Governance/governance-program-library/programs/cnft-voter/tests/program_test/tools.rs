@@ -107,7 +107,9 @@ pub fn assert_compression_err(
     match tx_error {
         TransactionError::InstructionError(_, instruction_error) =>
             match instruction_error {
-                InstructionError::Custom(e) => { assert_eq!(e, account_compression_error as u32) }
+                InstructionError::Custom(e) => {
+                    assert_eq!(e, (account_compression_error as u32) + 6000)
+                }
                 _ => panic!("{:?} Is not InstructionError::Custom()", instruction_error),
             }
         _ => panic!("{:?} Is not InstructionError", tx_error),
