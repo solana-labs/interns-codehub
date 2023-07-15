@@ -26,7 +26,7 @@ impl Default for Collection {
 }
 
 impl Collection {
-    pub fn adapt(&self) -> MetaplexCollection {
+    pub fn to_bubblegum(&self) -> MetaplexCollection {
         MetaplexCollection {
             verified: self.verified,
             key: self.key,
@@ -59,7 +59,7 @@ impl Default for Creator {
 }
 
 impl Creator {
-    pub fn adapt(&self) -> MetaplexCreator {
+    pub fn to_bubblegum(&self) -> MetaplexCreator {
         MetaplexCreator {
             address: self.address,
             verified: self.verified,
@@ -98,7 +98,7 @@ impl CompressedNftAsset {
     pub fn to_metadata_args(&self) -> MetadataArgs {
         let mut creators = vec![];
         for creator in self.creators.clone().iter() {
-            creators.push(creator.adapt());
+            creators.push(creator.to_bubblegum());
         }
         MetadataArgs {
             name: self.name.clone(),
@@ -109,7 +109,7 @@ impl CompressedNftAsset {
             primary_sale_happened: self.primary_sale_happened,
             is_mutable: self.is_mutable,
             edition_nonce: self.edition_nonce,
-            collection: Some(self.collection.clone().unwrap_or_default().adapt()),
+            collection: Some(self.collection.clone().unwrap_or_default().to_bubblegum()),
             uses: None,
             token_program_version: TokenProgramVersion::Original,
             token_standard: Some(TokenStandard::NonFungible),
@@ -129,7 +129,7 @@ pub fn verify_compressed_nft<'info>(
 ) -> Result<()> {
     let mut creators = vec![];
     for creator in params.creators.clone().iter() {
-        creators.push(creator.adapt());
+        creators.push(creator.to_bubblegum());
     }
 
     let metadata = MetadataArgs {
@@ -141,7 +141,7 @@ pub fn verify_compressed_nft<'info>(
         primary_sale_happened: params.primary_sale_happened,
         is_mutable: params.is_mutable,
         edition_nonce: params.edition_nonce,
-        collection: Some(collection.adapt()),
+        collection: Some(collection.to_bubblegum()),
         uses: None,
         token_program_version: TokenProgramVersion::Original,
         token_standard: Some(TokenStandard::NonFungible),

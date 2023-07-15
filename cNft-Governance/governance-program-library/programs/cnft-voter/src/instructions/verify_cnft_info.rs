@@ -9,10 +9,6 @@ use mpl_bubblegum::utils::get_asset_id;
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 use spl_account_compression::program::SplAccountCompression;
 use mpl_bubblegum::state::metaplex_adapter::{ MetadataArgs, TokenProgramVersion, TokenStandard };
-use mpl_bubblegum::state::metaplex_adapter::{
-    Creator as MetaplexCreator,
-    Collection as MetaplexCollection,
-};
 
 #[derive(Accounts)]
 #[instruction(params: CompressedNftAsset)]
@@ -45,11 +41,7 @@ pub fn verify_compressed_nft_info<'info>(
 
     let mut creators = vec![];
     for creator in params.creators.clone().iter() {
-        creators.push(MetaplexCreator {
-            address: creator.address.clone(),
-            verified: creator.verified,
-            share: creator.share,
-        });
+        creators.push(creator.to_bubblegum());
     }
 
     let collection = params.collection
@@ -64,10 +56,7 @@ pub fn verify_compressed_nft_info<'info>(
         primary_sale_happened: params.primary_sale_happened,
         is_mutable: params.is_mutable,
         edition_nonce: params.edition_nonce,
-        collection: Some(MetaplexCollection {
-            verified: collection.verified,
-            key: collection.key,
-        }),
+        collection: Some(collection.to_bubblegum()),
         uses: None,
         token_program_version: TokenProgramVersion::Original,
         token_standard: Some(TokenStandard::NonFungible),
