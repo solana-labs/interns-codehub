@@ -48,21 +48,22 @@ dotenv.config();
       ?.filter(
         (asset) =>
           asset.compression.compressed &&
-          asset.content.json_uri ===
-            "https://supersweetcollection.notarealurl/token.json"
+          asset.content.json_uri !==
+            "https://supersweetcollection.notarealurl/token.json" &&
+          asset.grouping[0].group_value === collectionMint.toBase58()
       )
       ?.map((asset) => {
         // display some info about the asset
-        console.log("assetId:", asset.id);
-        console.log("treeAddress", asset.compression.tree);
-        console.log("====================");
+        // console.log("assetId:", asset.id);
+        // console.log("treeAddress", asset.compression.tree);
+        // console.log("====================");
         // console.log("ownership:", asset.ownership);
         // console.log("compression:", asset.compression);
         // console.log("collection:", asset.grouping[0].group_value);
-        // console.log(asset);
-        getAssetProof(connection, new PublicKey(asset.id)).then((res) => {
-          console.log(res);
-        });
+        console.log(asset);
+        // getAssetProof(connection, new PublicKey(asset.id)).then((res) => {
+        // console.log(res);
+        // });
       });
   });
 
