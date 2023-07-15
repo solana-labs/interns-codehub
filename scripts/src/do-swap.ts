@@ -1,42 +1,31 @@
 import { Percentage } from '@orca-so/common-sdk'
 import { PriceMath } from '@orca-so/whirlpools-sdk'
 import { PublicKey } from '@solana/web3.js'
+import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from '@solana/spl-token'
 import BN from 'bn.js'
 import Decimal from 'decimal.js'
 
-import {
-  consoleLogFull,
-  getAccountData,
-  getTokenBalance,
-  truncatedAddress,
-} from './utils'
+import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
 import { ParsableGlobalpool, ParsableTickArray } from './types/parsing'
 import { getPostPoolInitParams } from './params'
-import { TickArrayData } from './types/accounts'
 import { TICK_ARRAY_SIZE } from './constants'
 import { getTickArrayKeysForSwap } from './utils/tick-arrays'
 import { swapQuoteByInputToken } from './utils/swap'
-
-type TickArrayInfo = {
-  tickArrayKey: PublicKey
-  startTickIndex: number
-  startPrice: Decimal
-  endPrice: Decimal
-  isCurrent: boolean
-  data: TickArrayData | null
-}
+import { createTransactionChained } from './utils/txix'
+import { createAssociatedTokenAccount } from './utils/token'
 
 async function main() {
   const {
     provider,
+    program,
     programId,
     connection,
-    feeRate,
     tickSpacing,
     tokenMintA: mintA,
     tokenMintB: mintB,
     cladKey,
     globalpoolKey,
+    keypair,
   } = await getPostPoolInitParams()
 
   console.log(`Clad: ${cladKey.toBase58()}`)
@@ -55,12 +44,30 @@ async function main() {
     throw new Error('globalpool not found')
   }
 
+  const { tokenVaultA, tokenVaultB } = globalpoolInfo
+
   const tokenMintAKey = mintA.address
   const tokenMintBKey = mintB.address
   const swapInputMint = swapA2B ? mintA : mintB
 
   console.log(`Token A: ${mintA.address.toBase58()}`)
   console.log(`Token B: ${mintB.address.toBase58()}`)
+
+  const tokenAuthority = provider.wallet.publicKey
+
+  const authorityTokenAccountA = await getOrCreateAssociatedTokenAccount(
+    connection,
+    keypair,
+    tokenMintAKey,
+    tokenAuthority
+  )
+  
+  const authorityTokenAccountB = await getOrCreateAssociatedTokenAccount(
+    connection,
+    keypair,
+    tokenMintBKey,
+    tokenAuthority
+  )
 
   const tickArrayKeys = getTickArrayKeysForSwap(
     globalpoolInfo.tickCurrentIndex,
@@ -133,6 +140,73 @@ async function main() {
   )
 
   console.log(quote)
+
+  const tokenVaultABefore = new BN(
+    await getTokenBalance(provider, authorityTokenAccountA.address)
+  )
+  const tokenVaultBBefore = new BN(
+    await getTokenBalance(provider, authorityTokenAccountB.address)
+  )
+
+  console.log(
+    'token Vault A before: ',
+    tokenVaultABefore.div(new BN(10 ** 6)).toString()
+  )
+  console.log(
+    'token Vault B before: ',
+    tokenVaultBBefore.div(new BN(10 ** 6)).toString()
+  )
+
+  const swapAccounts = {
+    tokenAuthority,
+    globalpool: globalpoolKey,
+    tokenOwnerAccountA: authorityTokenAccountA.address,
+    tokenOwnerAccountB: authorityTokenAccountB.address,
+    tokenVaultA,
+    tokenVaultB,
+    tickArray0: tickArrayKeys[0],
+    tickArray1: tickArrayKeys[1],
+    tickArray2: tickArrayKeys[2],
+    // sys
+    tokenProgram: TOKEN_PROGRAM_ID,
+  }
+
+  const swapParams = {
+    amount: quote.amount,
+    otherAmountThreshold: quote.otherAmountThreshold,
+    sqrtPriceLimit: quote.sqrtPriceLimit,
+    amountSpecifiedIsInput: quote.amountSpecifiedIsInput,
+    aToB: quote.aToB,
+  }
+
+  const txId = await createTransactionChained(
+    provider.connection,
+    provider.wallet,
+    [
+      program.instruction.swap(swapParams, {
+        accounts: swapAccounts,
+      }),
+    ],
+    []
+  ).buildAndExecute()
+
+  console.log(txId)
+
+  const tokenVaultAAfter = new BN(
+    await getTokenBalance(provider, authorityTokenAccountA.address)
+  )
+  const tokenVaultBAfter = new BN(
+    await getTokenBalance(provider, authorityTokenAccountB.address)
+  )
+
+  console.log(
+    'token Vault A after: ',
+    tokenVaultAAfter.div(new BN(10 ** 6)).toString()
+  )
+  console.log(
+    'token Vault B after: ',
+    tokenVaultBAfter.div(new BN(10 ** 6)).toString()
+  )
 }
 
 main().catch((err) => {

@@ -3,9 +3,12 @@ import { MathUtil, Percentage, TransactionBuilder } from '@orca-so/common-sdk'
 import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import { getMint } from '@solana/spl-token'
 import { Connection, Keypair, PublicKey } from '@solana/web3.js'
+import * as fs from 'fs'
 
 import { Clad } from '@/target/types/clad'
 import { tokenMintSOL, tokenMintUSDC } from './constants'
+
+const fsp = fs.promises
 
 export function getPDA(
   seeds: (Buffer | Uint8Array)[],
@@ -19,6 +22,10 @@ export async function getConstantParams() {
     commitment: 'confirmed',
     preflightCommitment: 'confirmed',
   })
+
+  // TODO: use dummy keypair as signer & wallet (NodeWallet)
+  //       need to modify all provider.wallet and transactionbuilder instances
+
   const { connection, wallet } = provider
 
   const program = anchor.workspace.Clad as anchor.Program<Clad>
@@ -52,6 +59,7 @@ export async function getConstantParams() {
     programId,
     connection,
     wallet,
+    keypair,
     feeRate,
     tickSpacing,
     tokenMintA,
