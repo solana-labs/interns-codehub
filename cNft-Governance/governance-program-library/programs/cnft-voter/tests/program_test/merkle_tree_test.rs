@@ -60,9 +60,9 @@ pub fn merkle_tree_get_size(max_depth: usize, max_buffer_size: usize) -> Result<
 }
 
 pub struct MerkleTreeArgs {
-    max_depth: u32,
-    max_buffer_size: u32,
-    public: Option<bool>,
+    pub max_depth: u32,
+    pub max_buffer_size: u32,
+    pub public: Option<bool>,
 }
 
 pub struct MerkleTreeCookie {
