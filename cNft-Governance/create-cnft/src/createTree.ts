@@ -1,35 +1,38 @@
-import { 
-    ValidDepthSizePair, 
+import { Keypair, Connection, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
+import {
+    ValidDepthSizePair,
     createAllocTreeIx,
     SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
     SPL_NOOP_PROGRAM_ID
 } from "@solana/spl-account-compression";
-import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 
 import {
     PROGRAM_ID as BUBBLEGUM_PROGRAM_ID,
     createCreateTreeInstruction,
 } from "@metaplex-foundation/mpl-bubblegum";
-import { savePublicKeyToFile } from "./helper";
+import { savePublicKeyToFile } from "../utils/helper";
+import dotenv from "dotenv";
+dotenv.config();
 
-export async function createMerkleTree(
-    connection: Connection,
+export interface MerkleTreeArgs {
+    maxDepth: number
+    maxBufferSize: number
+    canopyHeight: number
+}
+
+export async function createTree(
     payer: Keypair,
-    treeKeypair: Keypair,
+    connection: Connection,
+    treeNumber: number | null,
+    maxDepthSizePair: ValidDepthSizePair
 ) {
-    console.log("Start creating merkle tree");
-    console.log("merkle tree address:", treeKeypair.publicKey.toBase58());
-    const maxDepthSizePair: ValidDepthSizePair = {
-        maxDepth: 5,
-        maxBufferSize: 8,
-    };
+    const treeKeypair = Keypair.generate();
     const canopyDepth = maxDepthSizePair.maxDepth - 1;
 
     const [treeAuthority, _bump] = PublicKey.findProgramAddressSync(
         [treeKeypair.publicKey.toBuffer()],
         BUBBLEGUM_PROGRAM_ID,
     )
-    console.log("merkle tree authority:", treeAuthority.toBase58());
 
     // allocate space for tree account instruction
     const allocTreeIx = await createAllocTreeIx(
@@ -58,25 +61,24 @@ export async function createMerkleTree(
         BUBBLEGUM_PROGRAM_ID
     )
 
-    try{
+    try {
         const tx = new Transaction();
         tx.add(allocTreeIx);
         tx.add(createTreeIx);
         tx.feePayer = payer.publicKey;
 
-        const txSig = await sendAndConfirmTransaction(
+        await sendAndConfirmTransaction(
             connection,
-            tx, 
-            [payer, treeKeypair], 
-            {skipPreflight: true, commitment: "confirmed"});
-        
-        console.log("\nMerkle tree created successfully!");
-        console.log("Transaction signature: ", txSig);
+            tx,
+            [payer, treeKeypair],
+            { skipPreflight: true, commitment: "confirmed" });
+
     } catch (e) {
         console.error(e);
         throw e;
     }
-    savePublicKeyToFile("treeAddress", treeKeypair.publicKey);
-    savePublicKeyToFile("treeAuthority", treeAuthority);
-    return {treeAuthority, treeAddress: treeKeypair.publicKey}
+    savePublicKeyToFile(`treeAddress${treeNumber}`, treeKeypair.publicKey);
+    savePublicKeyToFile(`treeAuthority${treeNumber}`, treeAuthority);
+    console.log(`Tree Address${treeNumber}: `, treeKeypair.publicKey.toBase58());
+    return { treeAddress: treeKeypair.publicKey, treeAuthority }
 }
