@@ -24,14 +24,16 @@ import * as fs from "fs";
 import dotenv from "dotenv";
 dotenv.config();
 
+const EXTENSION = process.env.EXTENSION;
+
 export async function createNftCollection(
   payer: Keypair,
   connection: Connection,
   metaplex: Metaplex,
 ) {
   // Create collection metadata
-  const buffer = fs.readFileSync("./src/assets/collection.jpeg");
-  const file = toMetaplexFile(buffer, "collection.jpeg");
+  const buffer = fs.readFileSync(`./src/assets/collection.${EXTENSION}`);
+  const file = toMetaplexFile(buffer, `collection.${EXTENSION}`);
   const imageUri = await metaplex.storage().upload(file);
 
   const data = fs.readFileSync("./src/collection.json", "utf-8");
@@ -48,8 +50,8 @@ export async function createNftCollection(
   // Create collection
   const collectionMetadataV3: CreateMetadataAccountArgsV3 = {
     data: {
-      name: collectionMetadata.name ?? "",
-      symbol: collectionMetadata.symbol ?? "",
+      name: `${collectionMetadata.name ?? ""} Collection`,
+      symbol: `${collectionMetadata.symbol ?? ""}`,
       uri,
       sellerFeeBasisPoints: 100,
       creators: [
@@ -160,6 +162,6 @@ export async function createNftCollection(
   savePublicKeyToFile("collectionMint", collectionMint);
   savePublicKeyToFile("collectionMetadataAccount", collectionMetadataAccount);
   savePublicKeyToFile("collectionMasterEditionAccount", collectionMasterEditionAccount);
-  console.log("Collection Address: ", collectionMint)
+  console.log("Collection Address: ", collectionMint.toBase58())
   return { collectionMint, collectionMetadataAccount, collectionMasterEditionAccount }
 }

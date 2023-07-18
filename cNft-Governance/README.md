@@ -2,13 +2,29 @@
 
 Reference(fork): [nft-voter](https://github.com/solana-labs/governance-program-library/tree/master/programs/nft-voter)
 
-### create-cnft
+### create-cnft setup
+This directory helps you create NFT collection and tree account and mint both NFT and compressed NFT.
+The default will create a collection, two tree accounts, and mint 2 NFT and 3 cNFT.
+1. setup
+create a .env file (rename .env.sample) in the root directory and add the following variables
+   - EXTENSION: your nft images extension
+   - RPC_URL: add rpc that support ReadApi (e.g. https://rpc-devnet.helius.xyz/?api-key=<api_key>)
+   - PRIVATE_KEY: your private key (should be array)
+2. create collection.json
+3. create .local_key directory in the root and add keys.json file.
+4. config your own steps in main.ts
+5. fetch your nfts
+```cmd
+# install dependencies
+yarn install
 
-This code base contain basic:
+# run
+yarn demo ./src/main.ts
 
-- Create merkle tree and collection
-- Mint a cNFT
-- Fetch cNFT's info (ReadApi) from endpointRPC
+# fetch nfts
+yarn demo ./src/fetchNftsByOwner.ts
+```
+
 
 ### governance-program-library/programs/cnft-voter
 

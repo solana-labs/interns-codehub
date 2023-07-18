@@ -10,6 +10,10 @@ import * as fs from "fs";
 import {
     TokenStandard,
 } from "@metaplex-foundation/mpl-bubblegum";
+import dotenv from "dotenv";
+dotenv.config();
+
+const EXTENSION = process.env.EXTENSION;
 
 export async function mintNft(
     payer: Keypair,
@@ -17,21 +21,26 @@ export async function mintNft(
     collectionMint: PublicKey,
     nonce: number
 ) {
-    // create nft metadata
-    const buffer = fs.readFileSync(`./src/assets/dog${nonce}.jpeg`);
-    const file = toMetaplexFile(buffer, `dog${nonce}.jpeg`);
+    if (!EXTENSION) {
+        return console.warn("Please set EXTENSION in .env file")
+    }
+    const buffer = fs.readFileSync(`./src/assets/${nonce}.${EXTENSION}`);
+    const file = toMetaplexFile(buffer, `${nonce}.${EXTENSION}`);
     const imageUri = await metaplex.storage().upload(file);
 
+    const data = fs.readFileSync("./src/collection.json", "utf-8");
+    const nftInfo = JSON.parse(data);
+
     const nftMetadata: UploadMetadataInput = {
-        name: `Doggy cNFT #${nonce}`,
-        symbol: "DWFC",
-        description: "The Studious Dog are smart and productive dogs.",
+        name: `${nftInfo.name ?? "NFT"} #${nonce}`,
+        symbol: `${nftInfo.symbol ?? "NFT"}`,
+        description: `${nftInfo.description ?? "placeholder description"}`,
         image: imageUri,
         properties: {
             files: [
                 {
-                    uri: `dog${nonce}.jpeg`,
-                    type: "image/jpeg",
+                    uri: `${nonce}.${EXTENSION}`,
+                    type: `image/${EXTENSION}`,
                 },
             ],
         },
@@ -51,7 +60,7 @@ export async function mintNft(
                 },
             ],
             uses: null,
-            collection: null,
+            collection: collectionMint,
             isMutable: false,
             primarySaleHappened: false,
             tokenStandard: TokenStandard.NonFungible,

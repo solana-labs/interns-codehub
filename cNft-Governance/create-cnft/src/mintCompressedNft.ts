@@ -20,6 +20,10 @@ import {
 } from "@solana/spl-account-compression";
 import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
+import dotenv from "dotenv";
+dotenv.config();
+
+const EXTENSION = process.env.EXTENSION;
 
 export async function mintCompressedNft(
   payer: Keypair,
@@ -31,6 +35,9 @@ export async function mintCompressedNft(
   collectionMasterEditionAccount: PublicKey,
   nonce: number
 ) {
+  if (!EXTENSION) {
+    return console.warn("Please set EXTENSION in .env file")
+  }
   const metaplex = Metaplex.make(connection)
     .use(keypairIdentity(payer))
     .use(
@@ -42,20 +49,23 @@ export async function mintCompressedNft(
     );
 
   // create nft metadata
-  const buffer = fs.readFileSync(`./src/assets/dog${nonce}.jpeg`);
-  const file = toMetaplexFile(buffer, `dog${nonce}.jpeg`);
+  const buffer = fs.readFileSync(`./src/assets/${nonce}.${EXTENSION}`);
+  const file = toMetaplexFile(buffer, `${nonce}.${EXTENSION}`);
   const imageUri = await metaplex.storage().upload(file);
 
+  const data = fs.readFileSync("./src/collection.json", "utf-8");
+  const nftInfo = JSON.parse(data);
+
   const nftMetadata: UploadMetadataInput = {
-    name: `Doggy cNFT #${nonce}`,
-    symbol: "DWFC",
+    name: `${nftInfo.name ?? "NFT"} #${nonce}`,
+    symbol: `${nftInfo.symbol ?? "NFT"}`,
     description: "The Studious Dog are smart and productive dogs.",
     image: imageUri,
     properties: {
       files: [
         {
-          uri: `dog${nonce}.jpeg`,
-          type: "image/jpeg",
+          uri: `${nonce}.${EXTENSION}`,
+          type: `image/${EXTENSION}`,
         },
       ],
     },

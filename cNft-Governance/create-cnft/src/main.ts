@@ -46,29 +46,21 @@ import { mintCompressedNft } from "./mintCompressedNft";
         await createTree(payer, connection, 2, { maxDepth: 14, maxBufferSize: 64 });
     }
     keys = loadPublicKeysFromFile();
-    const treeAddress1: PublicKey = keys.treeAddress;
-    const treeAuthority1: PublicKey = keys.treeAuthority;
-    const treeAddress2: PublicKey = keys.treeAddress;
-    const treeAuthority2: PublicKey = keys.treeAuthority;
+    const treeAddress1: PublicKey = keys.treeAddress1;
+    const treeAuthority1: PublicKey = keys.treeAuthority1;
+    const treeAddress2: PublicKey = keys.treeAddress2;
+    const treeAuthority2: PublicKey = keys.treeAuthority2;
     const collectionMint: PublicKey = keys.collectionMint;
     const collectionMetadataAccount: PublicKey = keys.collectionMetadataAccount;
     const collectionMasterEditionAccount: PublicKey = keys.collectionMasterEditionAccount;
 
-    // await metaplex.nfts().verifyCollection({
-    //     mintAddress: new PublicKey("298e84sTDp3VoWNy6ZhCUDhg9Lr99WZcNspRk9A4ugP5"),
-    //     collectionMintAddress: new PublicKey("EDxaVvPHtGRazbUcEQ6PrU44tUsf6fL3WDxKddJeaxPx"),
-    //     isSizedCollection: true,
-    // },
-    //     { commitment: "finalized" }
-    // )
-
-    // await mintNft(payer, metaplex, collectionMint, 6)
-    // await mintNft(payer, metaplex, collectionMint, 7)
+    await mintNft(payer, metaplex, collectionMint, 6)
+    await mintNft(payer, metaplex, collectionMint, 7)
     await mintCompressedNft(payer, connection, treeAddress1,
         treeAuthority1, collectionMint, collectionMetadataAccount, collectionMasterEditionAccount, 8)
-    // await mintCompressedNft(payer, connection, treeAddress1,
-    //     treeAuthority1, collectionMint, collectionMetadataAccount, collectionMasterEditionAccount, 9)
-    // await mintCompressedNft(payer, connection, treeAddress2,
-    //     treeAuthority2, collectionMint, collectionMetadataAccount, collectionMasterEditionAccount, 10)
+    await mintCompressedNft(payer, connection, treeAddress1,
+        treeAuthority1, collectionMint, collectionMetadataAccount, collectionMasterEditionAccount, 9)
+    await mintCompressedNft(payer, connection, treeAddress2,
+        treeAuthority2, collectionMint, collectionMetadataAccount, collectionMasterEditionAccount, 10)
 
 })();
