@@ -24,10 +24,10 @@ export async function createTree(
     payer: Keypair,
     connection: Connection,
     treeNumber: number | null,
+    canopyDepth: number,
     maxDepthSizePair: ValidDepthSizePair
 ) {
     const treeKeypair = Keypair.generate();
-    const canopyDepth = maxDepthSizePair.maxDepth - 1;
 
     const [treeAuthority, _bump] = PublicKey.findProgramAddressSync(
         [treeKeypair.publicKey.toBuffer()],

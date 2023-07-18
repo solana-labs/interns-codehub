@@ -39,11 +39,11 @@ import { mintCompressedNft } from "./mintCompressedNft";
     }
 
     if (!keys?.treeAddress1 || !keys?.treeAuthority1) {
-        await createTree(payer, connection, 1, { maxDepth: 5, maxBufferSize: 8 });
+        await createTree(payer, connection, 1, 2, { maxDepth: 5, maxBufferSize: 8 });
     }
 
     if (!keys?.treeAddress2 || !keys?.treeAuthority2) {
-        await createTree(payer, connection, 2, { maxDepth: 14, maxBufferSize: 64 });
+        await createTree(payer, connection, 2, 4, { maxDepth: 14, maxBufferSize: 64 });
     }
     keys = loadPublicKeysFromFile();
     const treeAddress1: PublicKey = keys.treeAddress1;
