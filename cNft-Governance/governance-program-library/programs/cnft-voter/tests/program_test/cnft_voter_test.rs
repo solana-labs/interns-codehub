@@ -103,7 +103,6 @@ impl CompressedNftVoterTest {
         MerkleTreeTest::add_program(&mut program_test);
 
         let program_id = gpl_cnft_voter::id();
-        println!("Program ID: {}", program_id);
 
         let bench = ProgramTestBench::start_new(program_test).await;
         let bench_rc = Arc::new(bench);
