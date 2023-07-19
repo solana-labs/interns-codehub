@@ -17,7 +17,7 @@ pub struct TradePosition {
     pub liquidity_swapped: u128, // Liquidity swapped (for opening position) for this loan position
     pub liquidity_mint: Pubkey, // Mint of the liquidity token (can borrow only one token of a CL position)
 
-    pub collateral_amount: u128, //
+    pub collateral_amount: u64, // Amount of collateral locked (not sqrt_price or liquidity, it's actual amount)
     pub collateral_mint: Pubkey, // Mint of the collateral token (can put only one token as collateral)
 
     pub is_trade_open: bool, // Check whether a trade is open on the loan. Only one trade per loan supported for now.
@@ -74,5 +74,14 @@ impl TradePosition {
         self.tick_lower_index = tick_lower_index;
         self.tick_upper_index = tick_upper_index;
         Ok(())
+    }
+
+    pub fn update_collateral_info(
+        &mut self,
+        collateral_mint: Pubkey,
+        collateral_amount: u64,
+    ) {
+        self.collateral_mint = collateral_mint;
+        self.collateral_amount = collateral_amount;
     }
 }

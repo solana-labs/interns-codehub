@@ -8,6 +8,14 @@ import { ParsableTickArray } from '../types/parsing'
 import { getAccountData } from '../utils'
 import { TickUtil } from '@orca-so/whirlpools-sdk'
 
+/**
+ * Get TickArray key from valid start tick index
+ * 
+ * @param globalpool 
+ * @param startTickIndex 
+ * @param programId 
+ * @returns 
+ */
 export function getTickArrayKey(
   globalpool: PublicKey,
   startTickIndex: number,
@@ -21,6 +29,25 @@ export function getTickArrayKey(
     ],
     programId
   )[0]
+}
+
+/**
+ * Get TickArray key from any valid tick index, which doesn't have to be a start index.
+ * 
+ * @param globalpool 
+ * @param rawTickIndex Any valid tick index
+ * @param tickSpacing 
+ * @param programId 
+ * @returns 
+ */
+export function getTickArrayKeyFromTickIndex(
+  globalpool: PublicKey,
+  rawTickIndex: number,
+  tickSpacing: number,
+  programId: PublicKey
+) {
+  const startTickIndex = TickUtil.getStartTickIndex(rawTickIndex, tickSpacing)
+  return getTickArrayKey(globalpool, startTickIndex, programId)
 }
 
 export async function initTickArray(

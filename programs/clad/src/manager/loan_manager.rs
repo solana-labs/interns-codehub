@@ -1,13 +1,9 @@
 use {
     super::{
-        position_manager::next_position_modify_liquidity_update,
-        tick_manager::{next_fee_growths_inside, next_tick_modify_liquidity_update},
         globalpool_manager::next_globalpool_liquidity,
+        tick_manager::next_tick_modify_liquidity_update_from_loan,
     },
-    crate::{
-        errors::ErrorCode, manager::tick_manager::next_tick_cross_update, math::*, state::*,
-        util::TickSequence,
-    },
+    crate::{errors::ErrorCode, math::*, state::*, util::TickSequence},
     anchor_lang::prelude::{AccountLoader, *},
 };
 
@@ -39,10 +35,10 @@ pub fn calculate_modify_loan<'info>(
     tick_array_lower: &AccountLoader<'info, TickArray>,
     tick_array_upper: &AccountLoader<'info, TickArray>,
     liquidity_delta: i128,
-    timestamp: u64,
 ) -> Result<ModifyLoanUpdate> {
     // Disallow only updating position fee growth when position has zero liquidity
-    if liquidity_delta == 0 { // && position.liquidity == 0 {
+    if liquidity_delta == 0 {
+        // && position.liquidity == 0 {
         return Err(ErrorCode::LiquidityZero.into());
     }
 
@@ -50,12 +46,10 @@ pub fn calculate_modify_loan<'info>(
     let tick_upper_index = position.tick_upper_index;
 
     let tick_array_lower = tick_array_lower.load()?;
-    let tick_lower =
-        tick_array_lower.get_tick(tick_lower_index, globalpool.tick_spacing)?;
+    let tick_lower = tick_array_lower.get_tick(tick_lower_index, globalpool.tick_spacing)?;
 
     let tick_array_upper = tick_array_upper.load()?;
-    let tick_upper =
-        tick_array_upper.get_tick(tick_upper_index, globalpool.tick_spacing)?;
+    let tick_upper = tick_array_upper.get_tick(tick_upper_index, globalpool.tick_spacing)?;
 
     let next_global_liquidity = next_globalpool_liquidity(
         globalpool,
@@ -65,9 +59,20 @@ pub fn calculate_modify_loan<'info>(
     )?;
 
     //
+    // Verify that enough liquidity exists in Ticks.
+    // Note: Must check both the lower & upper tick's `liquidity_gross`.
+    //
+    let liquidity_delta_u128 = liquidity_delta.abs() as u128;
+    if liquidity_delta_u128 > tick_lower.liquidity_gross
+        && liquidity_delta_u128 > tick_upper.liquidity_gross
+    {
+        return Err(ErrorCode::InsufficientLiquidityToBorrow.into());
+    }
+
+    //
     // Calculate Tick Updates (shouldn't have any fee updates since the ticks are out of range)
     //
-    let tick_lower_update = next_tick_modify_liquidity_update(
+    let tick_lower_update = next_tick_modify_liquidity_update_from_loan(
         tick_lower,
         tick_lower_index,
         globalpool.tick_current_index,
@@ -77,7 +82,7 @@ pub fn calculate_modify_loan<'info>(
         false,
     )?;
 
-    let tick_upper_update = next_tick_modify_liquidity_update(
+    let tick_upper_update = next_tick_modify_liquidity_update_from_loan(
         tick_upper,
         tick_upper_index,
         globalpool.tick_current_index,
@@ -87,23 +92,21 @@ pub fn calculate_modify_loan<'info>(
         true,
     )?;
 
-    let (fee_growth_inside_a, fee_growth_inside_b) = next_fee_growths_inside(
-        globalpool.tick_current_index,
-        tick_lower,
-        tick_lower_index,
-        tick_upper,
-        tick_upper_index,
-        globalpool.fee_growth_global_a,
-        globalpool.fee_growth_global_b,
-    );
-
     //
     // Build TradePositionUpdate
+    // Note: Add the absolute value of `liquidty_delta` as it's negative when borrowing (used to subtract liquidity from
+    //       the pool) but the position itself needs to represent the borrowed liquidity that's now available (positive).
     //
     let position_update = TradePositionUpdate {
-        liquidity_available: add_liquidity_delta(position.liquidity_available, liquidity_delta)?,
+        liquidity_available: add_liquidity_delta(
+            position.liquidity_available,
+            liquidity_delta.abs(),
+        )?,
         liquidity_swapped: position.liquidity_swapped,
     };
+    msg!("position_update: {:?}", position_update);
+    msg!("tick_lower_update: {:?}", tick_lower_update);
+    msg!("tick_upper_update: {:?}", tick_upper_update);
 
     Ok(ModifyLoanUpdate {
         globalpool_liquidity: next_global_liquidity,
@@ -111,6 +114,131 @@ pub fn calculate_modify_loan<'info>(
         tick_lower_update,
         tick_upper_update,
     })
+}
+
+pub fn calculate_loan_liquidity_token_delta(
+    current_tick_index: i32,
+    position: &TradePosition,
+    liquidity_delta: i128,
+) -> Result<(u64, bool, bool, u128, u128)> {
+    if liquidity_delta == 0 {
+        return Err(ErrorCode::LiquidityZero.into());
+    }
+
+    // For a pool A/B (e.g. SOL/USDC), if current tick is
+    // - below the loan's lower tick:
+    //      - loan is borrowing Token A (SOL) (gets swapped to USDC for short-A)
+    //      - collateral is in Token B (USDC)
+    // - above the loan's upper tick:
+    //      - loan is borrowing Token B (USDC) (gets swapped to SOL for long-A)
+    //      - collateral is in Token A (SOL)
+    // - otherwise, invalid.
+    let is_collateral_token_a = current_tick_index > position.tick_upper_index;
+    let is_borrow_token_a = !is_collateral_token_a;
+
+    let liquidity: u128 = liquidity_delta.abs() as u128;
+    let round_up = liquidity_delta > 0;
+
+    let lower_sqrt_price = sqrt_price_from_tick_index(position.tick_lower_index);
+    let upper_sqrt_price = sqrt_price_from_tick_index(position.tick_upper_index);
+    msg!("lower_price_sqrt: {:?}", lower_sqrt_price);
+    msg!("upper_price_sqrt: {:?}", upper_sqrt_price);
+
+    // Always only in one token
+    let delta = if is_collateral_token_a {
+        get_amount_delta_a(lower_sqrt_price, upper_sqrt_price, liquidity, round_up)?
+    } else {
+        get_amount_delta_b(lower_sqrt_price, upper_sqrt_price, liquidity, round_up)?
+    };
+
+    Ok((
+        delta,
+        is_collateral_token_a,
+        is_borrow_token_a,
+        lower_sqrt_price,
+        upper_sqrt_price,
+    ))
+}
+
+pub fn calculate_collateral(
+    token_borrow_amount: u64,
+    is_borrow_token_a: bool,
+    is_collateral_token_a: bool,
+    borrowed_token_mint_decimals: u8,
+    collateral_token_mint_decimals: u8,
+    collateral_token_owner_account_amount: u64,
+    lower_sqrt_price: u128,
+    upper_sqrt_price: u128,
+) -> Result<u64> {
+    //
+    // TODO: FInd more optimized calculation method (no exponentiation?)
+    //
+
+    //
+    // TODO WARNING: This is a temporary solution for strict testing purposes, and should not be used for production.
+    //
+
+    let num_2_pow_neg_64 = 1_f32 / 18446744073709551616_f32;
+    let lower_price = (lower_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
+    let upper_price = (upper_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
+
+    let (lower_price, upper_price) = if collateral_token_mint_decimals
+        > borrowed_token_mint_decimals
+    {
+        let decimals_expo =
+            10_f32.powf((collateral_token_mint_decimals - borrowed_token_mint_decimals) as f32);
+        (lower_price * decimals_expo, upper_price * decimals_expo)
+    } else if collateral_token_mint_decimals < borrowed_token_mint_decimals {
+        let decimals_expo = lower_price
+            / 10_f32.powf((borrowed_token_mint_decimals - collateral_token_mint_decimals) as f32);
+        (lower_price * decimals_expo, upper_price * decimals_expo)
+    } else {
+        (lower_price, upper_price)
+    };
+
+    let lower_upper_mean_price = (lower_price + upper_price) / 2.0;
+
+    // msg!("collateral_token_key:  {}", collateral_token_mint.key());
+    msg!("collateral_token_mint: {}", collateral_token_mint_decimals);
+    // msg!("borrowed_token_key:    {}", borrowed_token_mint.key());
+    msg!("borrowed_token_mint:   {}", borrowed_token_mint_decimals);
+    let collateral_amount = if is_borrow_token_a {
+        token_borrow_amount * lower_upper_mean_price.ceil() as u64
+            / 10_u64.pow(borrowed_token_mint_decimals as u32)
+    } else {
+        if collateral_token_mint_decimals > borrowed_token_mint_decimals {
+            token_borrow_amount
+                * 10_u64.pow((collateral_token_mint_decimals - borrowed_token_mint_decimals) as u32)
+                / lower_upper_mean_price.floor() as u64
+        } else if collateral_token_mint_decimals < borrowed_token_mint_decimals {
+            token_borrow_amount
+                / 10_u64.pow((borrowed_token_mint_decimals - collateral_token_mint_decimals) as u32)
+                / lower_upper_mean_price.floor() as u64
+        } else {
+            token_borrow_amount / lower_upper_mean_price.floor() as u64
+        }
+    };
+
+    let collateral_amount = collateral_amount.checked_div(3).unwrap(); // 33.33% for experiment
+
+    if collateral_token_owner_account_amount < collateral_amount {
+        return Err(ErrorCode::InsufficientCollateral.into());
+    }
+
+    msg!("is_collateral_token_a: {}", is_collateral_token_a);
+    msg!("is_borrow_token_a:     {}", is_borrow_token_a);
+    msg!(
+        "collateral_amount:     {}",
+        collateral_amount as f32 / 10_f32.powf(collateral_token_mint_decimals as f32)
+    );
+    msg!(
+        "borrow_amount:         {}",
+        token_borrow_amount as f32 / 10_f32.powf(borrowed_token_mint_decimals as f32)
+    );
+    msg!("tick lower price:      {}", lower_price);
+    msg!("tick upper price:      {}", upper_price);
+
+    Ok(collateral_amount)
 }
 
 /*

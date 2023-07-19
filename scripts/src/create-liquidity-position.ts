@@ -28,7 +28,7 @@ import { PositionStatus } from './utils/liquidity-position/types'
 import { PositionUtil } from './utils/liquidity-position/utils'
 import { createAndMintToManyATAs } from './utils/token'
 import { createTransactionChained } from './utils/txix'
-import { initTickArrayRange } from './utils/tick-arrays'
+import { getTickArrayKeyFromTickIndex, initTickArrayRange } from './utils/tick-arrays'
 
 async function main() {
   const {
@@ -138,16 +138,16 @@ async function main() {
       liquidityAmount: new anchor.BN(100), // 100 USDC
     },
     {
-      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing,
-      tickUpperIndex: tickCurrentIndex + 64,
-      liquidityAmount: new anchor.BN(100), // 100 USDC
-    },
-    {
       tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE) * tickSpacing,
       tickUpperIndex: tickCurrentIndex - 128,
       liquidityAmount: new anchor.BN(100), // 100 USDC
     },
     // // Deposit both Token A and B (SOL & USDC)
+    {
+      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing,
+      tickUpperIndex: tickCurrentIndex + 64,
+      liquidityAmount: new anchor.BN(100), // 100 SOL worth
+    },
     // {
     //   tickLowerIndex: tickCurrentIndex - Math.floor(TICK_ARRAY_SIZE/3) * tickSpacing,
     //   tickUpperIndex: tickCurrentIndex + Math.ceil(TICK_ARRAY_SIZE/3) * tickSpacing,
@@ -215,6 +215,8 @@ async function main() {
       Percentage.fromFraction(5, 100) // 0.05% slippage
     )
 
+    console.log(quote)
+
     console.log(
       'tokenA max input',
       DecimalUtil.fromBN(quote.tokenMaxA, tokenMintA.decimals).toString()
@@ -231,31 +233,17 @@ async function main() {
       tokenMaxB: quote.tokenMaxB,
     }
 
-    const [tickArrayLowerKey] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('tick_array'),
-        globalpoolKey.toBuffer(),
-        Buffer.from(
-          TickUtil.getStartTickIndex(
-            openLiquidityPositionParams.tickLowerIndex,
-            tickSpacing
-          ).toString()
-        ),
-      ],
+    const tickArrayLowerKey = getTickArrayKeyFromTickIndex(
+      globalpoolKey,
+      tickLowerIndex,
+      tickSpacing,
       programId
     )
 
-    const [tickArrayUpperKey] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('tick_array'),
-        globalpoolKey.toBuffer(),
-        Buffer.from(
-          TickUtil.getStartTickIndex(
-            openLiquidityPositionParams.tickUpperIndex,
-            tickSpacing
-          ).toString()
-        ),
-      ],
+    const tickArrayUpperKey = getTickArrayKeyFromTickIndex(
+      globalpoolKey,
+      tickUpperIndex,
+      tickSpacing,
       programId
     )
 

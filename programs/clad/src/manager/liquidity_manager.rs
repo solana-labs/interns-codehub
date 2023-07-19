@@ -210,7 +210,7 @@ pub fn sync_modify_liquidity_values<'info>(
     Ok(())
 }
 
-pub fn sync_modify_liquidity_values_from_loan<'info>(
+pub fn sync_modify_liquidity_values_for_loan<'info>(
     globalpool: &mut Globalpool,
     position: &mut TradePosition,
     tick_array_lower: &AccountLoader<'info, TickArray>,

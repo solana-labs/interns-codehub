@@ -1,6 +1,4 @@
-use std::num::TryFromIntError;
-
-use anchor_lang::prelude::*;
+use {anchor_lang::prelude::*, std::num::TryFromIntError};
 
 #[error_code]
 #[derive(PartialEq)]
@@ -97,6 +95,11 @@ pub enum ErrorCode {
 
     #[msg("There are no loan amount to borrow.")]
     ZeroBorrowableAmount, //0x1799
+
+    #[msg("Insufficient collateral")]
+    InsufficientCollateral,
+    #[msg("Insufficient liquidity to borrow")]
+    InsufficientLiquidityToBorrow,
 }
 
 impl From<TryFromIntError> for ErrorCode {

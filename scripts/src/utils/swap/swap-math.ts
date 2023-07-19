@@ -18,13 +18,13 @@ export function computeSwapStep(
   amountSpecifiedIsInput: boolean,
   aToB: boolean
 ): SwapStep {
-  console.log('amountRemaining', amountRemaining.toString())
-  console.log('feeRate', feeRate.toString())
-  console.log('currLiquidity', currLiquidity.toString())
-  console.log('currSqrtPrice', currSqrtPrice.toString())
-  console.log('targetSqrtPrice', targetSqrtPrice.toString())
-  console.log('amountSpecifiedIsInput', amountSpecifiedIsInput)
-  console.log('aToB', aToB)
+  // console.log('amountRemaining', amountRemaining.toString())
+  // console.log('feeRate', feeRate.toString())
+  // console.log('currLiquidity', currLiquidity.toString())
+  // console.log('currSqrtPrice', currSqrtPrice.toString())
+  // console.log('targetSqrtPrice', targetSqrtPrice.toString())
+  // console.log('amountSpecifiedIsInput', amountSpecifiedIsInput)
+  // console.log('aToB', aToB)
   let amountFixedDelta = getAmountFixedDelta(
     currSqrtPrice,
     targetSqrtPrice,

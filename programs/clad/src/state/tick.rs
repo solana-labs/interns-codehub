@@ -35,13 +35,15 @@ impl Tick {
     /// - `update` - An update object to update the values in this tick
     pub fn update(&mut self, update: &TickUpdate) {
         msg!(
-            "updating tick with liquidity_net: {:?} / liquidity_gross: {:?}",
+            "updating tick with liquidity_net: {:?} / liquidity_gross: {:?} / liquidity_borrowed: {:?}",
             update.liquidity_net,
-            update.liquidity_gross
+            update.liquidity_gross,
+            update.liquidity_borrowed
         );
         self.initialized = update.initialized;
         self.liquidity_net = update.liquidity_net;
         self.liquidity_gross = update.liquidity_gross;
+        self.liquidity_borrowed = update.liquidity_borrowed;
         self.fee_growth_outside_a = update.fee_growth_outside_a;
         self.fee_growth_outside_b = update.fee_growth_outside_b;
     }
@@ -287,12 +289,6 @@ impl TickArray {
             offset
         );
         self.ticks.get_mut(offset as usize).unwrap().update(update);
-
-        for tick in self.ticks.iter() {
-            if tick.liquidity_gross != 0 || tick.liquidity_net != 0 {
-                msg!("Tick: {:?}", tick);
-            }
-        }
 
         Ok(())
     }

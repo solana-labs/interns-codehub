@@ -160,7 +160,7 @@ async function main() {
   )
   console.log(
     `  amount: ${quote.amount
-      .div(new BN(10 ** mintA.decimals))
+      // .div(new BN(10 ** mintA.decimals))
       .toLocaleString()}`
   )
   console.log(`  amountSpecifiedIsInput: ${quote.amountSpecifiedIsInput}`)

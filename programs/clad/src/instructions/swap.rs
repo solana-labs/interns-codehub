@@ -58,9 +58,7 @@ pub fn swap(ctx: Context<Swap>, params: &SwapParams) -> Result<()> {
         ctx.accounts.tick_array_2.load_mut().ok(),
     );
 
-    let amount_specified_is_input = params.amount_specified_is_input;
-    let a_to_b = params.a_to_b;
-    let other_amount_threshold = params.other_amount_threshold;
+    let SwapParams { amount_specified_is_input, a_to_b, other_amount_threshold, .. } = *params;
 
     let swap_update = swap_manager::swap(
         &globalpool,
@@ -85,6 +83,7 @@ pub fn swap(ctx: Context<Swap>, params: &SwapParams) -> Result<()> {
             return Err(ErrorCode::AmountInAboveMaximum.into());
         }
     }
+    msg!("swap_update: {:?}", swap_update);
 
     update_and_swap_globalpool(
         globalpool,

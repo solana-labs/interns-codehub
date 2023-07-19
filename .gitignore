@@ -8,3 +8,7 @@ test-ledger
 **/yarn.lock
 
 **/.next
+
+.env*
+**/.env
+!.env.example

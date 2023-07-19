@@ -1,9 +1,11 @@
-use crate::{
-    errors::ErrorCode,
-    math::add_liquidity_delta,
-    state::{Tick, TickUpdate},
+use {
+    crate::{
+        errors::ErrorCode,
+        math::add_liquidity_delta,
+        state::{Tick, TickUpdate},
+    },
+    anchor_lang::prelude::msg,
 };
-use anchor_lang::prelude::msg;
 
 pub fn next_tick_cross_update(
     tick: &Tick,
@@ -42,23 +44,16 @@ pub fn next_tick_modify_liquidity_update(
         return Ok(TickUpdate::default());
     }
 
-    let (fee_growth_outside_a, fee_growth_outside_b) =
-        if tick.liquidity_gross == 0 {
-            // By convention, assume all prior growth happened below the tick
-            if tick_current_index >= tick_index {
-                (
-                    fee_growth_global_a,
-                    fee_growth_global_b,
-                )
-            } else {
-                (0, 0)
-            }
+    let (fee_growth_outside_a, fee_growth_outside_b) = if tick.liquidity_gross == 0 {
+        // By convention, assume all prior growth happened below the tick
+        if tick_current_index >= tick_index {
+            (fee_growth_global_a, fee_growth_global_b)
         } else {
-            (
-                tick.fee_growth_outside_a,
-                tick.fee_growth_outside_b,
-            )
-        };
+            (0, 0)
+        }
+    } else {
+        (tick.fee_growth_outside_a, tick.fee_growth_outside_b)
+    };
 
     let liquidity_net = if is_upper_tick {
         tick.liquidity_net
@@ -70,7 +65,14 @@ pub fn next_tick_modify_liquidity_update(
             .ok_or(ErrorCode::LiquidityNetError)?
     };
 
-    msg!("liquidity (tick {:?}): gross {:?}  /  net {:?}", tick_index, liquidity_gross, liquidity_net);
+    let gross = tick.liquidity_gross;
+    let net = tick.liquidity_net;
+    msg!(
+        "liquidity (tick {:?}): gross {:?} / net {:?}",
+        tick_index,
+        gross,
+        net
+    );
 
     Ok(TickUpdate {
         initialized: true,
@@ -80,6 +82,32 @@ pub fn next_tick_modify_liquidity_update(
         fee_growth_outside_a,
         fee_growth_outside_b,
     })
+}
+
+pub fn next_tick_modify_liquidity_update_from_loan(
+    tick: &Tick,
+    tick_index: i32,
+    tick_current_index: i32,
+    fee_growth_global_a: u128,
+    fee_growth_global_b: u128,
+    liquidity_delta: i128,
+    // is_borrow: bool, // true = borrow liquidity, false = repay liquidity
+    is_upper_tick: bool,
+) -> Result<TickUpdate, ErrorCode> {
+    let mut update = next_tick_modify_liquidity_update(
+        tick,
+        tick_index,
+        tick_current_index,
+        fee_growth_global_a,
+        fee_growth_global_b,
+        liquidity_delta,
+        is_upper_tick,
+    )?;
+
+    update.liquidity_borrowed += liquidity_delta;
+    msg!("update: {:?}", update);
+
+    Ok(update)
 }
 
 // Calculates the fee growths inside of tick_lower and tick_upper based on their
@@ -135,16 +163,17 @@ pub fn next_fee_growths_inside(
 
 #[cfg(test)]
 mod tick_manager_tests {
-    use anchor_lang::prelude::Pubkey;
-
-    use crate::{
-        errors::ErrorCode,
-        manager::tick_manager::{
-            next_fee_growths_inside, next_tick_cross_update, next_tick_modify_liquidity_update,
-            TickUpdate,
+    use {
+        crate::{
+            errors::ErrorCode,
+            manager::tick_manager::{
+                next_fee_growths_inside, next_tick_cross_update, next_tick_modify_liquidity_update,
+                TickUpdate,
+            },
+            math::Q64_RESOLUTION,
+            state::{tick_builder::TickBuilder, Tick},
         },
-        math::Q64_RESOLUTION,
-        state::{tick_builder::TickBuilder, Tick},
+        anchor_lang::prelude::Pubkey,
     };
 
     #[test]

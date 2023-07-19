@@ -1,10 +1,10 @@
 use {
     crate::{
         errors::ErrorCode,
-        manager::{liquidity_manager::sync_modify_liquidity_values_from_loan, loan_manager},
-        math::convert_to_liquidity_delta,
+        manager::{liquidity_manager, loan_manager},
+        math::*,
         state::*,
-        util::{mint_position_token_and_remove_authority, to_timestamp_u64},
+        util::{mint_position_token_and_remove_authority, transfer_from_owner_to_vault},
     },
     anchor_lang::prelude::*,
     anchor_spl::{
@@ -59,11 +59,17 @@ pub struct OpenTradePosition<'info> {
     #[account(mut, address = globalpool.token_vault_a)]
     pub token_vault_a: Box<Account<'info, TokenAccount>>,
 
+    #[account(address = globalpool.token_mint_a)]
+    pub token_mint_a: Box<Account<'info, Mint>>,
+
     #[account(mut, constraint = token_owner_account_b.mint == globalpool.token_mint_b)]
     pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, address = globalpool.token_vault_b)]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
+
+    #[account(address = globalpool.token_mint_b)]
+    pub token_mint_b: Box<Account<'info, Mint>>,
 
     //
     // NOTE: Read `2. TODO` below for the reason of these commented out lines.
@@ -109,11 +115,13 @@ pub fn open_trade_position(
     ctx: Context<OpenTradePosition>,
     params: &OpenTradePositionParams,
 ) -> Result<()> {
-    let globalpool = &ctx.accounts.globalpool;
+    // let globalpool = &ctx.accounts.globalpool;
     let position_mint = &ctx.accounts.position_mint;
     let position = &mut ctx.accounts.position;
     // let token_vault_a = &ctx.accounts.token_vault_a;
     // let token_vault_b = &ctx.accounts.token_vault_b;
+
+    let tick_current_index = ctx.accounts.globalpool.tick_current_index;
 
     if params.liquidity_amount == 0 {
         return Err(ErrorCode::LiquidityZero.into());
@@ -129,35 +137,116 @@ pub fn open_trade_position(
 
     // Require that both TickArrays (from which token liquidity is borrowed) are either
     // below or above the current globalpool tick since a trader can only borrow one asset.
-    if (params.tick_lower_index < globalpool.tick_current_index
-        && params.tick_upper_index > globalpool.tick_current_index)
-        || (params.tick_upper_index == globalpool.tick_current_index)
-        || (params.tick_lower_index == globalpool.tick_current_index)
+    if (params.tick_lower_index < tick_current_index
+        && params.tick_upper_index > tick_current_index)
+        || (params.tick_upper_index == tick_current_index)
+        || (params.tick_lower_index == tick_current_index)
     {
         return Err(ProgramError::InvalidInstructionData.into());
     }
+
+    let liquidity_delta = convert_to_liquidity_delta(u128::from(params.liquidity_amount), false)?;
 
     //
     // 1. Initialize & mint the trade position
     //
     position.open_position(
-        globalpool,
+        &ctx.accounts.globalpool,
         position_mint.key(),
         params.tick_lower_index,
         params.tick_upper_index,
     )?;
 
     mint_position_token_and_remove_authority(
-        globalpool,
+        &ctx.accounts.globalpool,
         position_mint,
         &ctx.accounts.position_token_account,
         &ctx.accounts.token_program,
-    );
+    )?;
 
     //
-    // 2. Increase the position's loan liquidity
+    // 2. Get liquidity from ticks (fails if insufficient liquidity for loan)
     //
-    // TODO: Right now, the trade position takes out loan from only the passesd-in
+
+    let update = loan_manager::calculate_modify_loan(
+        &ctx.accounts.globalpool,
+        position,
+        &ctx.accounts.tick_array_lower,
+        &ctx.accounts.tick_array_upper,
+        liquidity_delta,
+    )?;
+
+    //
+    // 3. Check collateral.
+    //
+    // Note 1: Must come after initializing the position, as it uses the position data.
+    // Note 2: Borrowng Token B in A/B pool (e.g. SOL/USDC) means depositing Token A as collateral.
+    //
+
+    let (
+        token_borrow_amount,
+        is_collateral_token_a,
+        is_borrow_token_a,
+        lower_sqrt_price,
+        upper_sqrt_price,
+    ) = loan_manager::calculate_loan_liquidity_token_delta(
+        tick_current_index,
+        position,
+        liquidity_delta,
+    )?;
+
+    let (
+        collateral_token_owner_account,
+        collateral_token_vault,
+        collateral_token_mint,
+        borrowed_token_owner_account,
+        borrowed_token_vault,
+        borrowed_token_mint,
+    ) = if is_collateral_token_a {
+        (
+            &ctx.accounts.token_owner_account_a,
+            &ctx.accounts.token_vault_a,
+            &ctx.accounts.token_mint_a,
+            &ctx.accounts.token_owner_account_b,
+            &ctx.accounts.token_vault_b,
+            &ctx.accounts.token_mint_b,
+        )
+    } else {
+        (
+            &ctx.accounts.token_owner_account_b,
+            &ctx.accounts.token_vault_b,
+            &ctx.accounts.token_mint_b,
+            &ctx.accounts.token_owner_account_a,
+            &ctx.accounts.token_vault_a,
+            &ctx.accounts.token_mint_a,
+        )
+    };
+
+    let collateral_amount = loan_manager::calculate_collateral(
+        token_borrow_amount,
+        is_borrow_token_a,
+        is_collateral_token_a,
+        borrowed_token_mint.decimals,
+        collateral_token_mint.decimals,
+        collateral_token_owner_account.amount,
+        lower_sqrt_price,
+        upper_sqrt_price,
+    )?;
+
+    position.update_collateral_info(collateral_token_mint.key(), collateral_amount);
+
+    transfer_from_owner_to_vault(
+        &ctx.accounts.owner,
+        collateral_token_owner_account,
+        collateral_token_vault,
+        &ctx.accounts.token_program,
+        collateral_amount,
+    )?;
+
+    //
+    // 4. Increase the position's loan liquidity
+    //
+    // TODO: Right now, the trade position takes out loan (liquidity) from only the passesd-in
     //       `lower_tick` and `upper_tick`. Ideally, we want to traverse all initialized
     //       Ticks within the range [lower_tick, upper_tick) and extract liquidity as
     //       uniformly as possible so that the strike price of the loan will be the mean.
@@ -172,19 +261,7 @@ pub fn open_trade_position(
     //     ctx.accounts.tick_array_2.load_mut().ok(),
     // );
 
-    let liquidity_delta = convert_to_liquidity_delta(u128::from(params.liquidity_amount), false)?;
-    let timestamp = to_timestamp_u64(Clock::get()?.unix_timestamp)?;
-
-    let update = loan_manager::calculate_modify_loan(
-        globalpool,
-        position,
-        &ctx.accounts.tick_array_lower,
-        &ctx.accounts.tick_array_upper,
-        liquidity_delta,
-        timestamp,
-    )?;
-
-    sync_modify_liquidity_values_from_loan(
+    liquidity_manager::sync_modify_liquidity_values_for_loan(
         &mut ctx.accounts.globalpool,
         position,
         &ctx.accounts.tick_array_lower,
@@ -206,6 +283,11 @@ pub fn open_trade_position(
             &ctx.accounts.token_vault_a.amount,
         )
     };
+    msg!("initial_loan_token_balance: {}", initial_loan_token_balance);
+    msg!(
+        "initial_swapped_token_balance: {}",
+        initial_swapped_token_balance
+    );
 
     let mut router_accounts = vec![];
     for account in &ctx.remaining_accounts[..] {
@@ -217,26 +299,29 @@ pub fn open_trade_position(
         });
     }
 
+    let mut route_data_bytes: Vec<u8> = Vec::new();
+    let route_data = Route {
+        swap_leg: SwapLeg::Swap {
+            swap: Swap::Whirlpool { a_to_b: true },
+        },
+        in_amount: params.liquidity_amount,
+        quoted_out_amount: 0,
+        slippage_bps: params.slippage_bps,
+        platform_fee_bps: params.platform_fee_bps,
+    };
+    route_data.serialize(&mut route_data_bytes).unwrap();
+    msg!("&ctx.remaining_accounts[..] len: {}", ctx.remaining_accounts.len());
+
     // Swap
-    /*
     program::invoke_signed(
         &Instruction {
             program_id: jupiter_cpi::ID,
             accounts: router_accounts,
-            data: Route {
-                swap_leg: SwapLeg::Swap {
-                    swap: Swap::Whirlpool { a_to_b: true },
-                },
-                in_amount: params.liquidity_amount,
-                quoted_out_amount: 0,
-                slippage_bps: params.slippage_bps,
-                platform_fee_bps: params.platform_fee_bps,
-            }
-            .data(),
+            data: route_data_bytes,
         },
         &ctx.remaining_accounts[..],
-        &[&globalpool.seeds()],
-    )?; */
+        &[&ctx.accounts.globalpool.seeds()],
+    )?;
 
     //
     // Verify swap
@@ -255,6 +340,8 @@ pub fn open_trade_position(
             &ctx.accounts.token_vault_a.amount,
         )
     };
+    msg!("post_loan_token_balance: {}", post_loan_token_balance);
+    msg!("post_swapped_token_balance: {}", post_swapped_token_balance);
 
     // transfer_from_vault_to_owner(
     //     globalpool,

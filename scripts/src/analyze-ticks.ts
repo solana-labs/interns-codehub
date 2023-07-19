@@ -13,6 +13,7 @@ import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import { getPostPoolInitParams } from './params'
 import { TickArrayData } from './types/accounts'
 import { TICK_ARRAY_SIZE } from './constants'
+import { getTickArrayKey } from './utils/tick-arrays'
 
 type TickArrayInfo = {
   tickArrayKey: PublicKey
@@ -50,12 +51,9 @@ async function main() {
       offset
     )
 
-    const [tickArrayKey] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from('tick_array'),
-        globalpoolKey.toBuffer(),
-        Buffer.from(startTickIndex.toString()),
-      ],
+    const tickArrayKey = getTickArrayKey(
+      globalpoolKey,
+      startTickIndex,
       programId
     )
     //  PDAUtil.getTickArray(programId, whirlpoolPubkey, startTickIndex);
@@ -141,12 +139,14 @@ async function main() {
           `net:      ${liquidityNet.toLocaleString().padStart(30, ' ')}  `
         )
       }
+
       if (!zeroGross) {
         console.log(
           ' '.repeat(4),
           `gross:    ${liquidityGross.toLocaleString().padStart(30, ' ')}  `
         )
       }
+
       if (!zeroBorrowed) {
         console.log(
           ' '.repeat(4),
