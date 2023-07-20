@@ -75,6 +75,9 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         )?;
 
         voter_weight = voter_weight.checked_add(cnft_vote_weight as u64).unwrap();
+
+        require!(cnft_vote_record_info.data_is_empty(), CompressedNftVoterError::NftAlreadyVoted);
+
         let cnft_vote_record = CompressedNftVoteRecord {
             account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
             proposal,
@@ -82,7 +85,6 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
             governing_token_owner,
             reserved: [0; 8],
         };
-        require!(cnft_vote_record_info.data_is_empty(), CompressedNftVoterError::NftAlreadyVoted);
         create_and_serialize_account_signed(
             &ctx.accounts.payer.to_account_info(),
             &cnft_vote_record_info,

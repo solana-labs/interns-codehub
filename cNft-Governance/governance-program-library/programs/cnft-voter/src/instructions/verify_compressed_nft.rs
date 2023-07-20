@@ -7,15 +7,15 @@ use spl_account_compression::program::SplAccountCompression;
 
 #[derive(Accounts)]
 #[instruction(params: CompressedNftAsset)]
-pub struct VerifyCompressedNftInfo<'info> {
+pub struct VerifyCompressedNft<'info> {
     /// CHECK: This account is checked in the instruction
     pub leaf_owner: UncheckedAccount<'info>,
     pub payer: Signer<'info>,
     pub compression_program: Program<'info, SplAccountCompression>,
 }
 
-pub fn verify_compressed_nft_info<'info>(
-    ctx: Context<'_, '_, '_, 'info, VerifyCompressedNftInfo<'info>>,
+pub fn verify_cnft_metadata<'info>(
+    ctx: Context<'_, '_, '_, 'info, VerifyCompressedNft<'info>>,
     params: CompressedNftAsset
 ) -> Result<()> {
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
