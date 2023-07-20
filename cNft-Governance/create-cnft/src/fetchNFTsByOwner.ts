@@ -27,26 +27,36 @@ dotenv.config();
   console.log("Collection Address:", collectionMint.toBase58());
 
   // TODO: filter out json_url === "https://supersweetcollection.notarealurl/token.json"
-  const rawAssets = await getAssetsByOwner(connection, { ownerAddress: client.publicKey.toBase58() })
+  const rawAssets = await getAssetsByOwner(connection, {
+    ownerAddress: client.publicKey.toBase58(),
+  });
   const assets = rawAssets.items?.filter((asset) => {
     return (
-      asset.compression && asset.grouping.length > 0 &&
-      asset.grouping.find((group) => group.group_value === collectionMint.toBase58())
-    )
-  })
-  const nfts = assets.filter((asset) => !asset.compression.compressed)
-  const cnfts = assets.filter((asset) => asset.compression.compressed)
+      asset.compression &&
+      asset.grouping.length > 0 &&
+      asset.grouping.find(
+        (group) => group.group_value === collectionMint.toBase58()
+      )
+    );
+  });
+  const nfts = assets.filter((asset) => !asset.compression.compressed);
+  const cnfts = assets.filter((asset) => asset.compression.compressed);
 
   nfts.map((nft) => {
-    console.log("NFT Address: ", nft.id)
-  })
+    console.log("NFT Address: ", nft.id);
+  });
   cnfts.map((cnft) => {
-    console.log("cNFT Asset ID: ", cnft.id)
-  })
+    console.log("cNFT Asset ID: ", cnft.id);
+  });
 
-  const metaplex = new Metaplex(connection);
-  const metadata = await metaplex.nfts().findByMint({ mintAddress: new PublicKey("696GmVXNapR99oqM1LroRFxrq25FLHZoKQeCvff1CAc3") });
-  console.log(metadata.owner)
+  // const metaplex = new Metaplex(connection);
+  // const metadata = await metaplex
+  //   .nfts()
+  //   .findByMint({
+  //     mintAddress: new PublicKey(
+  //       "696GmVXNapR99oqM1LroRFxrq25FLHZoKQeCvff1CAc3"
+  //     ),
+  //   });
 
   // await getAsset(
   //   connection,
