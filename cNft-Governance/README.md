@@ -1,8 +1,8 @@
 # cNFT Gonvernance
 
-Reference(fork): [nft-voter](https://github.com/solana-labs/governance-program-library/tree/master/programs/nft-voter)
+Front-end: [Governance UI](https://github.com/hauchu1998/governance-ui) (fork from solana-labs/governance-ui)
 
-### create-cnft setup
+### create-cnft
 
 This directory designed to facilitate the creation of Non-Fungible Token (NFT) collections, as well as the generation of tree accounts for NFT and Compressed NFT (cNFT) minting.
 
@@ -72,3 +72,8 @@ cargo test-sbf
 3. ./instructions/verify_compressed_nft.rs
 4. ./state/cnft_verification.rs
 5. ./state/registrar.rs
+
+### Reference:
+
+1. [nft-voter](https://github.com/solana-labs/governance-program-library/tree/master/programs/nft-voter)
+2. [governance-ui](https://github.com/solana-labs/governance-ui)
