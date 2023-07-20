@@ -1,10 +1,16 @@
 import { AnchorProvider } from '@coral-xyz/anchor'
 import { Jupiter, SwapMode, RouteInfo } from '@jup-ag/core'
-import { AccountMeta, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
+import {
+  AccountMeta,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from '@solana/web3.js'
 import JSBI from 'jsbi'
 
 import { JUPITER_PROGRAM_ID } from '../constants'
 import { SwapRouteParams } from '../types/jupiter'
+import { consoleLogFull } from '.'
 
 async function getRecentBlockhash(
   provider: AnchorProvider
@@ -61,7 +67,7 @@ export async function getRemainingAccountsFromJupiterRoutes(
   routes: RouteInfo[],
   jupiter: Jupiter,
   provider: AnchorProvider,
-  user: PublicKey,
+  user: PublicKey, // globalpool pid
   maxSlippageFromBest = 0.05
 ) {
   if (!routes.length) return null
@@ -81,12 +87,17 @@ export async function getRemainingAccountsFromJupiterRoutes(
       )
     )
       return null
+    // consoleLogFull(route)
+    console.log(route)
+    console.log(route.marketInfos[0].amm.label, route.marketInfos[0].amm.id)
 
-    const res = await jupiter.exchange({ routeInfo: route }).catch((err) => {
-      console.log('DEBUG: Failed to set exchange')
-      console.error(err)
-      return null
-    })
+    const res = await jupiter
+      .exchange({ routeInfo: route, userPublicKey: user })
+      .catch((err) => {
+        console.log('DEBUG: Failed to set exchange')
+        console.error(err)
+        return null
+      })
     if (!res) {
       console.log('DEBUG: Skip route with no exchange info')
       continue
@@ -104,6 +115,8 @@ export async function getRemainingAccountsFromJupiterRoutes(
     //     ? swapTransaction.instructions.slice(0, -1)
     //     : []
 
+    console.log('swap instructions')
+    console.log(swapTransaction.instructions)
     let swapInstruction = swapTransaction.instructions.at(-1)
     if (!swapInstruction) {
       console.log('DEBUG: Skipped route with no swap instruction')
@@ -113,12 +126,15 @@ export async function getRemainingAccountsFromJupiterRoutes(
     for (const key of swapInstruction.keys) {
       if (key.isSigner) {
         if (!key.pubkey.equals(user)) {
+          console.log(key.pubkey)
           console.log('DEBUG: Skipped route with unexpected signer')
           continue
         }
         key.isSigner = false
       }
     }
+    console.log('swap instruction')
+    console.log(swapInstruction)
 
     // let postInstructions: TransactionInstruction[] = []
 
@@ -147,9 +163,8 @@ export async function getRemainingAccountsFromJupiterRoutes(
       // jupiter accounts
       accounts.push(...swapInstruction.keys)
     }
-    console.log(accounts)
 
-    return accounts
+    return { accounts, swapInstruction }
   }
 
   return null

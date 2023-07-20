@@ -29,6 +29,10 @@ url = "https://api.mainnet-beta.solana.com"
 [[test.validator.clone]]
 address = "JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB"
 
+# Lifinity V2
+[[test.validator.clone]]
+address = "DrRd8gYMJu9XGxLhwTCPdHNLXCKHsxJtMpbn62YqmwQe"
+
 # Modified USDC (mint authority set to local user)
 [[test.validator.account]]
 address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"

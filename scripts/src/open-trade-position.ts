@@ -11,6 +11,7 @@ import {
   Keypair,
   PublicKey,
   Connection,
+  ComputeBudgetProgram,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
@@ -164,17 +165,19 @@ async function main() {
   // consoleLogFull(routeInfos)
   if (!routeInfos) return null
 
-  const remainingAccounts = await getRemainingAccountsFromJupiterRoutes(
+  const swapRouteData = await getRemainingAccountsFromJupiterRoutes(
     routeInfos,
     jupiter,
     provider,
-    positionAuthority
+    globalpoolKey, // globalpool is the swapper
   )
-  console.log('remainingAccounts')
-  consoleLogFull(remainingAccounts)
-  if (!remainingAccounts) return null
+  if (!swapRouteData) return null
+  
+  const { accounts: swapAccounts, swapInstruction } = swapRouteData
+  console.log(swapAccounts.map((acc) => `${acc.pubkey.toBase58().padEnd(44, ' ')} (writer: ${acc.isWritable} / signer: ${acc.isSigner})`))
+  console.log('globalpoolKey', globalpoolKey.toBase58())
 
-  const openTradePositionAccounts = {
+  const openLoanPositionAccounts = {
     owner: positionAuthority,
     globalpool: globalpoolKey,
 
@@ -199,7 +202,7 @@ async function main() {
     rent: SYSVAR_RENT_PUBKEY,
   }
 
-  const openTradePositionParams = {
+  const openLoanPositionParams = {
     // amount: quote.amount,
     // otherAmountThreshold: quote.otherAmountThreshold,
     // sqrtPriceLimit: quote.sqrtPriceLimit,
@@ -209,23 +212,69 @@ async function main() {
     tickLowerIndex,
     tickUpperIndex,
     borrowA,
-    slippageBps: parseFloat(maxSlippage.toString()),
-    platformFeeBps: maxJupiterPlatformSlippage,
   }
 
-  const txId = await createTransactionChained(
+  const openTradePositionAccounts = {
+    owner: positionAuthority,
+    globalpool: globalpoolKey,
+
+    position: positionKey,
+    positionTokenAccount,
+
+    tokenOwnerAccountA,
+    tokenOwnerAccountB,
+    tokenVaultA,
+    tokenVaultB,
+    tokenMintA: tokenMintAKey,
+    tokenMintB: tokenMintBKey,
+
+    // sys
+    tokenProgram: TOKEN_PROGRAM_ID,
+    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+    systemProgram: SystemProgram.programId,
+    rent: SYSVAR_RENT_PUBKEY,
+  }
+
+  const openTradePositionParams = {
+    slippageBps: parseFloat(maxSlippage.toString()),
+    platformFeeBps: maxJupiterPlatformSlippage,
+    swapInstructionData: swapInstruction.data,
+  }
+
+  const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+    units: 1_000_000,
+  })
+
+  const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+    microLamports: 1,
+  })
+
+  const loanTxId = await createTransactionChained(
     provider.connection,
     provider.wallet,
     [
-      program.instruction.openTradePosition(openTradePositionParams, {
-        accounts: openTradePositionAccounts,
-        remainingAccounts,
+      program.instruction.openLoanPosition(openLoanPositionParams, {
+        accounts: openLoanPositionAccounts,
       }),
     ],
     [positionMintKeypair]
   ).buildAndExecute()
 
-  console.log(txId)
+  const tradeTxId = await createTransactionChained(
+    provider.connection,
+    provider.wallet,
+    [
+      modifyComputeUnits,
+      addPriorityFee,
+      program.instruction.openTradePosition(openTradePositionParams, {
+        accounts: openTradePositionAccounts,
+        remainingAccounts: swapAccounts,
+      }),
+    ],
+    []
+  ).buildAndExecute()
+
+  console.log(loanTxId, tradeTxId)
 
   const tokenVaultAAfter = new BN(
     await getTokenBalance(provider, globalpoolInfo.tokenVaultA)
