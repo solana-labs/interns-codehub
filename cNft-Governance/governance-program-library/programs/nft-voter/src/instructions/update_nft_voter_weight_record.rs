@@ -13,7 +13,7 @@ use itertools::Itertools;
 /// which were already used to calculate the total weight
 #[derive(Accounts)]
 #[instruction(voter_weight_action:VoterWeightAction)]
-pub struct UpdateVoterWeightRecord<'info> {
+pub struct UpdateNftVoterWeightRecord<'info> {
     /// The NFT voting Registrar
     pub registrar: Account<'info, Registrar>,
 
@@ -28,17 +28,19 @@ pub struct UpdateVoterWeightRecord<'info> {
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
 }
 
-pub fn update_voter_weight_record(
-    ctx: Context<UpdateVoterWeightRecord>,
-    voter_weight_action: VoterWeightAction,
+pub fn update_nft_voter_weight_record(
+    ctx: Context<UpdateNftVoterWeightRecord>,
+    voter_weight_action: VoterWeightAction
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let governing_token_owner = &ctx.accounts.voter_weight_record.governing_token_owner;
 
     match voter_weight_action {
         // voter_weight for CastVote action can't be evaluated using this instruction
-        VoterWeightAction::CastVote => return err!(NftVoterError::CastVoteIsNotAllowed),
-        VoterWeightAction::CommentProposal
+        VoterWeightAction::CastVote => {
+            return err!(NftVoterError::CastVoteIsNotAllowed);
+        }
+        | VoterWeightAction::CommentProposal
         | VoterWeightAction::CreateGovernance
         | VoterWeightAction::CreateProposal
         | VoterWeightAction::SignOffProposal => {}
@@ -55,7 +57,7 @@ pub fn update_voter_weight_record(
             governing_token_owner,
             nft_info,
             nft_metadata_info,
-            &mut unique_nft_mints,
+            &mut unique_nft_mints
         )?;
 
         voter_weight = voter_weight.checked_add(nft_vote_weight as u64).unwrap();

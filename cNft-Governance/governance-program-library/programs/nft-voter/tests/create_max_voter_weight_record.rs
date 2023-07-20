@@ -8,6 +8,8 @@ use solana_program_test::*;
 use solana_sdk::transport::TransportError;
 
 mod program_test;
+mod nft_test;
+mod cnft_test;
 
 #[tokio::test]
 async fn test_create_max_voter_weight_record() -> Result<(), TransportError> {

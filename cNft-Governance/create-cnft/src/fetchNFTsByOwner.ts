@@ -1,8 +1,9 @@
 import { loadPublicKeysFromFile } from "@/utils/helper";
-import { Connection, Keypair, clusterApiUrl } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { getAssetsByOwner, getAsset, getAssetProof } from "@/utils/read-api";
 
 import dotenv from "dotenv";
+import { Metaplex } from "@metaplex-foundation/js";
 dotenv.config();
 
 (async () => {
@@ -42,6 +43,11 @@ dotenv.config();
   cnfts.map((cnft) => {
     console.log("cNFT Asset ID: ", cnft.id)
   })
+
+  const metaplex = new Metaplex(connection);
+  const metadata = await metaplex.nfts().findByMint({ mintAddress: new PublicKey("696GmVXNapR99oqM1LroRFxrq25FLHZoKQeCvff1CAc3") });
+  console.log(metadata.owner)
+
   // await getAsset(
   //   connection,
   //   new PublicKey("4bCPfvu7JWGcFpZzpD6QAkYA5GNXsN7dpvqyFrYhGtzC")

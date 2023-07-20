@@ -73,4 +73,31 @@ pub enum NftVoterError {
 
     #[msg("VoterWeightRecord must be expired")]
     VoterWeightRecordMustBeExpired,
+
+    #[msg("Invalid instruction")]
+    InvalidInstruction,
+
+    #[msg("Invalid Vote Record Account")]
+    InvalidVoteRecordAccount,
+
+    #[msg("Leaf Owner Must Be Payer")]
+    LeafOwnerMustBePayer,
+
+    #[msg("Leaf Owner Must Be Token Owner")]
+    LeafOwnerMustBeTokenOwner,
+
+    #[msg("Invalid Metadata")]
+    InvalidMetadata,
+
+    #[msg("Invalid AssetId")]
+    InvalidAssetId,
+
+    #[msg("Invalid NFT Collection")]
+    InvalidCollectionMint,
+
+    #[msg("Governance Token Owner Or Delegate Must Sign")]
+    GoverningTokenOwnerOrDelegateMustSign,
+
+    #[msg("Leaf Owner Must Be Voter Authority")]
+    LeafOwnerMustBeVoterAuthority,
 }

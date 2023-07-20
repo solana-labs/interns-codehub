@@ -1,6 +1,6 @@
 [package]
 name = "gpl-nft-voter"
-version = "0.2.2"
+version = "0.2.3"
 description = "SPL Governance addin implementing NFT based governance"
 license = "Apache-2.0"
 edition = "2018"
@@ -26,6 +26,8 @@ solana-program = "1.14.16"
 spl-governance = { version = "3.1.1", features = ["no-entrypoint"] }
 spl-governance-tools=  "0.1.3"
 spl-token = { version = "3.5", features = [ "no-entrypoint" ] }
+spl-account-compression = { version="0.1.8", features = ["cpi"] }
+mpl-bubblegum = { version = "0.7.0", features = ["no-entrypoint", "cpi"] }
 
 # The explicit versions are required to compile Anchor <= 0.27.0
 # Once upgraded to the higher version this can be removed
@@ -36,3 +38,9 @@ toml_datetime = "=0.6.1"
 borsh = "0.9.1"
 solana-sdk = "1.14.16"
 solana-program-test = "1.14.16"
+log = "0.4.19"
+spl-concurrent-merkle-tree = "0.1.2"
+spl-merkle-tree-reference = "0.1.0"
+spl-noop = { version = "0.1.3", features = ["no-entrypoint"] }
+mpl-token-auth-rules = { version = "1.1", features = ["no-entrypoint"] }
+bytemuck = "1.13.0"
