@@ -1,8 +1,12 @@
 import { Jupiter } from '@jup-ag/core'
-import { Percentage } from '@orca-so/common-sdk'
+import { Percentage, TransactionBuilder } from '@orca-so/common-sdk'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  AccountLayout,
+  NATIVE_MINT,
   TOKEN_PROGRAM_ID,
+  createInitializeAccountInstruction,
+  createWrappedNativeAccount,
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token'
 import {
@@ -12,16 +16,20 @@ import {
   PublicKey,
   Connection,
   ComputeBudgetProgram,
+  AccountMeta,
+  Transaction,
+  VersionedTransaction,
+  TransactionMessage,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
-import { tokenMintSOL, tokenMintUSDC } from './constants'
+import { JUPITER_PROGRAM_ID, tokenMintSOL, tokenMintUSDC } from './constants'
 import envVars from './constants/env-vars'
 import { getPostPoolInitParams } from './params'
 import { ParsableGlobalpool } from './types/parsing'
 import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
 import {
-  getRemainingAccountsFromJupiterRoutes,
+  getRouteDataFromJupiterRoutes,
   getRoutesFromJupiter,
 } from './utils/jupiter'
 import { getTickArrayKeyFromTickIndex } from './utils/tick-arrays'
@@ -45,7 +53,8 @@ async function main() {
   console.log(`Clad: ${cladKey.toBase58()}`)
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
-  const borrowA = true // borrow SOL
+  const borrowA = false // borrow SOL
+  const isTradeA2B = borrowA
   // const borrowAmount = new BN(1) // 1 SOL
   const borrowAmount = new BN(10_000_000) // 10k liquidity (TODO: use quote to get this)
 
@@ -149,33 +158,133 @@ async function main() {
     user: positionAuthority,
     wrapUnwrapSOL: false,
     routeCacheDuration: 0,
+    // For testing only, only cloned Orca accounts on localnet
+    ammsToExclude: {
+      // 'Orca (Whirlpools)': false,
+      // Orca: false,
+      GooseFX: true,
+      Phoenix: true,
+      'Lifinity V2': true,
+      Lifinity: true,
+      Symmetry: true,
+      Serum: true,
+      Openbook: true,
+      Mercurial: true,
+      Marinade: true,
+      Saber: true,
+      Raydium: true,
+      'Raydium CLMM': true,
+    },
   })
 
-  const routeInfos = await getRoutesFromJupiter(
+  // Gets best route
+  const swapRoutes = await getRoutesFromJupiter(
     {
-      a2b: true, // token a to token b
-      tokenA: tokenMintSOL,
-      tokenB: tokenMintUSDC,
-      amount: 100 * Math.pow(10, 6),
+      a2b: isTradeA2B,
+      tokenA: isTradeA2B ? tokenMintAKey : tokenMintBKey,
+      tokenB: isTradeA2B ? tokenMintBKey : tokenMintAKey,
+      amount: 1 * Math.pow(10, isTradeA2B ? mintA.decimals : mintB.decimals), // 1 usdc or 1 sol
       slippageBps: 5.0,
       feeBps: 0.0,
     },
     jupiter
   )
   // consoleLogFull(routeInfos)
-  if (!routeInfos) return null
+  // console.log(swapRoutes)
+  if (!swapRoutes) return null
 
-  const swapRouteData = await getRemainingAccountsFromJupiterRoutes(
-    routeInfos,
-    jupiter,
-    provider,
-    globalpoolKey, // globalpool is the swapper
-  )
-  if (!swapRouteData) return null
-  
-  const { accounts: swapAccounts, swapInstruction } = swapRouteData
-  console.log(swapAccounts.map((acc) => `${acc.pubkey.toBase58().padEnd(44, ' ')} (writer: ${acc.isWritable} / signer: ${acc.isSigner})`))
-  console.log('globalpoolKey', globalpoolKey.toBase58())
+  // Routes are sorted based on outputAmount, so ideally the first route is the best.
+  const bestRoute = swapRoutes[0]
+  // console.log(bestRoute)
+
+  for (const marketInfo of bestRoute.marketInfos) {
+    if (marketInfo.notEnoughLiquidity)
+      throw new Error('Not enough liquidity on swap venue')
+  }
+
+  const res = await jupiter
+    .exchange({ routeInfo: bestRoute, userPublicKey: globalpoolKey }) // globalpool trades the tokens
+    .catch((err) => {
+      console.log('DEBUG: Failed to set exchange')
+      console.error(err)
+      return null
+    })
+  if (!res) {
+    throw new Error('Skip route with no exchange info')
+  }
+  const swapTransaction = res.swapTransaction as VersionedTransaction
+  if (!swapTransaction.message) {
+    throw new Error('Skipped route with no instructions') // skip legacy transaction
+  }
+
+  const message = TransactionMessage.decompile(swapTransaction.message, {
+    addressLookupTableAccounts: res.addressLookupTableAccounts,
+  })
+  // console.log(message.instructions)
+
+  console.log('whirlpool data')
+  console.log(bestRoute.marketInfos[0].amm)
+  if (bestRoute.marketInfos[0].amm.label.startsWith('Orca')) {
+    const { whirlpoolData } = bestRoute.marketInfos[0].amm as unknown as {
+      whirlpoolData: {
+        whirlpoolsConfig: any
+        tokenMintA: any
+        tokenMintB: any
+        tokenVaultA: any
+        tokenVaultB: any
+        rewardInfos: any[]
+        tickArrays: any[]
+      }
+    }
+    console.log('whirlpoolsConfig', whirlpoolData.whirlpoolsConfig.toBase58())
+    console.log('tokenVaultA', whirlpoolData.tokenVaultA.toBase58())
+    console.log('tokenVaultB', whirlpoolData.tokenVaultB.toBase58())
+    // console.log('config', orcaAmm.whirlpoolsConfig.toBase58())
+    // console.log('tokenMintA', orcaAmm.tokenMintA.toBase58())
+    // console.log('tokenMintB', orcaAmm.tokenMintB.toBase58())
+    // console.log('tokenVaultA', orcaAmm.tokenVaultA.toBase58())
+    // console.log('tokenVaultB', orcaAmm.tokenVaultB.toBase58())
+    // consoleLogFull(orcaAmm.rewardInfos)
+    // consoleLogFull(orcaAmm.tickArrays)
+  }
+
+  // const setupInstructions = message.instructions.slice(0, -1)
+  // consoleLogFull(setupInstructions)
+  // await createTransactionChained(
+  //   provider.connection,
+  //   provider.wallet,
+  //   setupInstructions,
+  //   []
+  // ).buildAndExecute()
+
+  const swapInstruction = message.instructions.slice(-1)[0]
+  // consoleLogFull(swapInstruction)
+  // console.log(swapInstruction.programId.toBase58())
+  // console.log(swapInstruction.keys.length)
+
+  // Discriminator must equal e5 17 cb 97 7a e3 ad 2a
+  // console.log(swapInstruction.data.subarray(0, 8))
+
+  const swapAccounts: AccountMeta[] = [
+    {
+      isSigner: false,
+      isWritable: false,
+      pubkey: swapInstruction.programId,
+    },
+  ]
+
+  for (const key of swapInstruction.keys) {
+    if (key.isSigner) {
+      if (!key.pubkey.equals(globalpoolKey)) {
+        console.log(key.pubkey)
+        console.log('DEBUG: Skipped route with unexpected signer')
+        continue
+      }
+      key.isSigner = false
+    }
+    swapAccounts.push(key)
+  }
+  console.log('swapAccounts len', swapAccounts.length)
 
   const openLoanPositionAccounts = {
     owner: positionAuthority,
@@ -236,10 +345,16 @@ async function main() {
   }
 
   const openTradePositionParams = {
-    slippageBps: parseFloat(maxSlippage.toString()),
+    slippageBps: bestRoute.slippageBps,
     platformFeeBps: maxJupiterPlatformSlippage,
+    // Swap data
+    // swapInAmount: bestRoute.inAmount.toString(),
+    // swapOutAmount: bestRoute.outAmount,
+    // swapOtherAmountThreshold: bestRoute.otherAmountThreshold.toString(),
+    // swapInstructionData: swapInstruction.data,
     swapInstructionData: swapInstruction.data,
   }
+  consoleLogFull(openTradePositionParams)
 
   const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
     units: 1_000_000,

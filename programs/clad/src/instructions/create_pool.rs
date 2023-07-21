@@ -1,7 +1,10 @@
 use {
     crate::state::*,
     anchor_lang::prelude::*,
-    anchor_spl::token::{self, Mint, Token, TokenAccount},
+    anchor_spl::{
+        associated_token::AssociatedToken,
+        token::{self, Mint, Token, TokenAccount},
+    },
 };
 
 #[derive(Accounts)]
@@ -36,23 +39,26 @@ pub struct CreatePool<'info> {
     pub token_mint_b: Account<'info, Mint>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = funder,
-        token::mint = token_mint_a,
-        token::authority = globalpool // transfer_authority
+        constraint = token_mint_a.key() == token_vault_a.mint,
+        associated_token::mint = token_mint_a,
+        associated_token::authority = globalpool
     )]
     pub token_vault_a: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = funder,
-        token::mint = token_mint_b,
-        token::authority = globalpool // transfer_authority
+        constraint = token_mint_b.key() == token_vault_b.mint,
+        associated_token::mint = token_mint_b,
+        associated_token::authority = globalpool
     )]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,

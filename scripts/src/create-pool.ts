@@ -1,6 +1,10 @@
 import * as anchor from '@coral-xyz/anchor'
 import { TransactionBuilder } from '@orca-so/common-sdk'
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from '@solana/spl-token'
 import {
   Keypair,
   PublicKey,
@@ -85,8 +89,28 @@ async function main() {
     programId
   )
 
-  const tokenVaultAKeypair = Keypair.generate()
-  const tokenVaultBKeypair = Keypair.generate()
+  const tokenVaultA = getAssociatedTokenAddressSync(
+    tokenMintAKey,
+    globalpoolKey,
+    true
+  )
+  const tokenVaultB = getAssociatedTokenAddressSync(
+    tokenMintBKey,
+    globalpoolKey,
+    true
+  )
+  // const tokenVaultA = await createAndMintToAssociatedTokenAccount(
+  //   provider,
+  //   tokenMintA,
+  //   0,
+  //   globalpoolKey,
+  // )
+  // const tokenVaultB = await createAndMintToAssociatedTokenAccount(
+  //   provider,
+  //   tokenMintB,
+  //   0,
+  //   globalpoolKey,
+  // )
 
   const createPoolParams = {
     feeRate,
@@ -97,12 +121,13 @@ async function main() {
     funder: wallet.publicKey,
     clad: cladKey,
     globalpool: globalpoolKey,
-    tokenMintA: tokenMintAKey,
-    tokenMintB: tokenMintBKey,
-    tokenVaultA: tokenVaultAKeypair.publicKey,
-    tokenVaultB: tokenVaultBKeypair.publicKey,
+    tokenMintA: tokenMintA.address,
+    tokenMintB: tokenMintB.address,
+    tokenVaultA: tokenVaultA,
+    tokenVaultB: tokenVaultB,
     // sys
     tokenProgram: TOKEN_PROGRAM_ID,
+    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
     systemProgram: SystemProgram.programId,
     rent: SYSVAR_RENT_PUBKEY,
   }
@@ -113,7 +138,7 @@ async function main() {
     program.instruction.createPool(createPoolParams, {
       accounts: createPoolAccounts,
     }),
-    [tokenVaultAKeypair, tokenVaultBKeypair]
+    []
   ).buildAndExecute()
 
   console.log('Created Pool: ', txIdCreatePool)

@@ -15,7 +15,7 @@ use {
 pub struct Globalpool {
     pub bump: [u8; 1], // Globalpool bump
 
-    pub tick_spacing: u16,         
+    pub tick_spacing: u16,
     pub tick_spacing_seed: [u8; 2],
 
     // Stored as hundredths of a basis point
@@ -176,13 +176,23 @@ impl Globalpool {
         }
     }
 
-    pub fn update_after_borrow(
+    pub fn update_liquidity_trade_locked(
         &mut self,
-        liquidity_borrowed: u128,
-        tick_index: i32,
-        sqrt_price: u128,
-    ) {
-        todo!()
+        liquidity_swapped_out: u128,
+        is_borrow_a: bool, // true: swapped out to Token B | false: swapped out to Token A
+    ) -> Result<()> {
+        if is_borrow_a {
+            self.liquidity_trade_locked_b = self
+                .liquidity_trade_locked_b
+                .checked_add(liquidity_swapped_out)
+                .unwrap();
+        } else {
+            self.liquidity_trade_locked_a = self
+                .liquidity_trade_locked_a
+                .checked_add(liquidity_swapped_out)
+                .unwrap();
+        }
+        Ok(())
     }
 
     pub fn reset_protocol_fees_owed(&mut self) {

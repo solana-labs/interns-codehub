@@ -4,7 +4,6 @@ import {
   AccountMeta,
   PublicKey,
   Transaction,
-  TransactionInstruction,
 } from '@solana/web3.js'
 import JSBI from 'jsbi'
 
@@ -50,10 +49,14 @@ export async function getRoutesFromJupiter(
       outputMint: a2b ? tokenB : tokenA,
       amount: JSBI.BigInt(amount.toString()),
       slippageBps,
-      feeBps,
+      feeBps: 0, // no fee charged by our program
       forceFetch: true,
+      // TODO: For shit coins, it's probably better to swap hops,
+      //       which requires creating ATA for the program for each hopped token.
+      //       So just do direct routes for now.
       onlyDirectRoutes: true,
       swapMode: SwapMode.ExactIn,
+      filterTopNResult: 2,
     })
     .then((res) => res.routesInfos)
     .catch((error) => {
@@ -63,7 +66,7 @@ export async function getRoutesFromJupiter(
     })
 }
 
-export async function getRemainingAccountsFromJupiterRoutes(
+export async function getRouteDataFromJupiterRoutes(
   routes: RouteInfo[],
   jupiter: Jupiter,
   provider: AnchorProvider,
@@ -88,8 +91,8 @@ export async function getRemainingAccountsFromJupiterRoutes(
     )
       return null
     // consoleLogFull(route)
-    console.log(route)
-    console.log(route.marketInfos[0].amm.label, route.marketInfos[0].amm.id)
+    // console.log(route)
+    // console.log(route.marketInfos[0].amm.label, route.marketInfos[0].amm.id)
 
     const res = await jupiter
       .exchange({ routeInfo: route, userPublicKey: user })
@@ -104,7 +107,7 @@ export async function getRemainingAccountsFromJupiterRoutes(
     }
 
     // console.log(res.transactions.swapTransaction)
-    const swapTransaction = res.transactions.swapTransaction as Transaction
+    const swapTransaction = res.swapTransaction as Transaction
     if (!swapTransaction.instructions) {
       console.log('DEBUG: Skipped route with no instructions')
       continue // skip VersionedTransaction

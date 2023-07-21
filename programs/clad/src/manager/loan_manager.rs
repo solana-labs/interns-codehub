@@ -141,8 +141,8 @@ pub fn calculate_loan_liquidity_token_delta(
 
     let lower_sqrt_price = sqrt_price_from_tick_index(position.tick_lower_index);
     let upper_sqrt_price = sqrt_price_from_tick_index(position.tick_upper_index);
-    msg!("lower_price_sqrt: {:?}", lower_sqrt_price);
-    msg!("upper_price_sqrt: {:?}", upper_sqrt_price);
+    // msg!("lower_price_sqrt: {:?}", lower_sqrt_price);
+    // msg!("upper_price_sqrt: {:?}", upper_sqrt_price);
 
     // Always only in one token
     let delta = if is_collateral_token_a {

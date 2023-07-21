@@ -87,9 +87,10 @@ export async function createAssociatedTokenAccount(
   provider: AnchorProvider,
   mint: web3.PublicKey,
   owner: web3.PublicKey,
-  payer: web3.PublicKey
+  payer: web3.PublicKey,
+  allowOwnerOffCurve: boolean = true
 ) {
-  const ataAddress = getAssociatedTokenAddressSync(mint, owner)
+  const ataAddress = getAssociatedTokenAddressSync(mint, owner, allowOwnerOffCurve)
   const instr = createAssociatedTokenAccountInstruction(
     payer,
     ataAddress,

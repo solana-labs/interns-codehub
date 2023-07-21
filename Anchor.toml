@@ -25,15 +25,103 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 programs/clad/tests/anch
 [test.validator]
 url = "https://api.mainnet-beta.solana.com"
 
-# Jupiter
+# Wrapped SOL (wSOL)
 [[test.validator.clone]]
-address = "JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB"
-
-# Lifinity V2
-[[test.validator.clone]]
-address = "DrRd8gYMJu9XGxLhwTCPdHNLXCKHsxJtMpbn62YqmwQe"
+address = "D3CDPQLoa9jY1LXCkpUqd3JQDWz8DX1LDE1dhmJt9fq4"
 
 # Modified USDC (mint authority set to local user)
 [[test.validator.account]]
 address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 filename = "scripts/accounts/usdc.json"
+
+# Jupiter V4
+[[test.validator.clone]]
+address = "JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB"
+
+# Raydium CLMM
+[[test.validator.clone]]
+address = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+
+# Raydium CLMM SOL-USDC
+[[test.validator.clone]]
+address = "2QdhepnKRTLjjSqPL1PtKNwqrUkoLee5Gqs8bvZhRdMv"
+
+# Lifinity V2
+[[test.validator.clone]]
+address = "DrRd8gYMJu9XGxLhwTCPdHNLXCKHsxJtMpbn62YqmwQe"
+
+# Lifinity Swap V2
+[[test.validator.clone]]
+address = "2wT8Yq49kHgDzXuPxZSaeLaH1qbmGXtEyPy64bL7aD3c"
+
+# Lifinity SOL-USDC
+[[test.validator.clone]]
+address = "86eq4kdBkUCHGdCC2SfcqGHRCBGhp2M89aCmuvvxaXsm"
+
+# Orca Whirlpool
+[[test.validator.clone]]
+address = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+
+# Orca Whirlpool SOL-USDC
+[[test.validator.clone]]
+address = "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE"
+
+# Orca tick array 1
+[[test.validator.clone]]
+address = "8cSEbQP389xmezdqPZ5qLma7YeCeQa8tuSsT67PYfomr"
+
+# Orca tick array 2
+[[test.validator.clone]]
+address = "54yX4yVDCs4eUwCHzDpRfuwQoB9BLvQZLT5zcpWmzKN7"
+
+# Orca tick array 3
+[[test.validator.clone]]
+address = "Bbynrb4EjyxqAHvxaG3AQSUtYzxEYe8QrSpt4xU6dE48"
+
+# Orca tick array 4
+[[test.validator.clone]]
+address = "CDDZkq29aFmAC63pRX5D19DvRa2PGHw6kzZ48EUSqVzr"
+
+# Orca tick array 4
+[[test.validator.clone]]
+address = "2XU8ZpQ8NMTTGDRmdhMsuwGJnLqS5DhKUrcRVDXraiyo"
+
+# Orca tick array 4
+[[test.validator.clone]]
+address = "HamuvLZt4pM1DBikuiF1hpnmK1EX9yLv9BUotHUJMBvp"
+
+# Orca tick array 4
+[[test.validator.clone]]
+address = "FUifo3d4gzAyE4k9ZZjKWmBhfHskCiVF4S9QgsGyjJVD"
+
+# Orca tick array 4
+[[test.validator.clone]]
+address = "4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ"
+
+# Orca tick array 4
+[[test.validator.clone]]
+address = "C6ZMoA93UfQMsJm2khN2gQr6vyTpujXFiLLxG3VeLEp6"
+
+# Orca tick array 4
+[[test.validator.clone]]
+address = "8LGqqS5P6kFy6LGYSVr5byaqVXcaqWh2PAUjmGzut4zM"
+
+# Orca token vault A
+[[test.validator.clone]]
+address = "EUuUbDcafPrmVTD5M6qoJAoyyNbihBhugADAxRMn5he9"
+
+# Orca token vault B
+[[test.validator.clone]]
+address = "2WLWEuKDgkDUccTpbwYp1GToYktiSB1cXvreHUwiSUVP"
+
+# Orca token vault B
+[[test.validator.clone]]
+address = "dwxR9YF7WwnJJu7bPC4UNcWFpcSsooH6fxbpoa3fTbJ"
+
+# Orca config
+[[test.validator.clone]]
+address = "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"
+
+# Orca SOL-USDC
+[[test.validator.clone]]
+address = "83v8iPyZihDEjDdY8RdZddyZNyUtXngz69Lgo9Kt5d6d"

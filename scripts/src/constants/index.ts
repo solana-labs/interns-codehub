@@ -3,7 +3,8 @@ import { PublicKey } from '@solana/web3.js'
 
 export { Clad } from '@/target/types/clad'
 
-export const JUPITER_PROGRAM_ID = 'JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB' // v3: JUP3c2Uh3WA4Ng34tw6kPd2G4C5BB21Xo36Je1s32Ph
+// export const JUPITER_PROGRAM_ID = 'JUP3c2Uh3WA4Ng34tw6kPd2G4C5BB21Xo36Je1s32Ph' // v3
+export const JUPITER_PROGRAM_ID = 'JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB' // v4
 
 export const TICK_ARRAY_SIZE = 88
 

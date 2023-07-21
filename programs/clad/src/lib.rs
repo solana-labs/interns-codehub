@@ -18,6 +18,11 @@ pub mod util;
 
 use {anchor_lang::prelude::*, instructions::*};
 
+pub mod jupiter {
+    // solana_program::declare_id!("JUP3c2Uh3WA4Ng34tw6kPd2G4C5BB21Xo36Je1s32Ph");
+    solana_program::declare_id!("JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB");
+}
+
 #[program]
 pub mod clad {
     use super::*;

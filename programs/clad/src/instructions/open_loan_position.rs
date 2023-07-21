@@ -123,7 +123,7 @@ pub fn open_loan_position(
     }
 
     if params.tick_lower_index > params.tick_upper_index {
-        return Err(ProgramError::InvalidInstructionData.into());
+        return Err(ErrorCode::InvalidTickRange.into());
     }
 
     // Require that both TickArrays (from which token liquidity is borrowed) are either
@@ -133,7 +133,15 @@ pub fn open_loan_position(
         || (params.tick_upper_index == tick_current_index)
         || (params.tick_lower_index == tick_current_index)
     {
-        return Err(ProgramError::InvalidInstructionData.into());
+        return Err(ErrorCode::InvalidTickRangeAgainstCurrentTick.into());
+    }
+
+    // Require that if borrow_a = true, then the Ticks are ABOVE the current globalpool tick.
+    // Conversely, if borrow_a = false, then the Ticks are BELOW the current globalpool tick.
+    if (params.borrow_a && params.tick_lower_index < tick_current_index)
+        || (!params.borrow_a && params.tick_upper_index > tick_current_index)
+    {
+        return Err(ErrorCode::InvalidTickRangeAgainstBorrowCondition.into());
     }
 
     let liquidity_delta = convert_to_liquidity_delta(u128::from(params.liquidity_amount), false)?;
@@ -142,7 +150,7 @@ pub fn open_loan_position(
     // 1. Initialize & mint the trade position
     //
 
-    position.open_position(
+    position.init_position(
         &ctx.accounts.globalpool,
         position_mint.key(),
         params.tick_lower_index,
@@ -225,7 +233,8 @@ pub fn open_loan_position(
         upper_sqrt_price,
     )?;
 
-    position.update_collateral_info(collateral_token_mint.key(), collateral_amount);
+    position.update_position_mints(borrowed_token_mint.key(), collateral_token_mint.key())?;
+    position.update_collateral_amount(collateral_amount)?;
 
     transfer_from_owner_to_vault(
         &ctx.accounts.owner,

@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "dependencies": {
     "@coral-xyz/anchor": "^0.28.1-beta.1",
-    "@jup-ag/core": "3.0.0-beta.18",
+    "@jup-ag/core": "^4.0.0-beta.18",
     "@metaplex-foundation/mpl-token-metadata": "^2.13.0",
-    "@orca-so/common-sdk": "^0.3.1",
+    "@orca-so/common-sdk": "0.3.0",
     "@orca-so/whirlpools-sdk": "^0.11.1",
     "@solana/spl-token": "^0.3.8",
     "@solana/web3.js": "^1.78.0",

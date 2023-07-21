@@ -3,26 +3,26 @@ import { Account, Mint } from '@solana/spl-token'
 import { AccountInfo, PublicKey } from '@solana/web3.js'
 
 export enum AccountName {
-  LiquidityPosition = "LiquidityPosition",
-  TradePosition = "TradePosition",
-  TickArray = "TickArray",
-  Globalpool = "Globalpool",
+  LiquidityPosition = 'LiquidityPosition',
+  TradePosition = 'TradePosition',
+  TickArray = 'TickArray',
+  Globalpool = 'Globalpool',
 }
 
 export type BasicSupportedTypes = Account | Mint
 
 export type GlobalpoolData = {
-	bump: number,
-	tickSpacing: number,
-	tickSpacingSeed: number,
+  bump: number
+  tickSpacing: number
+  tickSpacingSeed: number
   feeRate: number
-	feeRateSeed: number,
+  feeRateSeed: number
   protocolFeeRate: number
   liquidityAvailable: bigint
-	liquidityBorrowedA: bigint
-	liquidityBorrowedB: bigint
-	liquidityTradeLockedA: bigint
-	liquidityTradeLockedB: bigint
+  liquidityBorrowedA: bigint
+  liquidityBorrowedB: bigint
+  liquidityTradeLockedA: bigint
+  liquidityTradeLockedB: bigint
   sqrtPrice: bigint
   tickCurrentIndex: number
   protocolFeeOwedA: bigint
@@ -34,7 +34,7 @@ export type GlobalpoolData = {
   tokenVaultB: PublicKey
   feeGrowthGlobalB: bigint
   inceptionTime: bigint
-	feeAuthority: PublicKey
+  feeAuthority: PublicKey
 }
 
 export type LiquidityPositionData = {
@@ -52,9 +52,17 @@ export type LiquidityPositionData = {
 export type TradePositionData = {
   globalpool: PublicKey
   positionMint: PublicKey
-  liquidity: BN
   tickLowerIndex: number
   tickUpperIndex: number
+  liquidityAvailable: BN
+  liquiditySwapped: BN
+  liquidityMint: PublicKey
+  collateralAmount: BN // u64 is BN
+  collateralMint: PublicKey
+  isTradeOpen: boolean
+  openSlot: BN
+  duration: BN
+  interestRate: number
 }
 
 export type TickData = {
@@ -82,17 +90,17 @@ export type CladSupportedTypes =
 /**
  * Extended Mint type to host token info.
  */
-export type TokenInfo = Mint & { mint: PublicKey };
+export type TokenInfo = Mint & { mint: PublicKey }
 
 /**
  * Extended (token) Account type to host account info for a Token.
  */
-export type TokenAccountInfo = Account;
+export type TokenAccountInfo = Account
 
 /**
  * A wrapper class of a TickArray on a Globalpool
  */
 export type TickArray = {
-  address: PublicKey;
-  data: TickArrayData | null;
-};
+  address: PublicKey
+  data: TickArrayData | null
+}

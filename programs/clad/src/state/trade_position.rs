@@ -54,7 +54,7 @@ impl TradePosition {
         }
     }
 
-    pub fn open_position(
+    pub fn init_position(
         &mut self,
         globalpool: &Account<Globalpool>,
         position_mint: Pubkey,
@@ -76,12 +76,34 @@ impl TradePosition {
         Ok(())
     }
 
-    pub fn update_collateral_info(
+    pub fn update_position_mints(
         &mut self,
+        liquidity_mint: Pubkey,
         collateral_mint: Pubkey,
+    ) -> Result<()> {
+        if self.liquidity_mint == Pubkey::default() {
+            self.liquidity_mint = liquidity_mint;
+        }
+        if self.collateral_mint == Pubkey::default() {
+            self.collateral_mint = collateral_mint;
+        }
+        Ok(())
+    }
+
+    pub fn update_collateral_amount(
+        &mut self,
         collateral_amount: u64,
-    ) {
-        self.collateral_mint = collateral_mint;
+    ) -> Result<()> {
         self.collateral_amount = collateral_amount;
+        Ok(())
+    }
+
+    pub fn update_liquidity_swapped(
+        &mut self,
+        liquidity_swapped: u128,
+    ) -> Result<()> {
+        self.liquidity_available -= liquidity_swapped;
+        self.liquidity_swapped = liquidity_swapped;
+        Ok(())
     }
 }

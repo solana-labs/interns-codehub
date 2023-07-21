@@ -96,10 +96,21 @@ pub enum ErrorCode {
     #[msg("There are no loan amount to borrow.")]
     ZeroBorrowableAmount, //0x1799
 
+    #[msg("Invalid Tick Range")]
+    InvalidTickRange,
+    #[msg("Invalid Tick Range against Current Tick")]
+    InvalidTickRangeAgainstCurrentTick,
+    #[msg("Invalid Tick Range against Borrow Condition")]
+    InvalidTickRangeAgainstBorrowCondition,
+
     #[msg("Insufficient collateral")]
     InsufficientCollateral,
     #[msg("Insufficient liquidity to borrow")]
     InsufficientLiquidityToBorrow,
+    #[msg("Invalid Loan Trade Swap Direction")]
+    InvalidLoanTradeSwapDirection,
+    #[msg("Invalid Loan Trade Swap Result")]
+    InvalidLoanTradeSwapResult,
 }
 
 impl From<TryFromIntError> for ErrorCode {
