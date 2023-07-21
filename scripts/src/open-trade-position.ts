@@ -181,10 +181,10 @@ async function main() {
   const swapRoutes = await getRoutesFromJupiter(
     {
       a2b: isTradeA2B,
-      tokenA: isTradeA2B ? tokenMintAKey : tokenMintBKey,
-      tokenB: isTradeA2B ? tokenMintBKey : tokenMintAKey,
+      tokenA: tokenMintAKey,
+      tokenB: tokenMintBKey,
       amount: 1 * Math.pow(10, isTradeA2B ? mintA.decimals : mintB.decimals), // 1 usdc or 1 sol
-      slippageBps: 5.0,
+      slippageBps: 30, // 0.3%
       feeBps: 0.0,
     },
     jupiter
