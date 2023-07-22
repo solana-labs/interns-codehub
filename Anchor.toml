@@ -106,17 +106,25 @@ address = "C6ZMoA93UfQMsJm2khN2gQr6vyTpujXFiLLxG3VeLEp6"
 [[test.validator.clone]]
 address = "8LGqqS5P6kFy6LGYSVr5byaqVXcaqWh2PAUjmGzut4zM"
 
-# Orca token vault A
+# Orca token vault
 [[test.validator.clone]]
 address = "EUuUbDcafPrmVTD5M6qoJAoyyNbihBhugADAxRMn5he9"
 
-# Orca token vault B
+# Orca token vault
 [[test.validator.clone]]
 address = "2WLWEuKDgkDUccTpbwYp1GToYktiSB1cXvreHUwiSUVP"
 
-# Orca token vault B
+# Orca token vault
 [[test.validator.clone]]
 address = "dwxR9YF7WwnJJu7bPC4UNcWFpcSsooH6fxbpoa3fTbJ"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "6mQ8xEaHdTikyMvvMxUctYch6dUjnKgfoeib2msyMMi1"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "AQ36QRk3HAe6PHqBCtKTQnYKpt2kAagq9YoeTqUPMGHx"
 
 # Orca config
 [[test.validator.clone]]

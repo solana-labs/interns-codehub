@@ -35,6 +35,7 @@ pub fn calculate_modify_loan<'info>(
     tick_array_lower: &AccountLoader<'info, TickArray>,
     tick_array_upper: &AccountLoader<'info, TickArray>,
     liquidity_delta: i128,
+    borrow_a: bool,
 ) -> Result<ModifyLoanUpdate> {
     // Disallow only updating position fee growth when position has zero liquidity
     if liquidity_delta == 0 {
@@ -80,6 +81,7 @@ pub fn calculate_modify_loan<'info>(
         globalpool.fee_growth_global_b,
         liquidity_delta,
         false,
+        borrow_a,
     )?;
 
     let tick_upper_update = next_tick_modify_liquidity_update_from_loan(
@@ -90,6 +92,7 @@ pub fn calculate_modify_loan<'info>(
         globalpool.fee_growth_global_b,
         liquidity_delta,
         true,
+        borrow_a,
     )?;
 
     //

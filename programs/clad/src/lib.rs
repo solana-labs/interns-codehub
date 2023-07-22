@@ -106,6 +106,10 @@ pub mod clad {
         return instructions::open_loan_position(ctx, &params);
     }
 
+    pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
+        return instructions::close_loan_position(ctx);
+    }
+
     pub fn open_trade_position(
         ctx: Context<OpenTradePosition>,
         params: OpenTradePositionParams,
@@ -113,17 +117,12 @@ pub mod clad {
         return instructions::open_trade_position(ctx, &params);
     }
 
-    /// Close a trade position. Burns the trade position token in the owner's wallet.
-    ///
-    /// ### Authority
-    /// - "position_authority" - The authority that owns the position token.
-    ///
-    /// #### Special Errors
-    /// - `CloseTradePositionNotEmpty` - The provided trade position account is not empty.
-    // pub fn close_trade_position() -> Result<()> {
-    //     todo!();
-    //     Ok(())
-    // }
+    pub fn close_trade_position(
+        ctx: Context<CloseTradePosition>,
+        params: CloseTradePositionParams,
+    ) -> Result<()> {
+        return instructions::close_trade_position(ctx, &params);
+    }
 
     /// Add liquidity to a position in the Globalpool. This call also updates the position's accrued fees.
     ///

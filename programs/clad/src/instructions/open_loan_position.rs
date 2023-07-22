@@ -22,29 +22,30 @@ pub struct OpenLoanPosition<'info> {
     pub globalpool: Box<Account<'info, Globalpool>>,
 
     #[account(
-			init,
-			payer = owner,
-			space = TradePosition::LEN,
-			seeds = [
-					b"trade_position".as_ref(),
-					position_mint.key().as_ref()
-			],
-			bump,
+        init,
+        payer = owner,
+        space = TradePosition::LEN,
+        seeds = [
+                b"trade_position".as_ref(),
+                position_mint.key().as_ref()
+        ],
+        bump,
 	)]
     pub position: Box<Account<'info, TradePosition>>,
 
-    #[account(init,
-			payer = owner,
-			mint::authority = globalpool,
-			mint::decimals = 0,
+    #[account(
+        init,
+        payer = owner,
+        mint::authority = globalpool,
+        mint::decimals = 0,
 	)]
     pub position_mint: Account<'info, Mint>,
 
     #[account(
-			init,
-			payer = owner,
-			associated_token::mint = position_mint,
-			associated_token::authority = owner,
+        init,
+        payer = owner,
+        associated_token::mint = position_mint,
+        associated_token::authority = owner,
 	)]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
 
@@ -174,6 +175,7 @@ pub fn open_loan_position(
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
         liquidity_delta,
+        params.borrow_a,
     )?;
 
     //

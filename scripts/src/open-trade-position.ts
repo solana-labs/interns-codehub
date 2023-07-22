@@ -53,10 +53,11 @@ async function main() {
   console.log(`Clad: ${cladKey.toBase58()}`)
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
-  const borrowA = false // borrow SOL
+  const borrowA = false // borrow USDC (B)
   const isTradeA2B = borrowA
-  // const borrowAmount = new BN(1) // 1 SOL
-  const borrowAmount = new BN(10_000_000) // 10k liquidity (TODO: use quote to get this)
+
+  // const borrowAmount = new BN(100 * Math.pow(100, (borrowA ? mintA : mintB).decimals)) // 100 USDC
+  const borrowAmount = new BN(1_000_000) // 1m liquidity (todo: calculate using quote)
 
   const maxSlippage = Percentage.fromFraction(1, 100)
   const maxJupiterPlatformSlippage = 0
@@ -183,7 +184,8 @@ async function main() {
       a2b: isTradeA2B,
       tokenA: tokenMintAKey,
       tokenB: tokenMintBKey,
-      amount: 1 * Math.pow(10, isTradeA2B ? mintA.decimals : mintB.decimals), // 1 usdc or 1 sol
+      // amount: 1 * Math.pow(10, isTradeA2B ? mintA.decimals : mintB.decimals), // 1 usdc or 1 sol
+      amount: borrowAmount.toNumber(),
       slippageBps: 30, // 0.3%
       feeBps: 0.0,
     },
@@ -224,7 +226,7 @@ async function main() {
 
   console.log('whirlpool data')
   console.log(bestRoute.marketInfos[0].amm)
-  if (bestRoute.marketInfos[0].amm.label.startsWith('Orca')) {
+  if (bestRoute.marketInfos[0].amm.label === 'Orca (Whirlpools)') {
     const { whirlpoolData } = bestRoute.marketInfos[0].amm as unknown as {
       whirlpoolData: {
         whirlpoolsConfig: any

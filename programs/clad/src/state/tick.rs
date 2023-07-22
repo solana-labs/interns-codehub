@@ -18,7 +18,11 @@ pub struct Tick {
     pub initialized: bool,
     pub liquidity_net: i128,
     pub liquidity_gross: u128,
-    pub liquidity_borrowed: i128,
+    
+    // Two different trackers because Tick can be both left and right to the current globalpool 
+    // tick index when traders borrow liquidity.
+    pub liquidity_borrowed_a: i128,
+    pub liquidity_borrowed_b: i128,
 
     // Q64.64
     pub fee_growth_outside_a: u128,
@@ -35,15 +39,17 @@ impl Tick {
     /// - `update` - An update object to update the values in this tick
     pub fn update(&mut self, update: &TickUpdate) {
         msg!(
-            "updating tick with liquidity_net: {:?} / liquidity_gross: {:?} / liquidity_borrowed: {:?}",
+            "updating tick with liquidity_net: {:?} / liquidity_gross: {:?} / liquidity_borrowed_a: {:?} / / liquidity_borrowed_b: {:?}",
             update.liquidity_net,
             update.liquidity_gross,
-            update.liquidity_borrowed
+            update.liquidity_borrowed_a,
+            update.liquidity_borrowed_b,
         );
         self.initialized = update.initialized;
         self.liquidity_net = update.liquidity_net;
         self.liquidity_gross = update.liquidity_gross;
-        self.liquidity_borrowed = update.liquidity_borrowed;
+        self.liquidity_borrowed_a = update.liquidity_borrowed_a;
+        self.liquidity_borrowed_b = update.liquidity_borrowed_b;
         self.fee_growth_outside_a = update.fee_growth_outside_a;
         self.fee_growth_outside_b = update.fee_growth_outside_b;
     }
@@ -121,7 +127,8 @@ pub struct TickUpdate {
     pub initialized: bool,
     pub liquidity_net: i128,
     pub liquidity_gross: u128,
-    pub liquidity_borrowed: i128,
+    pub liquidity_borrowed_a: i128,
+    pub liquidity_borrowed_b: i128,
     pub fee_growth_outside_a: u128,
     pub fee_growth_outside_b: u128,
 }
@@ -132,7 +139,8 @@ impl TickUpdate {
             initialized: tick.initialized,
             liquidity_net: tick.liquidity_net,
             liquidity_gross: tick.liquidity_gross,
-            liquidity_borrowed: tick.liquidity_borrowed,
+            liquidity_borrowed_a: tick.liquidity_borrowed_a,
+            liquidity_borrowed_b: tick.liquidity_borrowed_b,
             fee_growth_outside_a: tick.fee_growth_outside_a,
             fee_growth_outside_b: tick.fee_growth_outside_b,
         }
@@ -371,8 +379,9 @@ pub mod tick_builder {
     pub struct TickBuilder {
         initialized: bool,
         liquidity_net: i128,
-        liquidity_borrowed: i128,
         liquidity_gross: u128,
+        liquidity_borrowed_a: i128,
+        liquidity_borrowed_b: i128,
         fee_growth_outside_a: u128,
         fee_growth_outside_b: u128,
     }
@@ -393,8 +402,13 @@ pub mod tick_builder {
             self
         }
 
-        pub fn liquidity_borrowed(mut self, liquidity_borrowed: i128) -> Self {
-            self.liquidity_borrowed = liquidity_borrowed;
+        pub fn liquidity_borrowed_a(mut self, liquidity_borrowed: i128) -> Self {
+            self.liquidity_borrowed_a = liquidity_borrowed;
+            self
+        }
+
+        pub fn liquidity_borrowed_b(mut self, liquidity_borrowed: i128) -> Self {
+            self.liquidity_borrowed_b = liquidity_borrowed;
             self
         }
 
@@ -413,7 +427,8 @@ pub mod tick_builder {
                 initialized: self.initialized,
                 liquidity_net: self.liquidity_net,
                 liquidity_gross: self.liquidity_gross,
-                liquidity_borrowed: self.liquidity_borrowed,
+                liquidity_borrowed_a: self.liquidity_borrowed_a,
+                liquidity_borrowed_b: self.liquidity_borrowed_b,
                 fee_growth_outside_a: self.fee_growth_outside_a,
                 fee_growth_outside_b: self.fee_growth_outside_b,
             }
@@ -604,7 +619,8 @@ mod array_update_tests {
             initialized: true,
             liquidity_net: 2525252i128,
             liquidity_gross: 2525252u128,
-            liquidity_borrowed: 0,
+            liquidity_borrowed_a: 0,
+            liquidity_borrowed_b: 0,
             fee_growth_outside_a: 28728282u128,
             fee_growth_outside_b: 22528728282u128,
         };
@@ -615,7 +631,8 @@ mod array_update_tests {
             initialized: true,
             liquidity_net: 24128472184712i128,
             liquidity_gross: 353873892732u128,
-            liquidity_borrowed: 0,
+            liquidity_borrowed_a: 0,
+            liquidity_borrowed_b: 0,
             fee_growth_outside_a: 3928372892u128,
             fee_growth_outside_b: 12242u128,
         };
@@ -630,7 +647,8 @@ mod array_update_tests {
             initialized: true,
             liquidity_net: 24128472184712i128,
             liquidity_gross: 353873892732u128,
-            liquidity_borrowed: 0,
+            liquidity_borrowed_a: 0,
+            liquidity_borrowed_b: 0,
             fee_growth_outside_a: 3928372892u128,
             fee_growth_outside_b: 12242u128,
         };

@@ -78,7 +78,8 @@ pub fn next_tick_modify_liquidity_update(
         initialized: true,
         liquidity_net,
         liquidity_gross,
-        liquidity_borrowed: tick.liquidity_borrowed,
+        liquidity_borrowed_a: tick.liquidity_borrowed_a,
+        liquidity_borrowed_b: tick.liquidity_borrowed_b,
         fee_growth_outside_a,
         fee_growth_outside_b,
     })
@@ -93,6 +94,7 @@ pub fn next_tick_modify_liquidity_update_from_loan(
     liquidity_delta: i128,
     // is_borrow: bool, // true = borrow liquidity, false = repay liquidity
     is_upper_tick: bool,
+    borrow_a: bool,
 ) -> Result<TickUpdate, ErrorCode> {
     let mut update = next_tick_modify_liquidity_update(
         tick,
@@ -104,7 +106,11 @@ pub fn next_tick_modify_liquidity_update_from_loan(
         is_upper_tick,
     )?;
 
-    update.liquidity_borrowed += liquidity_delta;
+    if borrow_a {
+        update.liquidity_borrowed_a += liquidity_delta;
+    } else {
+        update.liquidity_borrowed_b += liquidity_delta;
+    }
     msg!("update: {:?}", update);
 
     Ok(update)
@@ -323,7 +329,8 @@ mod tick_manager_tests {
                     initialized: true,
                     liquidity_net: 42069,
                     liquidity_gross: 42069,
-                    liquidity_borrowed: 0,
+                    liquidity_borrowed_a: 0,
+                    liquidity_borrowed_b: 0,
                     fee_growth_outside_a: 100,
                     fee_growth_outside_b: 100,
                 },

@@ -67,16 +67,16 @@ pub fn open_trade_position(
     let is_borrow_a =
         ctx.accounts.position.liquidity_mint == ctx.accounts.globalpool.token_mint_a.key();
 
-    let (initial_loan_token_balance, initial_swapped_token_balance) = if is_borrow_a {
-        (
-            ctx.accounts.token_vault_a.amount,
-            ctx.accounts.token_vault_b.amount,
-        )
+    let (loan_token_vault, other_token_vault) = if is_borrow_a {
+        (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
     } else {
-        (
-            ctx.accounts.token_vault_b.amount,
-            ctx.accounts.token_vault_a.amount,
-        )
+        (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
+    };
+
+    let (initial_loan_token_balance, initial_swapped_token_balance) = if is_borrow_a {
+        (loan_token_vault.amount, other_token_vault.amount)
+    } else {
+        (other_token_vault.amount, loan_token_vault.amount)
     };
 
     //
@@ -100,6 +100,10 @@ pub fn open_trade_position(
             AccountMeta::new_readonly(*account.key, is_signer)
         });
     }
+
+    //
+    // TODO: Validate that the receiver of the token swap is the globalpool's token vault
+    //
 
     //
     // Execute swap
@@ -130,16 +134,17 @@ pub fn open_trade_position(
     ctx.accounts.token_vault_a.reload()?;
     ctx.accounts.token_vault_b.reload()?;
 
-    let (post_loan_token_balance, post_swapped_token_balance) = if is_borrow_a {
-        (
-            ctx.accounts.token_vault_a.amount,
-            ctx.accounts.token_vault_b.amount,
-        )
+    // need to borrow immutable reference again after reloading mutable above
+    let (loan_token_vault, other_token_vault) = if is_borrow_a {
+        (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
     } else {
-        (
-            ctx.accounts.token_vault_b.amount,
-            ctx.accounts.token_vault_a.amount,
-        )
+        (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
+    };
+
+    let (post_loan_token_balance, post_swapped_token_balance) = if is_borrow_a {
+        (loan_token_vault.amount, other_token_vault.amount)
+    } else {
+        (other_token_vault.amount, loan_token_vault.amount)
     };
 
     // 1. Require that Loan Token was the swapped to Swapped Token.
@@ -172,6 +177,20 @@ pub fn open_trade_position(
         swapped_amount_in <= ctx.accounts.position.liquidity_available,
         ErrorCode::InvalidLoanTradeSwapResult
     );
+
+    // 3. Require that the tokens were deposited the right amount.
+    //
+
+    //
+    // TODO: Must implement this to make sure that the user did not swap to an external account.
+    //
+    // NOTE: Verify the swap instruction data as well (by slicing and matching numbers).
+    //
+
+    // require!(
+    //     post_swapped_token_balance,
+    //     ErrorCode::InvalidLoanTradeSwapResult
+    // );
 
     msg!("diff loan_token_balance: {}", swapped_amount_in);
     msg!("diff swapped_token_balance: {}", swapped_amount_out);

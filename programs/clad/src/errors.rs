@@ -111,6 +111,9 @@ pub enum ErrorCode {
     InvalidLoanTradeSwapDirection,
     #[msg("Invalid Loan Trade Swap Result")]
     InvalidLoanTradeSwapResult,
+
+    #[msg("Liquidity Borrowed Not Empty")]
+    LiquidityBorrowedNotEmpty,
 }
 
 impl From<TryFromIntError> for ErrorCode {
