@@ -1,53 +1,53 @@
 use {
-	crate::{errors::ErrorCode, state::*, util::verify_position_authority},
-	anchor_lang::prelude::*,
-	anchor_spl::{
-			associated_token::AssociatedToken,
-			token::{self, Mint, Token, TokenAccount},
-	},
-	solana_program::{instruction::Instruction, program},
+    crate::{errors::ErrorCode, state::*, util::verify_position_authority},
+    anchor_lang::prelude::*,
+    anchor_spl::{
+        associated_token::AssociatedToken,
+        token::{self, Mint, Token, TokenAccount},
+    },
+    solana_program::{instruction::Instruction, program},
 };
 
 #[derive(Accounts)]
 #[instruction(params: CloseTradePositionParams)]
 pub struct CloseTradePosition<'info> {
-	#[account(mut)]
-	pub owner: Signer<'info>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
 
-	pub globalpool: Box<Account<'info, Globalpool>>,
+    pub globalpool: Box<Account<'info, Globalpool>>,
 
-	#[account(mut, has_one = globalpool)]
-	pub position: Box<Account<'info, TradePosition>>,
+    #[account(mut, has_one = globalpool)]
+    pub position: Box<Account<'info, TradePosition>>,
 
-	#[account(
+    #[account(
         associated_token::mint = position.position_mint,
         associated_token::authority = owner,
 	)]
-	pub position_token_account: Box<Account<'info, TokenAccount>>,
+    pub position_token_account: Box<Account<'info, TokenAccount>>,
 
-	#[account(mut, constraint = token_owner_account_a.mint == globalpool.token_mint_a)]
-	pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
+    #[account(mut, constraint = token_owner_account_a.mint == globalpool.token_mint_a)]
+    pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
 
-	#[account(mut, address = globalpool.token_vault_a)]
-	pub token_vault_a: Box<Account<'info, TokenAccount>>,
+    #[account(mut, address = globalpool.token_vault_a)]
+    pub token_vault_a: Box<Account<'info, TokenAccount>>,
 
-	#[account(address = globalpool.token_mint_a)]
-	pub token_mint_a: Box<Account<'info, Mint>>,
+    #[account(address = globalpool.token_mint_a)]
+    pub token_mint_a: Box<Account<'info, Mint>>,
 
-	#[account(mut, constraint = token_owner_account_b.mint == globalpool.token_mint_b)]
-	pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
+    #[account(mut, constraint = token_owner_account_b.mint == globalpool.token_mint_b)]
+    pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
 
-	#[account(mut, address = globalpool.token_vault_b)]
-	pub token_vault_b: Box<Account<'info, TokenAccount>>,
+    #[account(mut, address = globalpool.token_vault_b)]
+    pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
-	#[account(address = globalpool.token_mint_b)]
-	pub token_mint_b: Box<Account<'info, Mint>>,
+    #[account(address = globalpool.token_mint_b)]
+    pub token_mint_b: Box<Account<'info, Mint>>,
 
-	#[account(address = token::ID)]
-	pub token_program: Program<'info, Token>,
-	pub associated_token_program: Program<'info, AssociatedToken>,
-	pub system_program: Program<'info, System>,
-	pub rent: Sysvar<'info, Rent>,
+    #[account(address = token::ID)]
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -151,15 +151,13 @@ pub fn close_trade_position(
     // 2. Require that the swap out amount equals the previous liquidity swapped amount.
 
     // This calculation should come after checking that the balances were modified legally (1).
-    let swapped_amount_in: u128 = post_other_token_balance
+    let swapped_amount_in = post_other_token_balance
         .checked_sub(initial_other_token_balance)
-        .unwrap()
-        .into();
+        .unwrap();
 
-    let swapped_amount_out: u128 = initial_loan_token_balance
+    let swapped_amount_out = initial_loan_token_balance
         .checked_sub(post_loan_token_balance)
-        .unwrap()
-        .into();
+        .unwrap();
 
     require!(
         swapped_amount_out == ctx.accounts.position.liquidity_swapped,

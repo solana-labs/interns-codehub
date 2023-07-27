@@ -34,29 +34,30 @@ address = "D3CDPQLoa9jY1LXCkpUqd3JQDWz8DX1LDE1dhmJt9fq4"
 address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 filename = "scripts/accounts/usdc.json"
 
+# Pyth Oracle
+[[test.validator.clone]]
+address = "FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH"
+
+# Pyth SOL/USD
+[[test.validator.clone]]
+address = "H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"
+
+# Pyth USDC/USD
+[[test.validator.clone]]
+address = "Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD"
+
 # Jupiter V4
 [[test.validator.clone]]
 address = "JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB"
 
-# Raydium CLMM
-[[test.validator.clone]]
-address = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
-
-# Raydium CLMM SOL-USDC
-[[test.validator.clone]]
-address = "2QdhepnKRTLjjSqPL1PtKNwqrUkoLee5Gqs8bvZhRdMv"
-
-# Lifinity V2
-[[test.validator.clone]]
-address = "DrRd8gYMJu9XGxLhwTCPdHNLXCKHsxJtMpbn62YqmwQe"
-
-# Lifinity Swap V2
-[[test.validator.clone]]
-address = "2wT8Yq49kHgDzXuPxZSaeLaH1qbmGXtEyPy64bL7aD3c"
-
-# Lifinity SOL-USDC
-[[test.validator.clone]]
-address = "86eq4kdBkUCHGdCC2SfcqGHRCBGhp2M89aCmuvvxaXsm"
+#
+# To simulate the swap using Jupiter on localnet, we need to clone
+# all Orca program addresses from mainnet-beta for SOL-USDC pool.
+#
+# And the Tick Arrays of a Whirlpool changes on the current price at which
+# the tests are ran, so one must add more tick array addresses here if the
+# error is thrown (tick array owned by 1111...1111 or expected to be already initialized)
+#
 
 # Orca Whirlpool
 [[test.validator.clone]]
@@ -66,45 +67,117 @@ address = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
 [[test.validator.clone]]
 address = "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE"
 
-# Orca tick array 1
+# Orca Whirlpool SOL-USDC
+[[test.validator.clone]]
+address = "FpCMFDFGYotvufJ7HrFHsWEiiQCGbkLCtwHiDnh7o28Q"
+
+# Orca tick array
 [[test.validator.clone]]
 address = "8cSEbQP389xmezdqPZ5qLma7YeCeQa8tuSsT67PYfomr"
 
-# Orca tick array 2
+# Orca tick array
 [[test.validator.clone]]
 address = "54yX4yVDCs4eUwCHzDpRfuwQoB9BLvQZLT5zcpWmzKN7"
 
-# Orca tick array 3
+# Orca tick array
 [[test.validator.clone]]
 address = "Bbynrb4EjyxqAHvxaG3AQSUtYzxEYe8QrSpt4xU6dE48"
 
-# Orca tick array 4
+# Orca tick array
 [[test.validator.clone]]
 address = "CDDZkq29aFmAC63pRX5D19DvRa2PGHw6kzZ48EUSqVzr"
 
-# Orca tick array 4
+# Orca tick array
 [[test.validator.clone]]
 address = "2XU8ZpQ8NMTTGDRmdhMsuwGJnLqS5DhKUrcRVDXraiyo"
 
-# Orca tick array 4
+# Orca tick array
 [[test.validator.clone]]
 address = "HamuvLZt4pM1DBikuiF1hpnmK1EX9yLv9BUotHUJMBvp"
 
-# Orca tick array 4
+# Orca tick array
 [[test.validator.clone]]
 address = "FUifo3d4gzAyE4k9ZZjKWmBhfHskCiVF4S9QgsGyjJVD"
 
-# Orca tick array 4
+# Orca tick array
 [[test.validator.clone]]
 address = "4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ"
 
-# Orca tick array 4
+# Orca tick array
 [[test.validator.clone]]
 address = "C6ZMoA93UfQMsJm2khN2gQr6vyTpujXFiLLxG3VeLEp6"
 
-# Orca tick array 4
+# Orca tick array
 [[test.validator.clone]]
 address = "8LGqqS5P6kFy6LGYSVr5byaqVXcaqWh2PAUjmGzut4zM"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "6RoDs4R2gkLYJ8zhYreKLpk4FATem1Ti7wuimtqu18UL"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "9UGCSa2vvv3yLgLMpskF7Qc7w3puro5XBgPLi37hoymV"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "7TSn9Jvj9Pk6zohmZAZK9dBn8gQFXZ19JfSos7pCaLxP"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "CXQLTLEmv7EsRmRaeAxsYq3QBwsLEVitbqmKiRakgTmV"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "6fRff6Z1gEuBEgdNN7s5ru6srpyXJxcfUARbjkU7z26o"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "GiCzQPq32BwYqmw63XenXYWtjSJ33eZXYncRp6x18MFD"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "7XLWyPdHWK8Fs6s1yzWnheFS61e2C6CUP7oTYH5VW34n"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "ACSZsvP1iCKWQVXoUMenHWpAfD3KgubLoMz8GtKP1NWQ"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "HZfG2mtxiuL3dQeHw6VqRFHWR33nzHhJ5seWVabRfC6J"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "4Sz4W2pC1YaLZyVP6ptNXNf727c6BtnB5BEYNQhHdCxN"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "p9c32PDrUYuLvy9MsfmWa4ALUdUE7oaRAKmg6URmuR6"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "Y4PTrDFVfPNrVV9RkT2sZxvy29JwcXjyjer4re1Ukzr"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "Em3TMAnaiTjHUUVngGgfFpB2Q3WFo3oXXcjpTbcEm198"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "7Nzbe7RWYv3KdWEEo415nJaa43BRUQnLs18MBrqQVx4d"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "8ZDXfrx7gc6rabJNR1ssrKTY6T2qAZNEpiUq2Ph9JnfQ"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "2DZW8MRvsxC85wKQeb2WvfhT6MSg9H6ca1SNJRNYup1k"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "3Sn5Cf9YMUuoqBooUti8qBikhUhz3rCQgbAsAyhBqbgR"
 
 # Orca token vault
 [[test.validator.clone]]
@@ -130,6 +203,10 @@ address = "AQ36QRk3HAe6PHqBCtKTQnYKpt2kAagq9YoeTqUPMGHx"
 [[test.validator.clone]]
 address = "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"
 
-# Orca SOL-USDC
+# Orca SOL-USDC (not whirlpool)
 [[test.validator.clone]]
 address = "83v8iPyZihDEjDdY8RdZddyZNyUtXngz69Lgo9Kt5d6d"
+
+# Orca token swap
+[[test.validator.clone]]
+address = "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1"

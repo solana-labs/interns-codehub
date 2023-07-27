@@ -102,7 +102,10 @@ pub fn calculate_modify_loan<'info>(
     // Note: Add the absolute value of `liquidty_delta` as it's negative when borrowing (used to subtract liquidity from
     //       the pool) but the position itself needs to represent the borrowed liquidity that's now available (positive).
     //
-    let liquidity_available = position.liquidity_available.checked_add(borrowed_amount).unwrap();
+    let liquidity_available = position
+        .liquidity_available
+        .checked_add(borrowed_amount)
+        .unwrap();
     let position_update = TradePositionUpdate {
         liquidity_available,
         liquidity_swapped: position.liquidity_swapped,
@@ -189,13 +192,18 @@ pub fn calculate_collateral(
         .read_price_in_quote(token_price_feed_a, current_timestamp)?
         .price_with_expo;
 
-    let borrowed_value_in_collateral_token = token_borrow_amount
-        .checked_mul(if is_borrow_token_a {
-            token_price_b_a
-        } else {
-            token_price_a_b
-        })
-        .unwrap();
+    let borrowed_value_in_collateral_token = if is_borrow_token_a {
+        token_borrow_amount
+            .checked_mul(token_price_b_a)
+            .ok_or(ErrorCode::MultiplicationOverflow)?
+            .checked_div(10_u64.pow(token_oracle_a.exponent.abs() as u32))
+    } else {
+        token_borrow_amount
+            .checked_mul(token_price_a_b)
+            .ok_or(ErrorCode::MultiplicationOverflow)?
+            .checked_div(10_u64.pow(token_oracle_b.exponent.abs() as u32))
+    }
+    .ok_or(ErrorCode::DivisionUnderflow)?;
 
     //
     // Collateral amount is a function of:
@@ -208,7 +216,17 @@ pub fn calculate_collateral(
     // For now, just 33% regardless of (2) and (3)
     let collateral_amount = borrowed_value_in_collateral_token
         .checked_div(3)
-        .unwrap();
+        .ok_or(ErrorCode::DivisionUnderflow)?;
+
+    msg!("token_price_a: {:?}", token_price_a);
+    msg!("token_price_b: {:?}", token_price_b);
+    msg!("token_price_a_b: {:?}", token_price_a_b);
+    msg!("token_price_b_a: {:?}", token_price_b_a);
+    msg!(
+        "borrowed_value_in_collateral_token: {:?}",
+        borrowed_value_in_collateral_token
+    );
+    msg!("collateral_amount: {:?}", collateral_amount);
 
     //
     // WARNING: This is a temporary solution for strict testing purposes, and should not be used for production.

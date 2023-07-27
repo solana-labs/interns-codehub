@@ -74,27 +74,29 @@ pub enum ErrorCode {
     MulDivInvalidInput, //0x1790
     #[msg("Multiplication overflow")]
     MultiplicationOverflow, //0x1791
+    #[msg("Division underflow")]
+    DivisionUnderflow, //0x1792
 
     #[msg("Provided SqrtPriceLimit not in the same direction as the swap.")]
-    InvalidSqrtPriceLimitDirection, //0x1792
+    InvalidSqrtPriceLimitDirection, //0x1793
     #[msg("There are no tradable amount to swap.")]
-    ZeroTradableAmount, //0x1793
+    ZeroTradableAmount, //0x1794
 
     #[msg("Amount out below minimum threshold")]
-    AmountOutBelowMinimum, //0x1794
+    AmountOutBelowMinimum, //0x1795
     #[msg("Amount in above maximum threshold")]
-    AmountInAboveMaximum, //0x1795
+    AmountInAboveMaximum, //0x1796
 
     #[msg("Invalid index for tick array sequence")]
-    TickArraySequenceInvalidIndex, //0x1796
+    TickArraySequenceInvalidIndex, //0x1797
 
     #[msg("Amount calculated overflows")]
-    AmountCalcOverflow, //0x1797
+    AmountCalcOverflow, //0x1798
     #[msg("Amount remaining overflows")]
-    AmountRemainingOverflow, //0x1798
+    AmountRemainingOverflow, //0x1799
 
     #[msg("There are no loan amount to borrow.")]
-    ZeroBorrowableAmount, //0x1799
+    ZeroBorrowableAmount, //0x179a
 
     #[msg("Invalid Tick Range")]
     InvalidTickRange,
@@ -116,10 +118,14 @@ pub enum ErrorCode {
     CloseTradePositionNotEmpty,
 
     // Pyth errors
-    #[msg("Could not load price account")]
-    PythError,
+    #[msg("Invalid Oracle Account")]
+    InvalidOracleAccount,
+    #[msg("Stale oracle price")]
+    StaleOraclePrice,
     #[msg("Failed to serialize price account")]
     TryToSerializePriceAccount,
+    #[msg("Failed to deserialize price account")]
+    TryToDeserializePriceAccount,
     #[msg("Invalid argument provided")]
     InvalidArgument,
 }

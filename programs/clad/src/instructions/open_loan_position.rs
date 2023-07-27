@@ -97,7 +97,7 @@ pub struct OpenLoanPosition<'info> {
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
     // For pyth
-    pub clock: Sysvar<'info, Clock>,
+    // pub clock: Sysvar<'info, Clock>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
@@ -250,9 +250,7 @@ pub fn open_loan_position(
         Clock::get()?.unix_timestamp,
     )?;
 
-    position.update_position_mints(borrowed_token_mint.key(), collateral_token_mint.key())?;
-    position.update_collateral_amount(collateral_amount)?;
-
+    // Transfer collateral from trader to vault
     transfer_from_owner_to_vault(
         &ctx.accounts.owner,
         collateral_token_owner_account,
@@ -260,6 +258,9 @@ pub fn open_loan_position(
         &ctx.accounts.token_program,
         collateral_amount,
     )?;
+
+    position.update_position_mints(borrowed_token_mint.key(), collateral_token_mint.key())?;
+    position.update_collateral_amount(collateral_amount)?;
 
     //
     // 4. Increase the position's loan liquidity

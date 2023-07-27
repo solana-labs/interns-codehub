@@ -1,12 +1,15 @@
 import * as anchor from '@coral-xyz/anchor'
-import { MathUtil, Percentage, TransactionBuilder } from '@orca-so/common-sdk'
-import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
+import { PriceMath } from '@orca-so/whirlpools-sdk'
 import { getMint } from '@solana/spl-token'
-import { Connection, Keypair, PublicKey, Transaction } from '@solana/web3.js'
+import { Keypair, PublicKey } from '@solana/web3.js'
 
 import { Clad } from '@/target/types/clad'
-import { tokenMintSOL, tokenMintUSDC } from './constants'
-import DummyWallet from './utils/wallet'
+import {
+  pythOracleSOL,
+  pythOracleUSDC,
+  tokenMintSOL,
+  tokenMintUSDC,
+} from './constants'
 import { requestAirdrop } from './utils/token'
 
 export function getPDA(
@@ -52,6 +55,9 @@ export async function getConstantParams() {
   const tokenMintA = await getMint(connection, tokenMintAKey)
   const tokenMintB = await getMint(connection, tokenMintBKey)
 
+  const tokenOracleA = pythOracleSOL
+  const tokenOracleB = pythOracleUSDC
+
   const initTickIndex = -39424 // 19.4054 B/A (USDC/SOL)
   const initPrice = PriceMath.tickIndexToPrice(
     initTickIndex,
@@ -76,6 +82,8 @@ export async function getConstantParams() {
     tickSpacing,
     tokenMintA,
     tokenMintB,
+    tokenOracleA,
+    tokenOracleB,
     cladKey,
     initTickIndex,
     initPrice,

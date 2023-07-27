@@ -25,6 +25,8 @@ async function main() {
     tickSpacing,
     tokenMintA,
     tokenMintB,
+    tokenOracleA,
+    tokenOracleB,
     cladKey,
     initPrice,
     initSqrtPrice,
@@ -125,6 +127,8 @@ async function main() {
     tokenMintB: tokenMintB.address,
     tokenVaultA: tokenVaultA,
     tokenVaultB: tokenVaultB,
+    tokenPriceFeedA: tokenOracleA,
+    tokenPriceFeedB: tokenOracleB,
     // sys
     tokenProgram: TOKEN_PROGRAM_ID,
     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,

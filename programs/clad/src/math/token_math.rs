@@ -27,7 +27,7 @@ pub const PROTOCOL_FEE_RATE_MUL_VALUE: u128 = 10_000;
 //
 // Get change in token_a corresponding to a change in price
 //
-// REFERENCE: Eq. 11 (for y when P ≥ p_b <=> x = 0) in Uniswap v3 Liquidity Math paper
+// REFERENCE: Eq. 11 (for x when P ≤ p_a <=> y = 0) in Uniswap v3 Liquidity Math paper
 //
 //
 // 6.16
@@ -74,7 +74,7 @@ pub fn get_amount_delta_a(
 //
 // Get change in token_b corresponding to a change in price
 //
-// REFERENCE: Eq. 12 (for x when P ≤ p_a <=> y = 0) in Uniswap v3 Liquidity Math paper
+// REFERENCE: Eq. 12 (for y when P ≥ p_b <=> x = 0) in Uniswap v3 Liquidity Math paper
 //
 //
 // 6.14
@@ -97,6 +97,7 @@ pub fn get_amount_delta_b(
 
 //
 // Inverse of `get_amount_delta_a`, where we know the amount of Token A and want the liquidity.
+// For x when P ≤ p_a <=> y = 0
 //
 // Δliquidity = amount_a * [(sqrt_price_lower * sqrt_price_upper) / (sqrt_price_upper - sqrt_price_lower)]
 pub fn get_liquidity_delta_a(
@@ -107,7 +108,10 @@ pub fn get_liquidity_delta_a(
 ) -> Result<u128, ErrorCode> {
     let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
 
-    let numerator = mul_u256(sqrt_price_lower, sqrt_price_upper)
+    let sqrt_mult = mul_u256(sqrt_price_lower, sqrt_price_upper)
+        .try_into_u128()
+        .unwrap();
+    let numerator = mul_u256(amount as u128, sqrt_mult)
         .checked_shift_word_left()
         .ok_or(ErrorCode::MultiplicationOverflow)?;
     let denominator = U256Muldiv::new(0, sqrt_price_upper - sqrt_price_lower);
@@ -126,6 +130,7 @@ pub fn get_liquidity_delta_a(
 
 //
 // Inverse of `get_amount_delta_b`, where we know the amount of Token B and want the liquidity.
+// For y when P ≥ p_b <=> x = 0
 //
 // Δliquidity = amount_b / (sqrt_price_upper - sqrt_price_lower)
 pub fn get_liquidity_delta_b(

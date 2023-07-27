@@ -71,7 +71,8 @@ export type TickData = {
   initialized: boolean
   liquidityNet: BN
   liquidityGross: BN
-  liquidityBorrowed: BN
+  liquidityBorrowedA: BN
+  liquidityBorrowedB: BN
   feeGrowthOutsideA: BN
   feeGrowthOutsideB: BN
 }

@@ -1,12 +1,8 @@
 import { Jupiter } from '@jup-ag/core'
-import { Percentage, TransactionBuilder } from '@orca-so/common-sdk'
+import { Percentage } from '@orca-so/common-sdk'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  AccountLayout,
-  NATIVE_MINT,
   TOKEN_PROGRAM_ID,
-  createInitializeAccountInstruction,
-  createWrappedNativeAccount,
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token'
 import {
@@ -17,24 +13,20 @@ import {
   Connection,
   ComputeBudgetProgram,
   AccountMeta,
-  Transaction,
   VersionedTransaction,
   TransactionMessage,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
-import { JUPITER_PROGRAM_ID, tokenMintSOL, tokenMintUSDC } from './constants'
 import envVars from './constants/env-vars'
 import { getPostPoolInitParams } from './params'
 import { ParsableGlobalpool } from './types/parsing'
 import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
-import {
-  getRouteDataFromJupiterRoutes,
-  getRoutesFromJupiter,
-} from './utils/jupiter'
+import { getRoutesFromJupiter } from './utils/jupiter'
 import { getTickArrayKeyFromTickIndex } from './utils/tick-arrays'
 import { createTransactionChained } from './utils/txix'
 import { createAndMintToManyATAs } from './utils/token'
+import { PoolUtil, toTokenAmount } from '@orca-so/whirlpools-sdk'
 
 async function main() {
   const {
@@ -46,6 +38,8 @@ async function main() {
     tickSpacing,
     tokenMintA: mintA,
     tokenMintB: mintB,
+    tokenOracleA,
+    tokenOracleB,
     cladKey,
     globalpoolKey,
   } = await getPostPoolInitParams()
@@ -54,10 +48,11 @@ async function main() {
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
   const borrowA = false // borrow USDC (B)
-  const isTradeA2B = borrowA
+  const isTradeA2B = true // swap USDC (B) to SOL (A)
 
   // const borrowAmount = new BN(100 * Math.pow(100, (borrowA ? mintA : mintB).decimals)) // 100 USDC
-  const borrowAmount = new BN(1_000_000) // 1m liquidity (todo: calculate using quote)
+  const borrowAmount = 100 // 100 USDC
+  const borrowAmountExpo = borrowAmount * Math.pow(10, mintB.decimals) // above scaled to decimal exponent
 
   const maxSlippage = Percentage.fromFraction(1, 100)
   const maxJupiterPlatformSlippage = 0
@@ -110,9 +105,21 @@ async function main() {
   const tickLowerIndex = -45056 // globalpoolInfo.tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing
   const tickUpperIndex = -39552 // globalpoolInfo.tickCurrentIndex + tickSpacing
 
+  // NOTE: At the top end of the price range, tick calcuation is off therefore the results can be off
+  const borrowAmountLiquidity = PoolUtil.estimateLiquidityFromTokenAmounts(
+    globalpoolInfo.tickCurrentIndex,
+    tickLowerIndex,
+    tickUpperIndex,
+    toTokenAmount(
+      borrowA ? borrowAmountExpo : 0,
+      borrowA ? 0 : borrowAmountExpo,
+    )
+  )
+
   console.log(`Tick Lower: ${tickLowerIndex}`)
   console.log(`Tick Upper: ${tickUpperIndex}`)
   console.log(`Tick Current: ${globalpoolInfo.tickCurrentIndex}`)
+  console.log(`borrowAmount: ${borrowAmount.toString()}`)
 
   const tokenVaultABefore = new BN(
     await getTokenBalance(provider, globalpoolInfo.tokenVaultA)
@@ -153,6 +160,10 @@ async function main() {
     programId
   )
 
+  //
+  // Swap setup
+  //
+
   const jupiter = await Jupiter.load({
     connection: new Connection(envVars.rpcEndpointMainnetBeta), // must use mainnet-beta RPC here
     cluster: 'mainnet-beta',
@@ -161,20 +172,38 @@ async function main() {
     routeCacheDuration: 0,
     // For testing only, only cloned Orca accounts on localnet
     ammsToExclude: {
-      // 'Orca (Whirlpools)': false,
-      // Orca: false,
+      Aldrin: true,
+      Crema: true,
+      Cropper: true,
+      Cykura: true,
+      DeltaFi: true,
       GooseFX: true,
-      Phoenix: true,
-      'Lifinity V2': true,
+      Invariant: true,
       Lifinity: true,
-      Symmetry: true,
-      Serum: true,
-      Openbook: true,
-      Mercurial: true,
+      'Lifinity V2': true,
       Marinade: true,
-      Saber: true,
+      Mercurial: true,
+      Meteora: true,
+      Orca: false,
+      'Orca (Whirlpools)': false,
       Raydium: true,
       'Raydium CLMM': true,
+      Saber: true,
+      Serum: true,
+      Step: true,
+      Penguin: true,
+      Saros: true,
+      Stepn: true,
+      Sencha: true,
+      'Saber (Decimals)': true,
+      Dradex: true,
+      Balansol: true,
+      Openbook: true,
+      Oasis: true,
+      BonkSwap: true,
+      Phoenix: true,
+      Symmetry: true,
+      Unknown: true,
     },
   })
 
@@ -185,7 +214,7 @@ async function main() {
       tokenA: tokenMintAKey,
       tokenB: tokenMintBKey,
       // amount: 1 * Math.pow(10, isTradeA2B ? mintA.decimals : mintB.decimals), // 1 usdc or 1 sol
-      amount: borrowAmount.toNumber(),
+      amount: borrowAmountExpo, // input token amount scaled to decimal exponent (& NOT in liquidity amount)
       slippageBps: 30, // 0.3%
       feeBps: 0.0,
     },
@@ -198,6 +227,10 @@ async function main() {
   // Routes are sorted based on outputAmount, so ideally the first route is the best.
   const bestRoute = swapRoutes[0]
   // console.log(bestRoute)
+
+  //
+  // For test only, fix the route's whirlpool data pubkeys for tick arrays
+  //
 
   for (const marketInfo of bestRoute.marketInfos) {
     if (marketInfo.notEnoughLiquidity)
@@ -234,8 +267,8 @@ async function main() {
         tokenMintB: any
         tokenVaultA: any
         tokenVaultB: any
-        rewardInfos: any[]
-        tickArrays: any[]
+        rewardInfos: any
+        tickArrays: any
       }
     }
     console.log('whirlpoolsConfig', whirlpoolData.whirlpoolsConfig.toBase58())
@@ -248,6 +281,26 @@ async function main() {
     // console.log('tokenVaultB', orcaAmm.tokenVaultB.toBase58())
     // consoleLogFull(orcaAmm.rewardInfos)
     // consoleLogFull(orcaAmm.tickArrays)
+    ;(
+      bestRoute.marketInfos[0].amm as unknown as {
+        whirlpoolData: { tickArrays: any }
+      }
+    ).whirlpoolData.tickArrays = {
+      aToB: [
+        new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
+        new PublicKey('8LGqqS5P6kFy6LGYSVr5byaqVXcaqWh2PAUjmGzut4zM'),
+        new PublicKey('C6ZMoA93UfQMsJm2khN2gQr6vyTpujXFiLLxG3VeLEp6'),
+      ],
+      bToA: [
+        new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
+        new PublicKey('FUifo3d4gzAyE4k9ZZjKWmBhfHskCiVF4S9QgsGyjJVD'),
+        new PublicKey('HamuvLZt4pM1DBikuiF1hpnmK1EX9yLv9BUotHUJMBvp'),
+      ],
+    }
+  } else if (bestRoute.marketInfos[0].amm.label !== 'Orca') {
+    throw new Error(
+      `Invalid exchange route, ${bestRoute.marketInfos[0].amm.label}`
+    )
   }
 
   // const setupInstructions = message.instructions.slice(0, -1)
@@ -268,12 +321,13 @@ async function main() {
   // console.log(swapInstruction.data.subarray(0, 8))
 
   const swapAccounts: AccountMeta[] = [
-    // Jupiter Program ID hard-coded in the program for now
-    // {
-    //   isSigner: false,
-    //   isWritable: false,
-    //   pubkey: swapInstruction.programId,
-    // },
+    // Jupiter Program ID hard-coded in the program, BUT we still need the program ID as the first account
+    // because Jupiter's `route` requires the first account be the program ID.
+    {
+      isSigner: false,
+      isWritable: false,
+      pubkey: swapInstruction.programId,
+    },
   ]
 
   for (const key of swapInstruction.keys) {
@@ -303,6 +357,8 @@ async function main() {
     tokenVaultB,
     tokenMintA: tokenMintAKey,
     tokenMintB: tokenMintBKey,
+    tokenPriceFeedA: tokenOracleA,
+    tokenPriceFeedB: tokenOracleB,
 
     tickArrayLower: tickArrayLowerKey,
     tickArrayUpper: tickArrayUpperKey,
@@ -320,10 +376,11 @@ async function main() {
     // sqrtPriceLimit: quote.sqrtPriceLimit,
     // amountSpecifiedIsInput: quote.amountSpecifiedIsInput,
     // aToB: quote.aToB,
-    liquidityAmount: borrowAmount,
+    liquidityAmount: borrowAmountLiquidity, // borrow amount in liquidity amount format
     tickLowerIndex,
     tickUpperIndex,
     borrowA,
+    loanDurationSlots: new BN(10_000), // 10k slots * 0.4s = 66m 40s
   }
 
   const openTradePositionAccounts = {

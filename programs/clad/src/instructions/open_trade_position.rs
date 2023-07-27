@@ -83,16 +83,18 @@ pub fn open_trade_position(
     // Set up swap
     //
 
-    // 0th index is router program
-    let mut swap_route_accounts = vec![];
-    for account in &ctx.remaining_accounts[..] {
-        let is_signer = account.key == &ctx.accounts.globalpool.key();
-        swap_route_accounts.push(if account.is_writable {
-            AccountMeta::new(*account.key, is_signer)
-        } else {
-            AccountMeta::new_readonly(*account.key, is_signer)
-        });
-    }
+    // 0th index is router pid, so skip it
+    let swap_route_accounts: Vec<AccountMeta> = (&ctx.remaining_accounts[1..])
+        .iter()
+        .map(|acct| {
+            let is_signer = acct.key == &ctx.accounts.globalpool.key();
+            if acct.is_writable {
+                AccountMeta::new(*acct.key, is_signer)
+            } else {
+                AccountMeta::new_readonly(*acct.key, is_signer)
+            }
+        })
+        .collect();
 
     //
     // TODO: Validate that the receiver of the token swap is the globalpool's token vault
@@ -111,7 +113,7 @@ pub fn open_trade_position(
 
     program::invoke_signed(
         &swap_instruction,
-        &ctx.remaining_accounts[1..],
+        &ctx.remaining_accounts[..], // all accounts are for swap (incl Jupiter account)
         &[&ctx.accounts.globalpool.seeds()],
     )?;
 
@@ -135,9 +137,16 @@ pub fn open_trade_position(
         (collateral_token_vault.amount, borrowed_token_vault.amount)
     };
 
-    // 1. Require that Loan Token was the swapped to Swapped Token.
+    // 1. Require that Loan (Borrowed) Token was the swapped to Swapped Token.
     // => Loan Token balance should decrease
     // => Swapped Token balance should increase
+    msg!("initial_loan_vault_balance: {}", initial_loan_vault_balance);
+    msg!("post_loan_vault_balance: {}", post_loan_vault_balance);
+    msg!(
+        "initial_swapped_vault_balance: {}",
+        initial_swapped_vault_balance
+    );
+    msg!("post_swapped_vault_balance: {}", post_swapped_vault_balance);
     require!(
         initial_loan_vault_balance > post_loan_vault_balance,
         ErrorCode::InvalidLoanTradeSwapDirection
@@ -158,6 +167,10 @@ pub fn open_trade_position(
     let swapped_amount_out = post_swapped_vault_balance
         .checked_sub(initial_swapped_vault_balance)
         .unwrap();
+    msg!("swapped_amount_in: {}", swapped_amount_in);
+    msg!("swapped_amount_out: {}", swapped_amount_out);
+    msg!("position.liquidity_available: {}", ctx.accounts.position.liquidity_available);
+    msg!("position.collateral_amount: {}", ctx.accounts.position.collateral_amount);
 
     require!(
         swapped_amount_in <= ctx.accounts.position.liquidity_available,

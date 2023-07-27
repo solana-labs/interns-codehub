@@ -67,3 +67,7 @@ export const MNDE = new PublicKey('MNDEFzGvMt87ueuHvVU9VcTqsAP5b3fTGPsHuuPA5ey')
 export const SAMO = new PublicKey(
   '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'
 )
+
+export const pythOracleSOL = new PublicKey('H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG')
+
+export const pythOracleUSDC = new PublicKey('Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD')
