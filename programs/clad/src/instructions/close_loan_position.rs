@@ -1,12 +1,9 @@
-use crate::util::verify_position_authority;
-
 use {
     crate::{
         errors::ErrorCode,
-        manager::{liquidity_manager, loan_manager},
-        math::*,
+        manager::loan_manager,
         state::*,
-        util::{mint_position_token_and_remove_authority, transfer_from_owner_to_vault},
+        util::{burn_and_close_user_position_token, verify_position_authority},
     },
     anchor_lang::prelude::*,
     anchor_spl::{
@@ -18,49 +15,34 @@ use {
 #[derive(Accounts)]
 pub struct CloseLoanPosition<'info> {
     #[account(mut)]
-    pub owner: Signer<'info>,
+    pub position_authority: Signer<'info>,
 
     pub globalpool: Box<Account<'info, Globalpool>>,
 
+    /// CHECK: safe, for receiving rent only
+    #[account(mut)]
+    pub receiver: UncheckedAccount<'info>,
+
     #[account(
+        mut,
+        close = receiver,
         seeds = [
             b"trade_position".as_ref(),
             position_mint.key().as_ref()
         ],
         bump,
 	)]
-    pub position: Box<Account<'info, TradePosition>>,
+    pub position: Account<'info, TradePosition>,
 
-    #[account(
-        mint::authority = globalpool,
-        mint::decimals = 0,
-	)]
+    #[account(mut, address = position.position_mint)]
     pub position_mint: Account<'info, Mint>,
 
     #[account(
-        // close,
-        associated_token::mint = position_mint,
-        associated_token::authority = owner,
-	)]
+        mut,
+        constraint = position_token_account.amount == 1,
+        constraint = position_token_account.mint == position.position_mint
+    )]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
-
-    #[account(mut, constraint = token_owner_account_a.mint == globalpool.token_mint_a)]
-    pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
-
-    #[account(mut, address = globalpool.token_vault_a)]
-    pub token_vault_a: Box<Account<'info, TokenAccount>>,
-
-    #[account(address = globalpool.token_mint_a)]
-    pub token_mint_a: Box<Account<'info, Mint>>,
-
-    #[account(mut, constraint = token_owner_account_b.mint == globalpool.token_mint_b)]
-    pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
-
-    #[account(mut, address = globalpool.token_vault_b)]
-    pub token_vault_b: Box<Account<'info, TokenAccount>>,
-
-    #[account(address = globalpool.token_mint_b)]
-    pub token_mint_b: Box<Account<'info, Mint>>,
 
     #[account(mut, has_one = globalpool)]
     pub tick_array_lower: AccountLoader<'info, TickArray>,
@@ -70,31 +52,40 @@ pub struct CloseLoanPosition<'info> {
 
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn close_loan_position(
-    ctx: Context<CloseLoanPosition>,
-) -> Result<()> {
-    verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
+pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
+    verify_position_authority(
+        &ctx.accounts.position_token_account,
+        &ctx.accounts.position_authority,
+    )?;
 
-    if ctx.accounts.position.liquidity_swapped != 0 {
-        return Err(ErrorCode::LiquidityBorrowedNotEmpty.into());
+    if !TradePosition::is_position_empty(&ctx.accounts.position) {
+        return Err(ErrorCode::CloseTradePositionNotEmpty.into());
     }
+
+    let borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);
 
     // Add numbers back to `liquidity_available` of each borrowed ticks
     // Decrease numbers from `liquidity_borrowed_a` and `liquidity_borrowed_b`
+    let tick_lower_index = position.tick_lower_index;
+    let tick_upper_index = position.tick_upper_index;
 
+    let tick_array_lower = tick_array_lower.load()?;
+    let tick_lower = tick_array_lower.get_tick(tick_lower_index, globalpool.tick_spacing)?;
 
-    // liquidity_manager::sync_modify_liquidity_values_for_loan(
-    //     &mut ctx.accounts.globalpool,
-    //     position,
-    //     &ctx.accounts.tick_array_lower,
-    //     &ctx.accounts.tick_array_upper,
-    //     update,
-    // )?;
+    let tick_array_upper = tick_array_upper.load()?;
+    let tick_upper = tick_array_upper.get_tick(tick_upper_index, globalpool.tick_spacing)?;
 
-    Ok(())
+    //
+    // Burn loan position token
+    //
+
+    burn_and_close_user_position_token(
+        &ctx.accounts.position_authority,
+        &ctx.accounts.receiver,
+        &ctx.accounts.position_mint,
+        &ctx.accounts.position_token_account,
+        &ctx.accounts.token_program,
+    )
 }

@@ -4,7 +4,10 @@ use {
         manager::{liquidity_manager, loan_manager},
         math::*,
         state::*,
-        util::{mint_position_token_and_remove_authority, transfer_from_owner_to_vault},
+        util::{
+            mint_position_token_and_remove_authority, to_timestamp_u64,
+            transfer_from_owner_to_vault,
+        },
     },
     anchor_lang::prelude::*,
     anchor_spl::{
@@ -67,6 +70,12 @@ pub struct OpenLoanPosition<'info> {
     #[account(address = globalpool.token_mint_b)]
     pub token_mint_b: Box<Account<'info, Mint>>,
 
+    #[account(address = globalpool.token_price_feed_a)]
+    pub token_price_feed_a: Account<'info, PriceFeed>,
+
+    #[account(address = globalpool.token_price_feed_b)]
+    pub token_price_feed_b: Account<'info, PriceFeed>,
+
     //
     // NOTE: Read `2. TODO` below for the reason of these commented out lines.
     //
@@ -87,6 +96,8 @@ pub struct OpenLoanPosition<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+    // For pyth
+    pub clock: Sysvar<'info, Clock>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
@@ -98,6 +109,9 @@ pub struct OpenLoanPositionParams {
     // Conversely, if !borrow_a, we traverse to the left (negative) from this index, inclusive.
     pub tick_lower_index: i32,
     pub tick_upper_index: i32,
+
+    // Number of slots to represent the length of loan (current slot + duration length = maturity slot)
+    pub loan_duration_slots: u64,
 
     // true: borrow token A | false: borrow token B
     pub borrow_a: bool,
@@ -113,7 +127,7 @@ pub fn open_loan_position(
     // let token_vault_a = &ctx.accounts.token_vault_a;
     // let token_vault_b = &ctx.accounts.token_vault_b;
 
-    let tick_current_index = ctx.accounts.globalpool.tick_current_index;
+    let current_tick_index = ctx.accounts.globalpool.tick_current_index;
 
     if params.liquidity_amount == 0 {
         return Err(ErrorCode::LiquidityZero.into());
@@ -129,23 +143,23 @@ pub fn open_loan_position(
 
     // Require that both TickArrays (from which token liquidity is borrowed) are either
     // below or above the current globalpool tick since a trader can only borrow one asset.
-    if (params.tick_lower_index < tick_current_index
-        && params.tick_upper_index > tick_current_index)
-        || (params.tick_upper_index == tick_current_index)
-        || (params.tick_lower_index == tick_current_index)
+    if (params.tick_lower_index < current_tick_index
+        && params.tick_upper_index > current_tick_index)
+        || (params.tick_upper_index == current_tick_index)
+        || (params.tick_lower_index == current_tick_index)
     {
         return Err(ErrorCode::InvalidTickRangeAgainstCurrentTick.into());
     }
 
     // Require that if borrow_a = true, then the Ticks are ABOVE the current globalpool tick.
     // Conversely, if borrow_a = false, then the Ticks are BELOW the current globalpool tick.
-    if (params.borrow_a && params.tick_lower_index < tick_current_index)
-        || (!params.borrow_a && params.tick_upper_index > tick_current_index)
+    if (params.borrow_a && params.tick_lower_index < current_tick_index)
+        || (!params.borrow_a && params.tick_upper_index > current_tick_index)
     {
         return Err(ErrorCode::InvalidTickRangeAgainstBorrowCondition.into());
     }
 
-    let liquidity_delta = convert_to_liquidity_delta(u128::from(params.liquidity_amount), false)?;
+    let liquidity_delta = convert_to_liquidity_delta(u128::from(params.liquidity_amount), true)?;
 
     //
     // 1. Initialize & mint the trade position
@@ -156,6 +170,8 @@ pub fn open_loan_position(
         position_mint.key(),
         params.tick_lower_index,
         params.tick_upper_index,
+        params.loan_duration_slots,
+        0,
     )?;
 
     mint_position_token_and_remove_authority(
@@ -167,7 +183,21 @@ pub fn open_loan_position(
 
     //
     // 2. Get liquidity from ticks (fails if insufficient liquidity for loan)
+    // Note: Must come after `position.init_position()` because it uses the position data.
     //
+
+    let (
+        token_borrow_amount,
+        is_borrow_token_a,
+        is_collateral_token_a,
+        lower_sqrt_price,
+        upper_sqrt_price,
+    ) = loan_manager::calculate_loan_liquidity_token_delta(
+        current_tick_index,
+        params.tick_lower_index,
+        params.tick_upper_index,
+        liquidity_delta,
+    )?;
 
     let update = loan_manager::calculate_modify_loan(
         &ctx.accounts.globalpool,
@@ -175,27 +205,14 @@ pub fn open_loan_position(
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
         liquidity_delta,
+        token_borrow_amount,
         params.borrow_a,
     )?;
 
     //
     // 3. Check collateral.
+    // Note: Borrowing Token B in A/B pool (e.g. SOL/USDC) means depositing Token A as collateral.
     //
-    // Note 1: Must come after initializing the position, as it uses the position data.
-    // Note 2: Borrowng Token B in A/B pool (e.g. SOL/USDC) means depositing Token A as collateral.
-    //
-
-    let (
-        token_borrow_amount,
-        is_collateral_token_a,
-        is_borrow_token_a,
-        lower_sqrt_price,
-        upper_sqrt_price,
-    ) = loan_manager::calculate_loan_liquidity_token_delta(
-        tick_current_index,
-        position,
-        liquidity_delta,
-    )?;
 
     let (
         collateral_token_owner_account,
@@ -226,13 +243,11 @@ pub fn open_loan_position(
 
     let collateral_amount = loan_manager::calculate_collateral(
         token_borrow_amount,
-        is_borrow_token_a,
         is_collateral_token_a,
-        borrowed_token_mint.decimals,
-        collateral_token_mint.decimals,
-        collateral_token_owner_account.amount,
-        lower_sqrt_price,
-        upper_sqrt_price,
+        // collateral_token_owner_account.amount,
+        &ctx.accounts.token_price_feed_a,
+        &ctx.accounts.token_price_feed_b,
+        Clock::get()?.unix_timestamp,
     )?;
 
     position.update_position_mints(borrowed_token_mint.key(), collateral_token_mint.key())?;

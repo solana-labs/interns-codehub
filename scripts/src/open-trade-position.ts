@@ -268,11 +268,12 @@ async function main() {
   // console.log(swapInstruction.data.subarray(0, 8))
 
   const swapAccounts: AccountMeta[] = [
-    {
-      isSigner: false,
-      isWritable: false,
-      pubkey: swapInstruction.programId,
-    },
+    // Jupiter Program ID hard-coded in the program for now
+    // {
+    //   isSigner: false,
+    //   isWritable: false,
+    //   pubkey: swapInstruction.programId,
+    // },
   ]
 
   for (const key of swapInstruction.keys) {

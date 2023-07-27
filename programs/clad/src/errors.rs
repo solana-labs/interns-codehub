@@ -112,8 +112,16 @@ pub enum ErrorCode {
     #[msg("Invalid Loan Trade Swap Result")]
     InvalidLoanTradeSwapResult,
 
-    #[msg("Liquidity Borrowed Not Empty")]
-    LiquidityBorrowedNotEmpty,
+    #[msg("Trade Position is Not Empty")]
+    CloseTradePositionNotEmpty,
+
+    // Pyth errors
+    #[msg("Could not load price account")]
+    PythError,
+    #[msg("Failed to serialize price account")]
+    TryToSerializePriceAccount,
+    #[msg("Invalid argument provided")]
+    InvalidArgument,
 }
 
 impl From<TryFromIntError> for ErrorCode {

@@ -64,35 +64,28 @@ pub fn open_trade_position(
 ) -> Result<()> {
     verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
 
-    let is_borrow_a =
-        ctx.accounts.position.liquidity_mint == ctx.accounts.globalpool.token_mint_a.key();
+    let is_borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);
+    let available_collateral_amount = ctx.accounts.position.collateral_amount;
 
-    let (loan_token_vault, other_token_vault) = if is_borrow_a {
+    let (borrowed_token_vault, collateral_token_vault) = if is_borrow_a {
         (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
     } else {
         (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
     };
 
-    let (initial_loan_token_balance, initial_swapped_token_balance) = if is_borrow_a {
-        (loan_token_vault.amount, other_token_vault.amount)
+    let (initial_loan_vault_balance, initial_swapped_vault_balance) = if is_borrow_a {
+        (borrowed_token_vault.amount, collateral_token_vault.amount)
     } else {
-        (other_token_vault.amount, loan_token_vault.amount)
+        (collateral_token_vault.amount, borrowed_token_vault.amount)
     };
 
     //
     // Set up swap
     //
 
-    let swap_program_id = ctx.remaining_accounts[0].key();
-    // msg!(
-    //     "ctx.remaining.accounts length: {}",
-    //     &ctx.remaining_accounts[..].len()
-    // );
-    // msg!("swap_program_id: {}", swap_program_id);
-
+    // 0th index is router program
     let mut swap_route_accounts = vec![];
-    for account in &ctx.remaining_accounts[1..] {
-        // 0th index is router pid
+    for account in &ctx.remaining_accounts[..] {
         let is_signer = account.key == &ctx.accounts.globalpool.key();
         swap_route_accounts.push(if account.is_writable {
             AccountMeta::new(*account.key, is_signer)
@@ -109,14 +102,9 @@ pub fn open_trade_position(
     // Execute swap
     //
 
-    // msg!("swap_route_accounts length: {}", swap_route_accounts.len());
-    // msg!(
-    //     "swap_instruction_Data length: {}",
-    //     params.swap_instruction_data.len()
-    // );
-
     let swap_instruction = Instruction {
-        program_id: swap_program_id,
+        // Jupiter Program ID hard-coded in the program for now
+        program_id: jupiter_cpi::id(), // == JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB
         accounts: swap_route_accounts,
         data: params.swap_instruction_data.clone(),
     };
@@ -134,28 +122,28 @@ pub fn open_trade_position(
     ctx.accounts.token_vault_a.reload()?;
     ctx.accounts.token_vault_b.reload()?;
 
-    // need to borrow immutable reference again after reloading mutable above
-    let (loan_token_vault, other_token_vault) = if is_borrow_a {
+    // need to borrow immutable reference again after reloading the mutable ref above
+    let (borrowed_token_vault, collateral_token_vault) = if is_borrow_a {
         (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
     } else {
         (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
     };
 
-    let (post_loan_token_balance, post_swapped_token_balance) = if is_borrow_a {
-        (loan_token_vault.amount, other_token_vault.amount)
+    let (post_loan_vault_balance, post_swapped_vault_balance) = if is_borrow_a {
+        (borrowed_token_vault.amount, collateral_token_vault.amount)
     } else {
-        (other_token_vault.amount, loan_token_vault.amount)
+        (collateral_token_vault.amount, borrowed_token_vault.amount)
     };
 
     // 1. Require that Loan Token was the swapped to Swapped Token.
     // => Loan Token balance should decrease
     // => Swapped Token balance should increase
     require!(
-        initial_loan_token_balance > post_loan_token_balance,
+        initial_loan_vault_balance > post_loan_vault_balance,
         ErrorCode::InvalidLoanTradeSwapDirection
     );
     require!(
-        initial_swapped_token_balance < post_swapped_token_balance,
+        initial_swapped_vault_balance < post_swapped_vault_balance,
         ErrorCode::InvalidLoanTradeSwapDirection
     );
 
@@ -163,15 +151,13 @@ pub fn open_trade_position(
     //    position.liquidity_available.
 
     // This calculation should come after checking that the balances were modified legally (1).
-    let swapped_amount_in: u128 = initial_loan_token_balance
-        .checked_sub(post_loan_token_balance)
-        .unwrap()
-        .into();
+    let swapped_amount_in = initial_loan_vault_balance
+        .checked_sub(post_loan_vault_balance)
+        .unwrap();
 
-    let swapped_amount_out: u128 = post_swapped_token_balance
-        .checked_sub(initial_swapped_token_balance)
-        .unwrap()
-        .into();
+    let swapped_amount_out = post_swapped_vault_balance
+        .checked_sub(initial_swapped_vault_balance)
+        .unwrap();
 
     require!(
         swapped_amount_in <= ctx.accounts.position.liquidity_available,

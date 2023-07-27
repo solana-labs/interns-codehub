@@ -56,6 +56,11 @@ pub struct CreatePool<'info> {
     )]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
+    // Need to read from Pyth to calculate collateral amount. We read both Token A and B since 
+    // the prices are returned in USD and we calculate collateral denominated in either token A or B.
+    pub token_price_feed_a: Account<'info, PriceFeed>,
+    pub token_price_feed_b: Account<'info, PriceFeed>,
+
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -91,5 +96,7 @@ pub fn create_pool(ctx: Context<CreatePool>, params: &CreatePoolParams) -> Resul
         ctx.accounts.token_vault_a.key(),
         ctx.accounts.token_mint_b.key(),
         ctx.accounts.token_vault_b.key(),
+        ctx.accounts.token_price_feed_a.key(),
+        ctx.accounts.token_price_feed_b.key(),
     )?)
 }

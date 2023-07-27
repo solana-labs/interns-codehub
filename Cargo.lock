@@ -837,6 +837,7 @@ dependencies = [
  "num 0.4.0",
  "num-traits",
  "proptest",
+ "pyth-sdk",
  "pyth-sdk-solana",
  "serde",
  "serde_json",

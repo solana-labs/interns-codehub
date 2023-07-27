@@ -29,9 +29,11 @@ export type GlobalpoolData = {
   protocolFeeOwedB: bigint
   tokenMintA: PublicKey
   tokenVaultA: PublicKey
+  tokenPriceFeedA: PublicKey
   feeGrowthGlobalA: bigint
   tokenMintB: PublicKey
   tokenVaultB: PublicKey
+  tokenPriceFeedB: PublicKey
   feeGrowthGlobalB: bigint
   inceptionTime: bigint
   feeAuthority: PublicKey
@@ -54,15 +56,15 @@ export type TradePositionData = {
   positionMint: PublicKey
   tickLowerIndex: number
   tickUpperIndex: number
+  tickCurrentIndexOriginal: number,
   liquidityAvailable: BN
   liquiditySwapped: BN
   liquidityMint: PublicKey
   collateralAmount: BN // u64 is BN
   collateralMint: PublicKey
-  isTradeOpen: boolean
   openSlot: BN
   duration: BN
-  interestRate: number
+  interestRate: number // u32
 }
 
 export type TickData = {

@@ -186,7 +186,7 @@ async function main() {
       ' '.repeat(10),
       `range:     [${priceRange[0]}, ${priceRange[1]})`.padEnd(32, ' ')
     )
-    console.log(' '.repeat(10), `is trade open: ${position.data.isTradeOpen}`)
+    console.log(' '.repeat(10), `is trade open: ${position.data.liquiditySwapped.eq(0) ? 'no' : 'yes'}`)
     console.log()
     console.log(' '.repeat(10), `liquidity mint:        ${position.data.liquidityMint.toBase58()}`)
     console.log(' '.repeat(10), `liquidity available:   ${position.data.liquidityAvailable}`)

@@ -5,6 +5,7 @@ use {
     },
     crate::{errors::ErrorCode, math::*, state::*, util::TickSequence},
     anchor_lang::prelude::{AccountLoader, *},
+    solana_program::clock::UnixTimestamp,
 };
 
 #[derive(Debug, Default)]
@@ -26,7 +27,7 @@ pub struct ModifyLoanUpdate {
     pub position_update: TradePositionUpdate,
 }
 
-// Calculates state after modifying liquidity by the liquidity_delta for the given positon.
+// Calculates state after modifying liquidity by the `borrowed_amount` for the given positon.
 // Fee growths will also be calculated by this function.
 // To trigger only calculation of fee growths, use calculate_fee_growths.
 pub fn calculate_modify_loan<'info>(
@@ -35,10 +36,11 @@ pub fn calculate_modify_loan<'info>(
     tick_array_lower: &AccountLoader<'info, TickArray>,
     tick_array_upper: &AccountLoader<'info, TickArray>,
     liquidity_delta: i128,
+    borrowed_amount: u64,
     borrow_a: bool,
 ) -> Result<ModifyLoanUpdate> {
     // Disallow only updating position fee growth when position has zero liquidity
-    if liquidity_delta == 0 {
+    if borrowed_amount == 0 {
         // && position.liquidity == 0 {
         return Err(ErrorCode::LiquidityZero.into());
     }
@@ -100,11 +102,9 @@ pub fn calculate_modify_loan<'info>(
     // Note: Add the absolute value of `liquidty_delta` as it's negative when borrowing (used to subtract liquidity from
     //       the pool) but the position itself needs to represent the borrowed liquidity that's now available (positive).
     //
+    let liquidity_available = position.liquidity_available.checked_add(borrowed_amount).unwrap();
     let position_update = TradePositionUpdate {
-        liquidity_available: add_liquidity_delta(
-            position.liquidity_available,
-            liquidity_delta.abs(),
-        )?,
+        liquidity_available,
         liquidity_swapped: position.liquidity_swapped,
     };
     msg!("position_update: {:?}", position_update);
@@ -121,7 +121,8 @@ pub fn calculate_modify_loan<'info>(
 
 pub fn calculate_loan_liquidity_token_delta(
     current_tick_index: i32,
-    position: &TradePosition,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
     liquidity_delta: i128,
 ) -> Result<(u64, bool, bool, u128, u128)> {
     if liquidity_delta == 0 {
@@ -136,28 +137,31 @@ pub fn calculate_loan_liquidity_token_delta(
     //      - loan is borrowing Token B (USDC) (gets swapped to SOL for long-A)
     //      - collateral is in Token A (SOL)
     // - otherwise, invalid.
-    let is_collateral_token_a = current_tick_index > position.tick_upper_index;
-    let is_borrow_token_a = !is_collateral_token_a;
+    let is_borrow_token_a = current_tick_index < tick_lower_index;
 
     let liquidity: u128 = liquidity_delta.abs() as u128;
     let round_up = liquidity_delta > 0;
 
-    let lower_sqrt_price = sqrt_price_from_tick_index(position.tick_lower_index);
-    let upper_sqrt_price = sqrt_price_from_tick_index(position.tick_upper_index);
+    let lower_sqrt_price = sqrt_price_from_tick_index(tick_lower_index);
+    let upper_sqrt_price = sqrt_price_from_tick_index(tick_upper_index);
     // msg!("lower_price_sqrt: {:?}", lower_sqrt_price);
     // msg!("upper_price_sqrt: {:?}", upper_sqrt_price);
 
     // Always only in one token
-    let delta = if is_collateral_token_a {
+    let delta = if is_borrow_token_a {
+        // P ≤ p_a (y = 0)
+        // Δt_a = liquidity * [(sqrt_price_lower - sqrt_price_upper) / (sqrt_price_upper * sqrt_price_lower)]
         get_amount_delta_a(lower_sqrt_price, upper_sqrt_price, liquidity, round_up)?
     } else {
+        // P ≥ p_b (x = 0)
+        // Δt_b = liquidity * (sqrt_price_upper - sqrt_price_lower)
         get_amount_delta_b(lower_sqrt_price, upper_sqrt_price, liquidity, round_up)?
     };
 
     Ok((
         delta,
-        is_collateral_token_a,
         is_borrow_token_a,
+        !is_borrow_token_a, // is_collateral_token_a
         lower_sqrt_price,
         upper_sqrt_price,
     ))
@@ -166,80 +170,67 @@ pub fn calculate_loan_liquidity_token_delta(
 pub fn calculate_collateral(
     token_borrow_amount: u64,
     is_borrow_token_a: bool,
-    is_collateral_token_a: bool,
-    borrowed_token_mint_decimals: u8,
-    collateral_token_mint_decimals: u8,
-    collateral_token_owner_account_amount: u64,
-    lower_sqrt_price: u128,
-    upper_sqrt_price: u128,
+    token_price_feed_a: &Account<'_, PriceFeed>,
+    token_price_feed_b: &Account<'_, PriceFeed>,
+    current_timestamp: UnixTimestamp,
 ) -> Result<u64> {
-    //
-    // TODO: FInd more optimized calculation method (no exponentiation?)
-    //
+    let token_oracle_a = token_price_feed_a.read_price(current_timestamp)?;
+    let token_oracle_b = token_price_feed_b.read_price(current_timestamp)?;
 
-    //
-    // TODO WARNING: This is a temporary solution for strict testing purposes, and should not be used for production.
-    //
+    // Prices scaled to exponent (e.g. 10^9 for SOL, 10^6 for USDC)
+    let token_price_a = token_oracle_a.price_with_expo;
+    let token_price_b = token_oracle_b.price_with_expo;
 
-    let num_2_pow_neg_64 = 1_f32 / 18446744073709551616_f32;
-    let lower_price = (lower_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
-    let upper_price = (upper_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
+    // token_price_a_b = A/B (Token A quoted in Token B, e.g. SOL/USDC)
+    let token_price_a_b = token_price_feed_a
+        .read_price_in_quote(token_price_feed_b, current_timestamp)?
+        .price_with_expo;
+    let token_price_b_a = token_price_feed_b
+        .read_price_in_quote(token_price_feed_a, current_timestamp)?
+        .price_with_expo;
 
-    let (lower_price, upper_price) = if collateral_token_mint_decimals
-        > borrowed_token_mint_decimals
-    {
-        let decimals_expo =
-            10_f32.powf((collateral_token_mint_decimals - borrowed_token_mint_decimals) as f32);
-        (lower_price * decimals_expo, upper_price * decimals_expo)
-    } else if collateral_token_mint_decimals < borrowed_token_mint_decimals {
-        let decimals_expo = lower_price
-            / 10_f32.powf((borrowed_token_mint_decimals - collateral_token_mint_decimals) as f32);
-        (lower_price * decimals_expo, upper_price * decimals_expo)
-    } else {
-        (lower_price, upper_price)
-    };
-
-    let lower_upper_mean_price = (lower_price + upper_price) / 2.0;
-
-    // msg!("collateral_token_key:  {}", collateral_token_mint.key());
-    msg!("collateral_token_mint: {}", collateral_token_mint_decimals);
-    // msg!("borrowed_token_key:    {}", borrowed_token_mint.key());
-    msg!("borrowed_token_mint:   {}", borrowed_token_mint_decimals);
-    let collateral_amount = if is_borrow_token_a {
-        token_borrow_amount * lower_upper_mean_price.ceil() as u64
-            / 10_u64.pow(borrowed_token_mint_decimals as u32)
-    } else {
-        if collateral_token_mint_decimals > borrowed_token_mint_decimals {
-            token_borrow_amount
-                * 10_u64.pow((collateral_token_mint_decimals - borrowed_token_mint_decimals) as u32)
-                / lower_upper_mean_price.floor() as u64
-        } else if collateral_token_mint_decimals < borrowed_token_mint_decimals {
-            token_borrow_amount
-                / 10_u64.pow((borrowed_token_mint_decimals - collateral_token_mint_decimals) as u32)
-                / lower_upper_mean_price.floor() as u64
+    let borrowed_value_in_collateral_token = token_borrow_amount
+        .checked_mul(if is_borrow_token_a {
+            token_price_b_a
         } else {
-            token_borrow_amount / lower_upper_mean_price.floor() as u64
-        }
-    };
+            token_price_a_b
+        })
+        .unwrap();
 
-    let collateral_amount = collateral_amount.checked_div(3).unwrap(); // 33.33% for experiment
+    //
+    // Collateral amount is a function of:
+    // 1. Loan size;
+    // 2. Distance from lower/upper tick of the loan to the current tick of the pool;
+    // 3. Distance between lower and upper tick of the loan.
+    // 4. Current price of the two tokens in the pool (collateral token & loaned token).
+    //
 
-    if collateral_token_owner_account_amount < collateral_amount {
-        return Err(ErrorCode::InsufficientCollateral.into());
-    }
+    // For now, just 33% regardless of (2) and (3)
+    let collateral_amount = borrowed_value_in_collateral_token
+        .checked_div(3)
+        .unwrap();
 
-    msg!("is_collateral_token_a: {}", is_collateral_token_a);
-    msg!("is_borrow_token_a:     {}", is_borrow_token_a);
-    msg!(
-        "collateral_amount:     {}",
-        collateral_amount as f32 / 10_f32.powf(collateral_token_mint_decimals as f32)
-    );
-    msg!(
-        "borrow_amount:         {}",
-        token_borrow_amount as f32 / 10_f32.powf(borrowed_token_mint_decimals as f32)
-    );
-    msg!("tick lower price:      {}", lower_price);
-    msg!("tick upper price:      {}", upper_price);
+    //
+    // WARNING: This is a temporary solution for strict testing purposes, and should not be used for production.
+    //
+
+    // let num_2_pow_neg_64 = 1_f32 / 18446744073709551616_f32;
+    // let lower_price = (lower_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
+    // let upper_price = (upper_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
+
+    // let (lower_price, upper_price) = if collateral_token_mint_decimals
+    //     > borrowed_token_mint_decimals
+    // {
+    //     let decimals_expo =
+    //         10_f32.powf((collateral_token_mint_decimals - borrowed_token_mint_decimals) as f32);
+    //     (lower_price * decimals_expo, upper_price * decimals_expo)
+    // } else if collateral_token_mint_decimals < borrowed_token_mint_decimals {
+    //     let decimals_expo = lower_price
+    //         / 10_f32.powf((borrowed_token_mint_decimals - collateral_token_mint_decimals) as f32);
+    //     (lower_price * decimals_expo, upper_price * decimals_expo)
+    // } else {
+    //     (lower_price, upper_price)
+    // };
 
     Ok(collateral_amount)
 }

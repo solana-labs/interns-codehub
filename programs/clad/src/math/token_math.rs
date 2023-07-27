@@ -1,9 +1,9 @@
-use crate::errors::ErrorCode;
-use crate::math::Q64_RESOLUTION;
-
-use super::{
-    checked_mul_shift_right_round_up_if, div_round_up_if, div_round_up_if_u256, mul_u256,
-    U256Muldiv, MAX_SQRT_PRICE_X64, MIN_SQRT_PRICE_X64,
+use {
+    super::{
+        checked_mul_shift_right_round_up_if, div_round_up_if, div_round_up_if_u256, mul_u256,
+        U256Muldiv, MAX_SQRT_PRICE_X64, MIN_SQRT_PRICE_X64,
+    },
+    crate::{errors::ErrorCode, math::Q64_RESOLUTION},
 };
 
 // Fee rate is represented as hundredths of a basis point.
@@ -27,17 +27,19 @@ pub const PROTOCOL_FEE_RATE_MUL_VALUE: u128 = 10_000;
 //
 // Get change in token_a corresponding to a change in price
 //
-
+// REFERENCE: Eq. 11 (for y when P ≥ p_b <=> x = 0) in Uniswap v3 Liquidity Math paper
+//
+//
 // 6.16
 // Δt_a = Δ(1 / sqrt_price) * liquidity
-
+//
 // Replace delta
-// Δt_a = (1 / sqrt_price_upper - 1 / sqrt_price_lower) * liquidity
-
+// Δt_a = (1 / sqrt_price_lower - 1 / sqrt_price_upper) * liquidity
+//
 // Common denominator to simplify
-// Δt_a = ((sqrt_price_lower - sqrt_price_upper) / (sqrt_price_upper * sqrt_price_lower)) * liquidity
-
-// Δt_a = (liquidity * (sqrt_price_lower - sqrt_price_upper)) / (sqrt_price_upper * sqrt_price_lower)
+// Δt_a = ((sqrt_price_upper - sqrt_price_lower) / (sqrt_price_lower * sqrt_price_upper)) * liquidity
+//
+// Δt_a = (liquidity * (sqrt_price_upper - sqrt_price_lower)) / (sqrt_price_lower * sqrt_price_upper)
 pub fn get_amount_delta_a(
     sqrt_price_0: u128,
     sqrt_price_1: u128,
@@ -52,7 +54,7 @@ pub fn get_amount_delta_a(
         .checked_shift_word_left()
         .ok_or(ErrorCode::MultiplicationOverflow)?;
 
-    let denominator = mul_u256(sqrt_price_upper, sqrt_price_lower);
+    let denominator = mul_u256(sqrt_price_lower, sqrt_price_upper);
 
     let (quotient, remainder) = numerator.div(denominator, round_up);
 
@@ -72,10 +74,12 @@ pub fn get_amount_delta_a(
 //
 // Get change in token_b corresponding to a change in price
 //
-
+// REFERENCE: Eq. 12 (for x when P ≤ p_a <=> y = 0) in Uniswap v3 Liquidity Math paper
+//
+//
 // 6.14
 // Δt_b = Δ(sqrt_price) * liquidity
-
+//
 // Replace delta
 // Δt_b = (sqrt_price_upper - sqrt_price_lower) * liquidity
 pub fn get_amount_delta_b(
@@ -84,11 +88,67 @@ pub fn get_amount_delta_b(
     liquidity: u128,
     round_up: bool,
 ) -> Result<u64, ErrorCode> {
-    let (price_lower, price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
+    let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
 
     // liquidity * (price_upper - price_lower) must be less than 2^128
     // for the token amount to be less than 2^64
-    checked_mul_shift_right_round_up_if(liquidity, price_upper - price_lower, round_up)
+    checked_mul_shift_right_round_up_if(liquidity, sqrt_price_upper - sqrt_price_lower, round_up)
+}
+
+//
+// Inverse of `get_amount_delta_a`, where we know the amount of Token A and want the liquidity.
+//
+// Δliquidity = amount_a * [(sqrt_price_lower * sqrt_price_upper) / (sqrt_price_upper - sqrt_price_lower)]
+pub fn get_liquidity_delta_a(
+    sqrt_price_0: u128,
+    sqrt_price_1: u128,
+    amount: u64,
+    round_up: bool,
+) -> Result<u128, ErrorCode> {
+    let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
+
+    let numerator = mul_u256(sqrt_price_lower, sqrt_price_upper)
+        .checked_shift_word_left()
+        .ok_or(ErrorCode::MultiplicationOverflow)?;
+    let denominator = U256Muldiv::new(0, sqrt_price_upper - sqrt_price_lower);
+
+    let (quotient, remainder) = numerator.div(denominator, round_up);
+
+    let result = if round_up && !remainder.is_zero() {
+        quotient.add(U256Muldiv::new(0, 1))
+    } else {
+        quotient
+    }
+    .try_into_u128()?;
+
+    return Ok(result);
+}
+
+//
+// Inverse of `get_amount_delta_b`, where we know the amount of Token B and want the liquidity.
+//
+// Δliquidity = amount_b / (sqrt_price_upper - sqrt_price_lower)
+pub fn get_liquidity_delta_b(
+    sqrt_price_0: u128,
+    sqrt_price_1: u128,
+    amount: u64,
+    round_up: bool,
+) -> Result<u128, ErrorCode> {
+    let (sqrt_price_lower, sqrt_price_upper) = increasing_price_order(sqrt_price_0, sqrt_price_1);
+
+    let numerator = U256Muldiv::new(0, amount as u128);
+    let denominator = U256Muldiv::new(0, sqrt_price_upper - sqrt_price_lower);
+
+    let (quotient, remainder) = numerator.div(denominator, round_up);
+
+    let result = if round_up && !remainder.is_zero() {
+        quotient.add(U256Muldiv::new(0, 1))
+    } else {
+        quotient
+    }
+    .try_into_u128()?;
+
+    return Ok(result);
 }
 
 pub fn increasing_price_order(sqrt_price_0: u128, sqrt_price_1: u128) -> (u128, u128) {
@@ -265,9 +325,11 @@ pub fn get_next_sqrt_price(
 
 #[cfg(test)]
 mod fuzz_tests {
-    use super::*;
-    use crate::math::{bit_math::*, tick_math::*, U256};
-    use proptest::prelude::*;
+    use {
+        super::*,
+        crate::math::{bit_math::*, tick_math::*, U256},
+        proptest::prelude::*,
+    };
 
     // Cases where the math overflows or errors
     //
@@ -460,8 +522,7 @@ mod fuzz_tests {
 #[cfg(test)]
 mod test_get_amount_delta {
     // Δt_a = ((liquidity * (sqrt_price_lower - sqrt_price_upper)) / sqrt_price_upper) / sqrt_price_lower
-    use super::get_amount_delta_a;
-    use super::get_amount_delta_b;
+    use super::{get_amount_delta_a, get_amount_delta_b};
 
     #[test]
     fn test_get_amount_delta_ok() {

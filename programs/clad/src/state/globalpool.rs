@@ -31,17 +31,17 @@ pub struct Globalpool {
     //
     pub liquidity_available: u128,
 
-    // Liquidity of Token A on loan
-    pub liquidity_borrowed_a: u128,
+    // Liquidity of Token A on loan (actual token amount)
+    pub liquidity_borrowed_a: u64,
 
-    // Liquidity of Token B on loan
-    pub liquidity_borrowed_b: u128,
+    // Liquidity of Token B on loan (actual token amount)
+    pub liquidity_borrowed_b: u64,
 
-    // Liquidity of Token A swapped from Token B for trade positions (for ledger purposes)
-    pub liquidity_trade_locked_a: u128,
+    // Liquidity of Token A swapped from Token B for trade positions (for ledger purposes) (actual token amount)
+    pub liquidity_trade_locked_a: u64,
 
-    // Liquidity of Token B swapped from Token A for trade positions (for ledger purposes)
-    pub liquidity_trade_locked_b: u128,
+    // Liquidity of Token B swapped from Token A for trade positions (for ledger purposes) (actual token amount)
+    pub liquidity_trade_locked_b: u64,
 
     // MAX/MIN at Q32.64, but using Q64.64 for rounder bytes
     // Q64.64
@@ -53,12 +53,14 @@ pub struct Globalpool {
 
     pub token_mint_a: Pubkey,  // 32
     pub token_vault_a: Pubkey, // 32
+    pub token_price_feed_a: Pubkey,
 
     // Q64.64
     pub fee_growth_global_a: u128, // 16
 
     pub token_mint_b: Pubkey,  // 32
     pub token_vault_b: Pubkey, // 32
+    pub token_price_feed_b: Pubkey,
 
     // Q64.64
     pub fee_growth_global_b: u128, // 16
@@ -94,6 +96,8 @@ impl Globalpool {
         token_vault_a: Pubkey,
         token_mint_b: Pubkey,
         token_vault_b: Pubkey,
+        token_price_feed_a: Pubkey,
+        token_price_feed_b: Pubkey,
     ) -> Result<()> {
         if token_mint_a.ge(&token_mint_b) {
             return Err(ErrorCode::InvalidTokenMintOrder.into());
@@ -137,14 +141,17 @@ impl Globalpool {
 
         self.token_mint_a = token_mint_a;
         self.token_vault_a = token_vault_a;
+        self.token_price_feed_a = token_price_feed_a;
         self.fee_growth_global_a = 0;
         self.fee_authority = fee_authority;
 
         self.token_mint_b = token_mint_b;
         self.token_vault_b = token_vault_b;
+        self.token_price_feed_b = token_price_feed_b;
         self.fee_growth_global_b = 0;
 
         self.inception_time = to_timestamp_u64(Clock::get()?.unix_timestamp)?;
+
 
         Ok(())
     }
@@ -178,7 +185,7 @@ impl Globalpool {
 
     pub fn update_liquidity_trade_locked(
         &mut self,
-        liquidity_swapped_out: u128,
+        liquidity_swapped_out: u64,
         is_borrow_a: bool, // true: swapped out to Token B | false: swapped out to Token A
     ) -> Result<()> {
         if is_borrow_a {

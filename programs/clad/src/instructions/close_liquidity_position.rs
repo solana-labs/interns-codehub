@@ -1,9 +1,12 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount};
-
-use crate::errors::ErrorCode;
-use crate::state::*;
-use crate::util::{burn_and_close_user_position_token, verify_position_authority};
+use {
+    crate::{
+        errors::ErrorCode,
+        state::*,
+        util::{burn_and_close_user_position_token, verify_position_authority},
+    },
+    anchor_lang::prelude::*,
+    anchor_spl::token::{self, Mint, Token, TokenAccount},
+};
 
 #[derive(Accounts)]
 pub struct CloseLiquidityPosition<'info> {
@@ -13,9 +16,13 @@ pub struct CloseLiquidityPosition<'info> {
     #[account(mut)]
     pub receiver: UncheckedAccount<'info>,
 
-    #[account(mut,
+    #[account(
+        mut,
         close = receiver,
-        seeds = [b"liquidity_position".as_ref(), position_mint.key().as_ref()],
+        seeds = [
+            b"liquidity_position".as_ref(), 
+            position_mint.key().as_ref()
+        ],
         bump,
     )]
     pub position: Account<'info, LiquidityPosition>,
