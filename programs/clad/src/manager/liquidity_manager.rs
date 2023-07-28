@@ -163,8 +163,8 @@ pub fn calculate_liquidity_token_deltas(
     let mut delta_a: u64 = 0;
     let mut delta_b: u64 = 0;
 
-    let round_up = liquidity_delta > 0;
     let liquidity: u128 = liquidity_delta.abs() as u128;
+    let round_up = liquidity_delta > 0;
 
     let lower_price = sqrt_price_from_tick_index(position.tick_lower_index);
     let upper_price = sqrt_price_from_tick_index(position.tick_upper_index);

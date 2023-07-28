@@ -102,13 +102,13 @@ pub fn calculate_modify_loan<'info>(
     // Note: Add the absolute value of `liquidty_delta` as it's negative when borrowing (used to subtract liquidity from
     //       the pool) but the position itself needs to represent the borrowed liquidity that's now available (positive).
     //
-    let liquidity_available = position
-        .liquidity_available
+    let loan_token_available = position
+        .loan_token_available
         .checked_add(borrowed_amount)
         .unwrap();
     let position_update = TradePositionUpdate {
-        liquidity_available,
-        liquidity_swapped: position.liquidity_swapped,
+        loan_token_available,
+        loan_token_swapped: position.loan_token_swapped,
     };
     msg!("position_update: {:?}", position_update);
     msg!("tick_lower_update: {:?}", tick_lower_update);
@@ -152,11 +152,11 @@ pub fn calculate_loan_liquidity_token_delta(
 
     // Always only in one token
     let delta = if is_borrow_token_a {
-        // P ≤ p_a (y = 0)
+        // P ≤ p_a (y = 0) => borrowing `delta` amount of Token A (X)
         // Δt_a = liquidity * [(sqrt_price_lower - sqrt_price_upper) / (sqrt_price_upper * sqrt_price_lower)]
         get_amount_delta_a(lower_sqrt_price, upper_sqrt_price, liquidity, round_up)?
     } else {
-        // P ≥ p_b (x = 0)
+        // P ≥ p_b (x = 0) => borrowing `delta` amount of Token B (Y)
         // Δt_b = liquidity * (sqrt_price_upper - sqrt_price_lower)
         get_amount_delta_b(lower_sqrt_price, upper_sqrt_price, liquidity, round_up)?
     };

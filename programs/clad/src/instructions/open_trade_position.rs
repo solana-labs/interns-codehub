@@ -133,8 +133,8 @@ pub fn open_trade_position(
     msg!("swapped_amount_in: {}", swapped_amount_in);
     msg!("swapped_amount_out: {}", swapped_amount_out);
     msg!(
-        "position.liquidity_available: {}",
-        ctx.accounts.position.liquidity_available
+        "position.loan_token_available: {}",
+        ctx.accounts.position.loan_token_available
     );
     msg!(
         "position.collateral_amount: {}",
@@ -142,7 +142,7 @@ pub fn open_trade_position(
     );
 
     require!(
-        swapped_amount_in <= ctx.accounts.position.liquidity_available,
+        swapped_amount_in <= ctx.accounts.position.loan_token_available,
         ErrorCode::InvalidLoanTradeSwapResult
     );
 

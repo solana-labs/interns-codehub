@@ -56,14 +56,15 @@ export type TradePositionData = {
   positionMint: PublicKey
   tickLowerIndex: number
   tickUpperIndex: number
-  tickCurrentIndexOriginal: number,
-  liquidityAvailable: BN
-  liquiditySwapped: BN
-  liquidityMint: PublicKey
-  collateralAmount: BN // u64 is BN
-  collateralMint: PublicKey
-  openSlot: BN
-  duration: BN
+  tickOpenIndex: number,
+  liquidityBorrowed: BN // u128
+  loanTokenAvailable: BN // u64
+  loanTokenSwapped: BN // u64
+  collateralAmount: BN // u64
+  tokenMintLoan: PublicKey
+  tokenMintCollateral: PublicKey
+  openSlot: BN // u64
+  duration: BN // u64
   interestRate: number // u32
 }
 

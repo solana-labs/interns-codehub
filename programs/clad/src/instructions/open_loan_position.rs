@@ -168,6 +168,7 @@ pub fn open_loan_position(
     position.init_position(
         &ctx.accounts.globalpool,
         position_mint.key(),
+        u128::from(params.liquidity_amount),
         params.tick_lower_index,
         params.tick_upper_index,
         params.loan_duration_slots,

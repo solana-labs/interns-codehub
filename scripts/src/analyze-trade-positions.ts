@@ -19,12 +19,18 @@ import { ParsableGlobalpool, ParsableTradePosition } from './types/parsing'
 import { GlobalpoolData, TradePositionData } from './types/accounts'
 import { PositionStatus } from './utils/liquidity-position/types'
 import { PositionUtil } from './utils/liquidity-position/utils'
+import { getTokenAmountsFromLiquidity } from './utils/token-math'
 
 type UserPosition = {
   key: PublicKey
   mint: PublicKey
   ata: PublicKey
   data: TradePositionData
+}
+
+function paddedConsoleLogBlock(str: string[]) {
+  str.forEach((s) => console.log(' '.repeat(10), s))
+  console.log()
 }
 
 async function getUserPositions(
@@ -126,6 +132,8 @@ async function main() {
       tokenMintA: mintAKey,
       tokenMintB: mintBKey,
       tickCurrentIndex,
+      sqrtPrice: currentSqrtPrice,
+      tickSpacing: poolTickSpacing,
     } = cachedGlobalpoolData.get(globalpoolKey.toBase58()) as GlobalpoolData
 
     if (!cachedTokenMints.has(mintAKey.toBase58())) {
@@ -164,6 +172,64 @@ async function main() {
       tickUpperIndex
     )
 
+    // console.log(
+    //   new BN(currentSqrtPrice.toString()).toString(),
+    //   PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex).toString(),
+    //   PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex).toString(),
+    // )
+
+    const tokenAmountsToRepayCurrent = getTokenAmountsFromLiquidity(
+      position.data.liquidityBorrowed,
+      new BN(currentSqrtPrice.toString()),
+      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
+      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      true
+    )
+
+    const mockInterval = 44 * poolTickSpacing
+
+    const mockTick1 = tickUpperIndex + mockInterval
+    const mockPrice1 = PriceMath.tickIndexToPrice(
+      mockTick1,
+      mintA.decimals,
+      mintB.decimals
+    ).toFixed(mintB.decimals)
+    const tokenAmountsToRepayMock1 = getTokenAmountsFromLiquidity(
+      position.data.liquidityBorrowed,
+      PriceMath.tickIndexToSqrtPriceX64(mockTick1),
+      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
+      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      true
+    )
+
+    const mockTick2 = tickLowerIndex - mockInterval
+    const mockPrice2 = PriceMath.tickIndexToPrice(
+      mockTick2,
+      mintA.decimals,
+      mintB.decimals
+    ).toFixed(mintB.decimals)
+    const tokenAmountsToRepayMock2 = getTokenAmountsFromLiquidity(
+      position.data.liquidityBorrowed,
+      PriceMath.tickIndexToSqrtPriceX64(mockTick2),
+      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
+      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      true
+    )
+
+    const mockTick3 = tickUpperIndex - mockInterval // mid-point of the position range
+    const mockPrice3 = PriceMath.tickIndexToPrice(
+      mockTick3,
+      mintA.decimals,
+      mintB.decimals
+    ).toFixed(mintB.decimals)
+    const tokenAmountsToRepayMock3 = getTokenAmountsFromLiquidity(
+      position.data.liquidityBorrowed,
+      PriceMath.tickIndexToSqrtPriceX64(mockTick3),
+      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
+      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      true
+    )
+
     console.log(
       ' '.repeat(2),
       position.key.toBase58().padEnd(44, ' '),
@@ -179,23 +245,49 @@ async function main() {
         ? 'above-range'
         : 'below-range'
     )
-    console.log(
-      ' '.repeat(10),
-      `tick:      [${tickLowerIndex}, ${tickUpperIndex})`.padEnd(26, ' ')
-    )
-    console.log(
-      ' '.repeat(10),
-      `range:     [${priceRange[0]}, ${priceRange[1]})`.padEnd(32, ' ')
-    )
-    console.log(' '.repeat(10), `is trade open: ${position.data.liquiditySwapped.eq(new BN(0)) ? 'no' : 'yes'}`)
-    console.log()
-    console.log(' '.repeat(10), `liquidity mint:        ${position.data.liquidityMint.toBase58()}`)
-    console.log(' '.repeat(10), `liquidity available:   ${position.data.liquidityAvailable}`)
-    console.log(' '.repeat(10), `liquidity swapped:     ${position.data.liquiditySwapped}`)
-    console.log()
-    console.log(' '.repeat(10), `collateral mint:       ${position.data.collateralMint.toBase58()}`)
-    console.log(' '.repeat(10), `collateral available:  ${position.data.collateralAmount}`)
-    console.log()
+
+    paddedConsoleLogBlock([
+      `tick:      [${tickLowerIndex}, ${tickUpperIndex})`.padEnd(26, ' '),
+      `range:     [${priceRange[0]}, ${priceRange[1]})`.padEnd(32, ' '),
+      `is trade open: ${
+        position.data.loanTokenSwapped.eq(new BN(0)) ? 'no' : 'yes'
+      }`,
+    ])
+
+    paddedConsoleLogBlock([
+      `loan token mint:        ${position.data.tokenMintLoan.toBase58()}`,
+      `loan token available:   ${position.data.loanTokenAvailable}`,
+      `loan token swapped:     ${position.data.loanTokenSwapped}`,
+    ])
+
+    paddedConsoleLogBlock([
+      `collateral mint:        ${position.data.tokenMintCollateral.toBase58()}`,
+      `collateral available:   ${position.data.collateralAmount}`,
+    ])
+
+    paddedConsoleLogBlock([
+      'Current repayment on closing position',
+      `Token A:   ${tokenAmountsToRepayCurrent.tokenA.toString()}`,
+      `Token B:   ${tokenAmountsToRepayCurrent.tokenB.toString()}`,
+    ])
+
+    paddedConsoleLogBlock([
+      `Mock 1, Price = ${mockPrice1}`,
+      `Token A:   ${tokenAmountsToRepayMock1.tokenA.toString()}`,
+      `Token B:   ${tokenAmountsToRepayMock1.tokenB.toString()}`,
+    ])
+
+    paddedConsoleLogBlock([
+      `Mock 2, Price = ${mockPrice2}`,
+      `Token A:   ${tokenAmountsToRepayMock2.tokenA.toString()}`,
+      `Token B:   ${tokenAmountsToRepayMock2.tokenB.toString()}`,
+    ])
+
+    paddedConsoleLogBlock([
+      `Mock 3, Price = ${mockPrice3}`,
+      `Token A:   ${tokenAmountsToRepayMock3.tokenA.toString()}`,
+      `Token B:   ${tokenAmountsToRepayMock3.tokenB.toString()}`,
+    ])
   }
 }
 

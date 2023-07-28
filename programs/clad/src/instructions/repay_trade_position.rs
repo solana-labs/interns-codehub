@@ -1,6 +1,7 @@
 use {
     crate::{
         errors::ErrorCode,
+        math::{get_amount_delta_a, get_amount_delta_b, sqrt_price_from_tick_index},
         state::*,
         util::{sort_token_amount_for_loan, verify_position_authority},
     },
@@ -126,7 +127,39 @@ pub fn repay_trade_position(
     // i. Repay 1 SOL + all of SOL collateral.
     //
 
-    let original_borrowed_liquidity = 
+    let liquidity_borrowed = ctx.accounts.position.liquidity_borrowed;
+    let tick_lower_index = ctx.accounts.position.tick_lower_index;
+    let tick_upper_index = ctx.accounts.position.tick_upper_index;
+    let tick_current_index = ctx.accounts.globalpool.tick_current_index;
+    let sqrt_current_price = ctx.accounts.globalpool.sqrt_price;
+
+    let mut delta_a: u64 = 0;
+    let mut delta_b: u64 = 0;
+
+    let sqrt_lower_price = sqrt_price_from_tick_index(tick_lower_index);
+    let sqrt_upper_price = sqrt_price_from_tick_index(tick_upper_index);
+
+    if tick_current_index < tick_lower_index {
+        delta_a = get_amount_delta_a(sqrt_lower_price, sqrt_upper_price, liquidity_borrowed, true)?;
+    } else if tick_current_index < tick_upper_index {
+        delta_a = get_amount_delta_a(
+            sqrt_current_price,
+            sqrt_upper_price,
+            liquidity_borrowed,
+            true,
+        )?;
+        delta_b = get_amount_delta_b(
+            sqrt_lower_price,
+            sqrt_current_price,
+            liquidity_borrowed,
+            true,
+        )?;
+    } else {
+        delta_b = get_amount_delta_b(sqrt_lower_price, sqrt_upper_price, liquidity_borrowed, true)?;
+    }
+
+    msg!("delta_a: {}", delta_a);
+    msg!("delta_b: {}", delta_b);
 
     /*
 
