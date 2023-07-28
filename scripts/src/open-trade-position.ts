@@ -48,7 +48,7 @@ async function main() {
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
   const borrowA = false // borrow USDC (B)
-  const isTradeA2B = true // swap USDC (B) to SOL (A)
+  const isTradeA2B = borrowA // swap USDC (B) to SOL (A)
 
   // const borrowAmount = new BN(100 * Math.pow(100, (borrowA ? mintA : mintB).decimals)) // 100 USDC
   const borrowAmount = 100 // 100 USDC
