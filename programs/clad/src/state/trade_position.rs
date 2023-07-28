@@ -39,13 +39,26 @@ pub struct TradePositionUpdate {
 impl TradePosition {
     pub const LEN: usize = 8 + std::mem::size_of::<TradePosition>();
 
-    pub fn is_position_empty<'info>(position: &TradePosition) -> bool {
+    pub fn is_position_empty(position: &TradePosition) -> bool {
         position.liquidity_swapped == 0
     }
 
     /// Collateral in Token A implies loan in Token B, and vice versa.
-    pub fn is_borrow_a<'info>(&self, globalpool: &Account<Globalpool>) -> bool {
+    pub fn is_borrow_a(&self, globalpool: &Account<Globalpool>) -> bool {
         self.collateral_mint.eq(&globalpool.token_mint_b)
+    }
+
+    // Long:  borrowing Token B (quote) & swapping to Token A (base)
+    // Short: borrowing Token A (base)  & swapping to Token B (quote)
+    // Long  => collateral: Token A
+    // Short => collateral: Token B
+    pub fn is_long(&self, globalpool: &Account<Globalpool>) -> bool {
+        !self.is_borrow_a(globalpool)
+    }
+
+    // See above `is_long`
+    pub fn is_long_check_borrow(is_borrow_token_a: bool) -> bool {
+        !is_borrow_token_a
     }
 
     pub fn update(&mut self, update: &TradePositionUpdate) {

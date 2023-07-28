@@ -1,11 +1,15 @@
 use {
-    crate::{errors::ErrorCode, state::*, util::verify_position_authority},
+    crate::{
+        errors::ErrorCode,
+        manager::swap_manager::execute_jupiter_swap_for_globalpool,
+        state::*,
+        util::{sort_token_amount_for_loan, verify_position_authority},
+    },
     anchor_lang::prelude::*,
     anchor_spl::{
         associated_token::AssociatedToken,
         token::{self, Mint, Token, TokenAccount},
     },
-    solana_program::{instruction::Instruction, program},
 };
 
 #[derive(Accounts)]
@@ -65,77 +69,36 @@ pub fn open_trade_position(
     verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
 
     let is_borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);
-    let available_collateral_amount = ctx.accounts.position.collateral_amount;
 
-    let (borrowed_token_vault, collateral_token_vault) = if is_borrow_a {
-        (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
-    } else {
-        (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
-    };
-
-    let (initial_loan_vault_balance, initial_swapped_vault_balance) = if is_borrow_a {
-        (borrowed_token_vault.amount, collateral_token_vault.amount)
-    } else {
-        (collateral_token_vault.amount, borrowed_token_vault.amount)
-    };
-
-    //
-    // Set up swap
-    //
-
-    // 0th index is router pid, so skip it
-    let swap_route_accounts: Vec<AccountMeta> = (&ctx.remaining_accounts[1..])
-        .iter()
-        .map(|acct| {
-            let is_signer = acct.key == &ctx.accounts.globalpool.key();
-            if acct.is_writable {
-                AccountMeta::new(*acct.key, is_signer)
-            } else {
-                AccountMeta::new_readonly(*acct.key, is_signer)
-            }
-        })
-        .collect();
+    let (initial_loan_vault_balance, initial_swapped_vault_balance) = sort_token_amount_for_loan(
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_vault_b,
+        is_borrow_a,
+    );
 
     //
     // TODO: Validate that the receiver of the token swap is the globalpool's token vault
     //
 
-    //
-    // Execute swap
-    //
-
-    let swap_instruction = Instruction {
-        // Jupiter Program ID hard-coded in the program for now
-        program_id: jupiter_cpi::id(), // == JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB
-        accounts: swap_route_accounts,
-        data: params.swap_instruction_data.clone(),
-    };
-
-    program::invoke_signed(
-        &swap_instruction,
-        &ctx.remaining_accounts[..], // all accounts are for swap (incl Jupiter account)
-        &[&ctx.accounts.globalpool.seeds()],
+    execute_jupiter_swap_for_globalpool(
+        &ctx.accounts.globalpool,
+        &ctx.remaining_accounts,
+        &params.swap_instruction_data,
     )?;
 
     //
     // Verify swap
     //
 
+    // Update token vault amounts
     ctx.accounts.token_vault_a.reload()?;
     ctx.accounts.token_vault_b.reload()?;
 
-    // need to borrow immutable reference again after reloading the mutable ref above
-    let (borrowed_token_vault, collateral_token_vault) = if is_borrow_a {
-        (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
-    } else {
-        (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
-    };
-
-    let (post_loan_vault_balance, post_swapped_vault_balance) = if is_borrow_a {
-        (borrowed_token_vault.amount, collateral_token_vault.amount)
-    } else {
-        (collateral_token_vault.amount, borrowed_token_vault.amount)
-    };
+    let (post_loan_vault_balance, post_swapped_vault_balance) = sort_token_amount_for_loan(
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_vault_b,
+        is_borrow_a,
+    );
 
     // 1. Require that Loan (Borrowed) Token was the swapped to Swapped Token.
     // => Loan Token balance should decrease
@@ -169,8 +132,14 @@ pub fn open_trade_position(
         .unwrap();
     msg!("swapped_amount_in: {}", swapped_amount_in);
     msg!("swapped_amount_out: {}", swapped_amount_out);
-    msg!("position.liquidity_available: {}", ctx.accounts.position.liquidity_available);
-    msg!("position.collateral_amount: {}", ctx.accounts.position.collateral_amount);
+    msg!(
+        "position.liquidity_available: {}",
+        ctx.accounts.position.liquidity_available
+    );
+    msg!(
+        "position.collateral_amount: {}",
+        ctx.accounts.position.collateral_amount
+    );
 
     require!(
         swapped_amount_in <= ctx.accounts.position.liquidity_available,

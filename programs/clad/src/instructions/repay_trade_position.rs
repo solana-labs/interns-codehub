@@ -1,5 +1,9 @@
 use {
-    crate::{errors::ErrorCode, state::*, util::verify_position_authority},
+    crate::{
+        errors::ErrorCode,
+        state::*,
+        util::{sort_token_amount_for_loan, verify_position_authority},
+    },
     anchor_lang::prelude::*,
     anchor_spl::{
         associated_token::AssociatedToken,
@@ -9,8 +13,8 @@ use {
 };
 
 #[derive(Accounts)]
-#[instruction(params: CloseTradePositionParams)]
-pub struct CloseTradePosition<'info> {
+#[instruction(params: RepayTradePositionParams)]
+pub struct RepayTradePosition<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
@@ -51,50 +55,103 @@ pub struct CloseTradePosition<'info> {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct CloseTradePositionParams {
+pub struct RepayTradePositionParams {
     // Jupiter router params
     pub slippage_bps: u16,
     pub platform_fee_bps: u8,
     pub swap_instruction_data: Vec<u8>,
 }
 
-pub fn close_trade_position(
-    ctx: Context<CloseTradePosition>,
-    params: &CloseTradePositionParams,
+pub fn repay_trade_position(
+    ctx: Context<RepayTradePosition>,
+    params: &RepayTradePositionParams,
 ) -> Result<()> {
     verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
 
-    let is_borrow_a =
-        ctx.accounts.position.liquidity_mint == ctx.accounts.globalpool.token_mint_a.key();
-
-    let (loan_token_vault, other_token_vault) = if is_borrow_a {
-        (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
-    } else {
-        (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
-    };
-
-    let (initial_loan_token_balance, initial_other_token_balance) = if is_borrow_a {
-        (loan_token_vault.amount, other_token_vault.amount)
-    } else {
-        (other_token_vault.amount, loan_token_vault.amount)
-    };
+    let is_borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);
 
     //
-    // Set up swap from other token to loan token
+    // WARNING:
+    //
+    // When using the raw tick_current_index from the globalpool, an attacker can manipulate
+    // the tick in tx T and repay the trade position in tx T+1, causing the program to use
+    // tick_current_index that is unfavourable to the lender.
+    //
+    // This won't be problematic for pools with high liquidity, where it costs a lot to exploit,
+    // but smaller pools are susceptible to this attack. It's like manipulating the spot price to
+    // make an option contract in-the-money right before maturity (ie. option pinning).
+    //
+    // Potential Mitigation:
+    // - Use TWAP of tick_current_index
     //
 
-    let swap_program_id = ctx.remaining_accounts[0].key();
+    let tick_current_index = ctx.accounts.globalpool.tick_current_index;
+    let loan_tick_lower_index = ctx.accounts.position.tick_lower_index;
+    let loan_tick_upper_index = ctx.accounts.position.tick_upper_index;
 
-    let mut swap_route_accounts = vec![];
-    for account in &ctx.remaining_accounts[1..] {
-        // 0th index is router pid
-        let is_signer = account.key == &ctx.accounts.globalpool.key();
-        swap_route_accounts.push(if account.is_writable {
-            AccountMeta::new(*account.key, is_signer)
-        } else {
-            AccountMeta::new_readonly(*account.key, is_signer)
-        });
-    }
+    //
+    // Consider three cases of repaying (closing) a trade position.
+    //
+    // Assumptions:
+    // - Price is at 1000 USDC/SOL when user swapped USDC to SOL.
+    // - User borrowed in the liquidity range (850, 950).
+    // - User borrowed 1000 USDC, then swapped it to 1 SOL for *long-SOL* position.
+    // - User put in 0.1111 SOL (valued at 111.1 USDC) as collateral.
+    // - Trivial slippage and fee incurred for swaps.
+    //
+    // Let P = SOL price (in USDC) at the time of repayment.
+    //
+    // (1) P >= 1000
+    // Requirement: Repay 1000 USDC.
+    // i. Swap at most 1 SOL to 1000 USDC via Jupiter.
+    // ii. Repay 1000 USDC to globalpool & claim back full collateral.
+    //
+    // (2) P \in [950, 1000)
+    // Requirement: Repay 1000 USDC.
+    // i. Swap 1 SOL to at most 1000 USDC via Jupiter.
+    // ii. Take some of SOL collateral and swap to USDC via Jupiter.
+    // => Output of (i) & (ii) sums to 1000 USDC.
+    // iii. Repay 1000 USDC to globalpool & claim back leftover collateral.
+    //
+    // (3) P \in (850, 950)
+    // Requirement: Repay X USDC and Y SOL.
+    // i. Swap < 1 SOL to X USDC via Jupiter.
+    // ii. Take some of SOL collateral.
+    // => (ii) + leftover from (i) sums to Y SOL.
+    // iii. Repay X USDC and Y SOL.
+    // iv. Claim back leftover collateral (0.1 SOL - (ii) SOL).
+    //
+    // (4) P <= 850
+    // Requirement: Repay 1.1111 SOL (= 1000 / [(950+850)/2])
+    // i. Repay 1 SOL + all of SOL collateral.
+    //
+
+    let original_borrowed_liquidity = 
+
+    /*
+
+    let (initial_loan_token_balance, initial_other_token_balance) = sort_token_amount_for_loan(
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_vault_b,
+        is_borrow_a,
+    );
+
+    //
+    // Set up swap from other token to borrowed token
+    //
+
+    // 0th index is router pid, so skip it
+    let swap_route_accounts: Vec<AccountMeta> = (&ctx.remaining_accounts[1..])
+        .iter()
+        .map(|acct| {
+            let is_signer = acct.key == &ctx.accounts.globalpool.key();
+            if acct.is_writable {
+                AccountMeta::new(*acct.key, is_signer)
+            } else {
+                AccountMeta::new_readonly(*acct.key, is_signer)
+            }
+        })
+        .collect();
 
     //
     // TODO: Validate that the receiver of the token swap is the globalpool's token vault
@@ -105,14 +162,14 @@ pub fn close_trade_position(
     //
 
     let swap_instruction = Instruction {
-        program_id: swap_program_id,
+        program_id: jupiter_cpi::id(), // == JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB
         accounts: swap_route_accounts,
         data: params.swap_instruction_data.clone(),
     };
 
     program::invoke_signed(
         &swap_instruction,
-        &ctx.remaining_accounts[1..],
+        &ctx.remaining_accounts[..],
         &[&ctx.accounts.globalpool.seeds()],
     )?;
 
@@ -120,21 +177,15 @@ pub fn close_trade_position(
     // Verify swap
     //
 
+    // Update token vault amounts
     ctx.accounts.token_vault_a.reload()?;
     ctx.accounts.token_vault_b.reload()?;
 
-    // need to borrow immutable reference again after reloading mutable above
-    let (loan_token_vault, other_token_vault) = if is_borrow_a {
-        (&ctx.accounts.token_vault_a, &ctx.accounts.token_vault_b)
-    } else {
-        (&ctx.accounts.token_vault_b, &ctx.accounts.token_vault_a)
-    };
-
-    let (post_loan_token_balance, post_other_token_balance) = if is_borrow_a {
-        (loan_token_vault.amount, other_token_vault.amount)
-    } else {
-        (other_token_vault.amount, loan_token_vault.amount)
-    };
+    let (post_loan_token_balance, post_other_token_balance) = sort_token_amount_for_loan(
+        &ctx.accounts.token_vault_a,
+        &ctx.accounts.token_vault_b,
+        is_borrow_a,
+    );
 
     // 1. Require that Other Token was the swapped to Loan Token.
     // => Loan Token balance should increase
@@ -151,12 +202,12 @@ pub fn close_trade_position(
     // 2. Require that the swap out amount equals the previous liquidity swapped amount.
 
     // This calculation should come after checking that the balances were modified legally (1).
-    let swapped_amount_in = post_other_token_balance
-        .checked_sub(initial_other_token_balance)
+    let swapped_amount_in = initial_other_token_balance
+        .checked_sub(post_other_token_balance)
         .unwrap();
 
-    let swapped_amount_out = initial_loan_token_balance
-        .checked_sub(post_loan_token_balance)
+    let swapped_amount_out = post_loan_token_balance
+        .checked_sub(initial_loan_token_balance)
         .unwrap();
 
     require!(
@@ -194,6 +245,7 @@ pub fn close_trade_position(
     // ctx.accounts
     //     .globalpool
     //     .update_liquidity_trade_locked(swapped_amount_out, is_borrow_a)?;
+    */
 
     Ok(())
 }

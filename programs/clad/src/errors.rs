@@ -113,6 +113,8 @@ pub enum ErrorCode {
     InvalidLoanTradeSwapDirection,
     #[msg("Invalid Loan Trade Swap Result")]
     InvalidLoanTradeSwapResult,
+    #[msg("Invalid Loan Parameters")]
+    InvalidLoanParameters,
 
     #[msg("Trade Position is Not Empty")]
     CloseTradePositionNotEmpty,

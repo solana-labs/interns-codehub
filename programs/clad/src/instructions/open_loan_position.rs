@@ -183,21 +183,22 @@ pub fn open_loan_position(
 
     //
     // 2. Get liquidity from ticks (fails if insufficient liquidity for loan)
-    // Note: Must come after `position.init_position()` because it uses the position data.
+    //
+    // WARNING: Must come after `position.init_position()` because it uses the position data.
     //
 
-    let (
-        token_borrow_amount,
-        is_borrow_token_a,
-        is_collateral_token_a,
-        lower_sqrt_price,
-        upper_sqrt_price,
-    ) = loan_manager::calculate_loan_liquidity_token_delta(
-        current_tick_index,
-        params.tick_lower_index,
-        params.tick_upper_index,
-        liquidity_delta,
-    )?;
+    let (token_borrow_amount, is_borrow_token_a, is_collateral_token_a, _, _) =
+        loan_manager::calculate_loan_liquidity_token_delta(
+            current_tick_index,
+            params.tick_lower_index,
+            params.tick_upper_index,
+            liquidity_delta,
+        )?;
+
+    require!(
+        is_borrow_token_a == params.borrow_a,
+        ErrorCode::InvalidLoanParameters
+    );
 
     let update = loan_manager::calculate_modify_loan(
         &ctx.accounts.globalpool,
@@ -243,8 +244,11 @@ pub fn open_loan_position(
 
     let collateral_amount = loan_manager::calculate_collateral(
         token_borrow_amount,
-        is_collateral_token_a,
+        is_borrow_token_a,
         // collateral_token_owner_account.amount,
+        params.tick_lower_index,
+        params.tick_upper_index,
+        ctx.accounts.globalpool.tick_current_index,
         &ctx.accounts.token_price_feed_a,
         &ctx.accounts.token_price_feed_b,
         Clock::get()?.unix_timestamp,

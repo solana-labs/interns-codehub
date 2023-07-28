@@ -117,11 +117,11 @@ pub mod clad {
         return instructions::open_trade_position(ctx, &params);
     }
 
-    pub fn close_trade_position(
-        ctx: Context<CloseTradePosition>,
-        params: CloseTradePositionParams,
+    pub fn repay_trade_position(
+        ctx: Context<RepayTradePosition>,
+        params: RepayTradePositionParams,
     ) -> Result<()> {
-        return instructions::close_trade_position(ctx, &params);
+        return instructions::repay_trade_position(ctx, &params);
     }
 
     /// Add liquidity to a position in the Globalpool. This call also updates the position's accrued fees.

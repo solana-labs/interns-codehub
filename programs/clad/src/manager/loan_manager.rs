@@ -173,10 +173,15 @@ pub fn calculate_loan_liquidity_token_delta(
 pub fn calculate_collateral(
     token_borrow_amount: u64,
     is_borrow_token_a: bool,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
+    tick_current_index: i32,
     token_price_feed_a: &Account<'_, PriceFeed>,
     token_price_feed_b: &Account<'_, PriceFeed>,
     current_timestamp: UnixTimestamp,
 ) -> Result<u64> {
+    let is_long = TradePosition::is_long_check_borrow(is_borrow_token_a);
+
     let token_oracle_a = token_price_feed_a.read_price(current_timestamp)?;
     let token_oracle_b = token_price_feed_b.read_price(current_timestamp)?;
 
@@ -208,10 +213,32 @@ pub fn calculate_collateral(
     //
     // Collateral amount is a function of:
     // 1. Loan size;
-    // 2. Distance from lower/upper tick of the loan to the current tick of the pool;
-    // 3. Distance between lower and upper tick of the loan.
-    // 4. Current price of the two tokens in the pool (collateral token & loaned token).
+    // 2. Lower and/or upper tick of the loan;
+    // 3. Current tick of the pool.
     //
+    // Long position: 2P_c / (P_u + P_l) - 1 (borrowing Token B (quote) & swapping to Token A (base))
+    // Short position: P_u - P_c             (borrowing Token A (base) & swapping to Token B (quote))
+    //
+    // where:
+    // - P_c = price of borrowed token quoted in the other token
+    // - (P_l, P_u) = price of the lower and upper tick of the loan quoted in the other token
+    //
+
+    // let collateral_amount = if is_long {
+    //     sqrt_price_from_tick_index(tick_lower_index)
+    //         .checked_mul(2)
+    //         .ok_or(ErrorCode::MultiplicationOverflow)?
+    //         .checked_div(
+    //             sqrt_price_from_tick_index(tick_upper_index)
+    //                 .checked_add(sqrt_price_from_tick_index(tick_lower_index))
+    //                 .unwrap()
+    //         )
+    //         .ok_or(ErrorCode::DivisionUnderflow)
+    //         - 1
+    // } else {
+    //     1
+    // };
+
 
     // For now, just 33% regardless of (2) and (3)
     let collateral_amount = borrowed_value_in_collateral_token

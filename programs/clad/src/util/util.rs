@@ -1,17 +1,18 @@
-use anchor_lang::{
-    prelude::{AccountInfo, Pubkey, Signer, *},
-    ToAccountInfo,
+use {
+    crate::errors::ErrorCode,
+    anchor_lang::{
+        prelude::{AccountInfo, Pubkey, Signer, *},
+        ToAccountInfo,
+    },
+    anchor_spl::token::TokenAccount,
+    solana_program::program_option::COption,
+    std::convert::TryFrom,
 };
-use anchor_spl::token::TokenAccount;
-use solana_program::program_option::COption;
-use std::convert::TryFrom;
-
-use crate::errors::ErrorCode;
 
 /// Verify position authority for either Liquidity or Trade Position.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `position_token_account`
 /// * `position_authority`
 pub fn verify_position_authority<'info>(
@@ -44,4 +45,29 @@ fn validate_owner(expected_owner: &Pubkey, owner_account_info: &AccountInfo) -> 
 
 pub fn to_timestamp_u64(t: i64) -> Result<u64> {
     u64::try_from(t).or(Err(ErrorCode::InvalidTimestampConversion.into()))
+}
+
+pub fn sort_token_vault_for_loan<'info>(
+    token_vault_a: &'info TokenAccount,
+    token_vault_b: &'info TokenAccount,
+    is_borrow_a: bool,
+) -> (&'info TokenAccount, &'info TokenAccount) {
+    if is_borrow_a {
+        (token_vault_a, token_vault_b)
+    } else {
+        (token_vault_b, token_vault_a)
+    }
+}
+
+pub fn sort_token_amount_for_loan<'info>(
+    token_vault_a: &'info TokenAccount,
+    token_vault_b: &'info TokenAccount,
+    is_borrow_a: bool,
+) -> (u64, u64) {
+    let (borrowed_token_vault, collateral_token_vault) = sort_token_vault_for_loan(
+        token_vault_a,
+        token_vault_b,
+        is_borrow_a,
+    );
+    (borrowed_token_vault.amount, collateral_token_vault.amount)
 }

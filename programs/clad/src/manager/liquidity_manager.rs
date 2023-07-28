@@ -152,7 +152,7 @@ fn _calculate_modify_liquidity(
 
 pub fn calculate_liquidity_token_deltas(
     current_tick_index: i32,
-    sqrt_price: u128,
+    current_sqrt_price: u128,
     position: &LiquidityPosition,
     liquidity_delta: i128,
 ) -> Result<(u64, u64)> {
@@ -163,8 +163,8 @@ pub fn calculate_liquidity_token_deltas(
     let mut delta_a: u64 = 0;
     let mut delta_b: u64 = 0;
 
-    let liquidity: u128 = liquidity_delta.abs() as u128;
     let round_up = liquidity_delta > 0;
+    let liquidity: u128 = liquidity_delta.abs() as u128;
 
     let lower_price = sqrt_price_from_tick_index(position.tick_lower_index);
     let upper_price = sqrt_price_from_tick_index(position.tick_upper_index);
@@ -174,8 +174,8 @@ pub fn calculate_liquidity_token_deltas(
         delta_a = get_amount_delta_a(lower_price, upper_price, liquidity, round_up)?;
     } else if current_tick_index < position.tick_upper_index {
         // current tick inside position
-        delta_a = get_amount_delta_a(sqrt_price, upper_price, liquidity, round_up)?;
-        delta_b = get_amount_delta_b(lower_price, sqrt_price, liquidity, round_up)?;
+        delta_a = get_amount_delta_a(current_sqrt_price, upper_price, liquidity, round_up)?;
+        delta_b = get_amount_delta_b(lower_price, current_sqrt_price, liquidity, round_up)?;
     } else {
         // current tick above position
         delta_b = get_amount_delta_b(lower_price, upper_price, liquidity, round_up)?;

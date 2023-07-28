@@ -4,6 +4,7 @@ use {
         util::TickSequence,
     },
     anchor_lang::prelude::*,
+    solana_program::{instruction::Instruction, program},
     std::convert::TryInto,
 };
 
@@ -255,6 +256,47 @@ fn get_next_sqrt_prices(
         sqrt_price_limit.min(next_tick_price)
     };
     (next_tick_price, next_sqrt_price_limit)
+}
+
+//
+// TODO: Validate that the receiver of the token swap is the globalpool's token vault
+//
+pub fn execute_jupiter_swap_for_globalpool(
+    globalpool: &Account<Globalpool>,
+    remaining_accounts: &[AccountInfo<'_>],
+    swap_instruction_data: &Vec<u8>,
+) -> Result<()> {
+    // 0th index is router pid, so skip it
+    let swap_route_accounts: Vec<AccountMeta> = remaining_accounts[1..]
+        .iter()
+        .map(|acct| {
+            let is_signer = acct.key == &globalpool.key();
+            if acct.is_writable {
+                AccountMeta::new(*acct.key, is_signer)
+            } else {
+                AccountMeta::new_readonly(*acct.key, is_signer)
+            }
+        })
+        .collect();
+
+    //
+    // Execute swap
+    //
+
+    let swap_instruction = Instruction {
+        // Jupiter Program ID hard-coded in the program for now
+        program_id: jupiter_cpi::id(), // == JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB
+        accounts: swap_route_accounts,
+        data: swap_instruction_data.clone(),
+    };
+
+    program::invoke_signed(
+        &swap_instruction,
+        remaining_accounts, // all accounts are for swap (incl Jupiter account)
+        &[&globalpool.seeds()],
+    )?;
+
+    Ok(())
 }
 
 #[cfg(test)]
