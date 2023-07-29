@@ -58,7 +58,7 @@ export async function getConstantParams() {
   const tokenOracleA = pythOracleSOL
   const tokenOracleB = pythOracleUSDC
 
-  const initTickIndex = -39424 // 19.4054 B/A (USDC/SOL)
+  const initTickIndex = -36928 // 25.06 B/A (USDC/SOL)
   const initPrice = PriceMath.tickIndexToPrice(
     initTickIndex,
     tokenMintA.decimals,

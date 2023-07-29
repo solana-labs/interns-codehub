@@ -31,6 +31,7 @@ pub struct CloseLoanPosition<'info> {
             position_mint.key().as_ref()
         ],
         bump,
+        has_one = globalpool
 	)]
     pub position: Account<'info, TradePosition>,
 
@@ -63,8 +64,6 @@ pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
     if !TradePosition::is_position_empty(&ctx.accounts.position) {
         return Err(ErrorCode::CloseTradePositionNotEmpty.into());
     }
-
-    let borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);
 
     // Add numbers back to `liquidity_available` of each borrowed ticks
     // Decrease numbers from `liquidity_borrowed_a` and `liquidity_borrowed_b`

@@ -5,6 +5,7 @@ use {
     },
     crate::{errors::ErrorCode, math::*, state::*, util::TickSequence},
     anchor_lang::prelude::{AccountLoader, *},
+    anchor_spl::token::Mint,
     solana_program::clock::UnixTimestamp,
 };
 
@@ -172,88 +173,117 @@ pub fn calculate_loan_liquidity_token_delta(
 
 pub fn calculate_collateral(
     token_borrow_amount: u64,
+    liquidity_amount: u128,
     is_borrow_token_a: bool,
     tick_lower_index: i32,
     tick_upper_index: i32,
-    tick_current_index: i32,
+    token_mint_a: &Account<'_, Mint>,
+    token_mint_b: &Account<'_, Mint>,
     token_price_feed_a: &Account<'_, PriceFeed>,
     token_price_feed_b: &Account<'_, PriceFeed>,
     current_timestamp: UnixTimestamp,
 ) -> Result<u64> {
-    let is_long = TradePosition::is_long_check_borrow(is_borrow_token_a);
-
-    let token_oracle_a = token_price_feed_a.read_price(current_timestamp)?;
-    let token_oracle_b = token_price_feed_b.read_price(current_timestamp)?;
+    let token_oracle_a_b = token_price_feed_a.read_price_in_quote_custom_expo(
+        token_price_feed_b,
+        current_timestamp,
+        -(token_mint_b.decimals as i32),
+    )?;
+    let token_oracle_b_a = token_price_feed_b.read_price_in_quote_custom_expo(
+        token_price_feed_a,
+        current_timestamp,
+        -(token_mint_a.decimals as i32),
+    )?;
 
     // Prices scaled to exponent (e.g. 10^9 for SOL, 10^6 for USDC)
-    let token_price_a = token_oracle_a.price_with_expo;
-    let token_price_b = token_oracle_b.price_with_expo;
+    // let token_price_a = token_oracle_a.price_with_expo;
+    // let token_price_b = token_oracle_b.price_with_expo;
 
     // token_price_a_b = A/B (Token A quoted in Token B, e.g. SOL/USDC)
-    let token_price_a_b = token_price_feed_a
-        .read_price_in_quote(token_price_feed_b, current_timestamp)?
-        .price_with_expo;
-    let token_price_b_a = token_price_feed_b
-        .read_price_in_quote(token_price_feed_a, current_timestamp)?
-        .price_with_expo;
+    let token_price_a_b = token_oracle_a_b.price_with_expo;
+    let token_price_b_a = token_oracle_b_a.price_with_expo;
 
-    let borrowed_value_in_collateral_token = if is_borrow_token_a {
-        token_borrow_amount
-            .checked_mul(token_price_b_a)
-            .ok_or(ErrorCode::MultiplicationOverflow)?
-            .checked_div(10_u64.pow(token_oracle_a.exponent.abs() as u32))
+    let sqrt_price_lower = sqrt_price_from_tick_index(tick_lower_index);
+    let sqrt_price_upper = sqrt_price_from_tick_index(tick_upper_index);
+
+    let worst_case_value = if is_borrow_token_a {
+        // Collateral is in Token B, worst case is full payment in Token B (swap back from A + collateral)
+        get_amount_delta_b(sqrt_price_lower, sqrt_price_upper, liquidity_amount, true)
     } else {
+        // Collateral is in Token A, worst case is full payment in Token A (swap back from B + collateral)
+        get_amount_delta_a(sqrt_price_lower, sqrt_price_upper, liquidity_amount, true)
+    }?;
+
+    //
+    // Currently, we use oracle price for calculating the current-price-swap of loaned token to long token.
+    // This prevents JIT tick index manipulation (right before the loan).
+    //
+
+    msg!("token_amount: {:?}", token_borrow_amount);
+    // msg!("token_price_a: {:?}", token_price_a);
+    // msg!("token_price_b: {:?}", token_price_b);
+    msg!("token_price_a_b: {:?}", token_price_a_b);
+    msg!("token_price_b_a: {:?}", token_price_b_a);
+
+    let loan_value_quoted_in_collateral_token = if is_borrow_token_a {
         token_borrow_amount
             .checked_mul(token_price_a_b)
             .ok_or(ErrorCode::MultiplicationOverflow)?
-            .checked_div(10_u64.pow(token_oracle_b.exponent.abs() as u32))
+    } else {
+        token_borrow_amount
+            .checked_mul(token_price_b_a)
+            .ok_or(ErrorCode::MultiplicationOverflow)?
+    };
+
+    let collateral_token_oracle_expo = if is_borrow_token_a {
+        token_oracle_b_a.exponent
+    } else {
+        token_oracle_a_b.exponent
+    };
+
+    // Since oracle prices are quoted with scaled to exponent (more precisely, `.exponent`).
+    // Divide the output by 1e8.
+    let loan_value_quoted_in_collateral_token: u64 = if collateral_token_oracle_expo < 0 {
+        loan_value_quoted_in_collateral_token
+            .checked_div(10u64.pow(collateral_token_oracle_expo.abs() as u32))
+    } else {
+        loan_value_quoted_in_collateral_token
+            .checked_mul(10u64.pow(collateral_token_oracle_expo as u32))
     }
     .ok_or(ErrorCode::DivisionUnderflow)?;
 
-    //
-    // Collateral amount is a function of:
-    // 1. Loan size;
-    // 2. Lower and/or upper tick of the loan;
-    // 3. Current tick of the pool.
-    //
-    // Long position: 2P_c / (P_u + P_l) - 1 (borrowing Token B (quote) & swapping to Token A (base))
-    // Short position: P_u - P_c             (borrowing Token A (base) & swapping to Token B (quote))
-    //
-    // where:
-    // - P_c = price of borrowed token quoted in the other token
-    // - (P_l, P_u) = price of the lower and upper tick of the loan quoted in the other token
-    //
-
-    // let collateral_amount = if is_long {
-    //     sqrt_price_from_tick_index(tick_lower_index)
-    //         .checked_mul(2)
-    //         .ok_or(ErrorCode::MultiplicationOverflow)?
-    //         .checked_div(
-    //             sqrt_price_from_tick_index(tick_upper_index)
-    //                 .checked_add(sqrt_price_from_tick_index(tick_lower_index))
-    //                 .unwrap()
-    //         )
-    //         .ok_or(ErrorCode::DivisionUnderflow)
-    //         - 1
-    // } else {
-    //     1
-    // };
-
-
-    // For now, just 33% regardless of (2) and (3)
-    let collateral_amount = borrowed_value_in_collateral_token
-        .checked_div(3)
-        .ok_or(ErrorCode::DivisionUnderflow)?;
-
-    msg!("token_price_a: {:?}", token_price_a);
-    msg!("token_price_b: {:?}", token_price_b);
-    msg!("token_price_a_b: {:?}", token_price_a_b);
-    msg!("token_price_b_a: {:?}", token_price_b_a);
+    msg!("worst_case_value: {:?}", worst_case_value);
     msg!(
-        "borrowed_value_in_collateral_token: {:?}",
-        borrowed_value_in_collateral_token
+        "loan_value_quoted_in_collateral_token: {:?}",
+        loan_value_quoted_in_collateral_token
     );
-    msg!("collateral_amount: {:?}", collateral_amount);
+
+    if worst_case_value < loan_value_quoted_in_collateral_token {
+        return Err(ErrorCode::CollateralCalculationError.into());
+    }
+
+    let collateral_amount = worst_case_value - loan_value_quoted_in_collateral_token;
+
+    // Buffer of 5% for
+    // 1. Mismatch between price quoted by Pyth Oracle and execution price via Jupiter
+    // 2. Liquidation fee/penalty (paid to crank)
+    // 3. Jupiter swap fee & slippage (price impact)
+    let collateral_amount_with_buffer = collateral_amount
+        .checked_mul(10_500)
+        .ok_or(ErrorCode::MultiplicationOverflow)?
+        .checked_div(10_000)
+        .unwrap();
+
+    // let collateral_amount = borrowed_value_in_collateral_token
+    //     .checked_div(3)
+    //     .ok_or(ErrorCode::DivisionUnderflow)?;
+    // msg!(
+    //     "borrowed_value_in_collateral_token: {:?}",
+    //     borrowed_value_in_collateral_token
+    // );
+    msg!(
+        "collateral_amount_with_buffer: {:?}",
+        collateral_amount_with_buffer
+    );
 
     //
     // WARNING: This is a temporary solution for strict testing purposes, and should not be used for production.
@@ -277,7 +307,7 @@ pub fn calculate_collateral(
     //     (lower_price, upper_price)
     // };
 
-    Ok(collateral_amount)
+    Ok(collateral_amount_with_buffer)
 }
 
 /*

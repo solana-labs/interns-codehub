@@ -68,6 +68,28 @@ impl PriceFeed {
         quote_price_feed: &PriceFeed,
         current_timestamp: UnixTimestamp,
     ) -> Result<OraclePrice> {
+        let (price, quote) = self._read_price_in_quote(quote_price_feed, current_timestamp)?;
+        // TODO: validate that we want the price_in_quote to use `quote.expo` as result_expo
+        let price_in_quote = price.get_price_in_quote(&quote, quote.expo).unwrap();
+        PriceFeed::format_price(price_in_quote)
+    }
+
+    pub fn read_price_in_quote_custom_expo(
+        &self,
+        quote_price_feed: &PriceFeed,
+        current_timestamp: UnixTimestamp,
+        expo: i32,
+    ) -> Result<OraclePrice> {
+        let (price, quote) = self._read_price_in_quote(quote_price_feed, current_timestamp)?;
+        let price_in_quote = price.get_price_in_quote(&quote, expo).unwrap();
+        PriceFeed::format_price(price_in_quote)
+    }
+
+    fn _read_price_in_quote(
+        &self,
+        quote_price_feed: &PriceFeed,
+        current_timestamp: UnixTimestamp,
+    ) -> Result<(pyth_sdk::Price, pyth_sdk::Price)> {
         // let pyth_price = self.get_price_unchecked();
         // msg!("pyth_price: {:?}", pyth_price);
         // msg!("diff time: {:?}", current_timestamp - pyth_price.publish_time);
@@ -81,10 +103,7 @@ impl PriceFeed {
             .get_price_no_older_than(current_timestamp, PriceFeed::STALE_SECONDS)
             .ok_or(ErrorCode::StaleOraclePrice)?;
 
-        // TODO: validate that we want the price_in_quote to use `quote.expo` as result_expo
-        let price_in_quote = price.get_price_in_quote(&quote, quote.expo).unwrap();
-
-        PriceFeed::format_price(price_in_quote)
+        Ok((price, quote))
     }
 
     fn format_price(price: pyth_sdk::Price) -> Result<OraclePrice> {

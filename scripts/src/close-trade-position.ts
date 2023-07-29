@@ -47,6 +47,10 @@ async function main() {
   console.log(`Clad: ${cladKey.toBase58()}`)
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
+  const positionMintPubkey = new PublicKey(
+    '4oZpNCAMCzw48wJyWqkBXwMuHrVVW94ygxM2yKzZphzc'
+  )
+
   const borrowA = false // borrow USDC (B)
   const isTradeA2B = borrowA // swap USDC (B) to SOL (A)
 
@@ -79,31 +83,18 @@ async function main() {
   const [tokenOwnerAccountA, tokenOwnerAccountB] =
     await createAndMintToManyATAs(provider, [mintA, mintB], mintAmount)
 
-  // const [tokenOwnerAccountA, tokenOwnerAccountB] = await Promise.all(
-  //   [tokenMintAKey, tokenMintBKey].map((tokenMintKey) =>
-  //     getOrCreateAssociatedTokenAccount(
-  //       connection,
-  //       fundedSigner,
-  //       tokenMintKey,
-  //       tokenAuthority
-  //     ).then((res) => res.address)
-  //   )
-  // )
-  // console.log(tokenOwnerAccountA, tokenOwnerAccountB)
-
-  const positionMintKeypair = Keypair.generate()
   const [positionKey] = PublicKey.findProgramAddressSync(
-    [Buffer.from('trade_position'), positionMintKeypair.publicKey.toBuffer()],
+    [Buffer.from('trade_position'), positionMintPubkey.toBuffer()],
     programId
   )
   const positionTokenAccount = getAssociatedTokenAddressSync(
-    positionMintKeypair.publicKey,
+    positionMintPubkey,
     positionAuthority
   )
 
   // TODO: programatically find Ticks with enough liquidity for the trade
-  const tickLowerIndex = -39104 // 20.03 USDC/SOL
-  const tickUpperIndex = -37696 // 23.06 USDC/SOL
+  const tickLowerIndex = -45056 // globalpoolInfo.tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing
+  const tickUpperIndex = -39552 // globalpoolInfo.tickCurrentIndex + tickSpacing
 
   // NOTE: At the top end of the price range, tick calcuation is off therefore the results can be off
   const borrowAmountLiquidity = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -119,46 +110,6 @@ async function main() {
   console.log(`Tick Lower: ${tickLowerIndex}`)
   console.log(`Tick Upper: ${tickUpperIndex}`)
   console.log(`Tick Current: ${globalpoolInfo.tickCurrentIndex}`)
-  console.log(`borrowAmount: ${borrowAmount.toString()}`)
-
-  const tokenVaultABefore = new BN(
-    await getTokenBalance(provider, globalpoolInfo.tokenVaultA)
-  )
-  const tokenVaultBBefore = new BN(
-    await getTokenBalance(provider, globalpoolInfo.tokenVaultB)
-  )
-
-  console.log(
-    'token Vault A before: ',
-    tokenVaultABefore.div(new BN(mintA.decimals)).toString()
-  )
-  console.log(
-    'token Vault B before: ',
-    tokenVaultBBefore.div(new BN(mintB.decimals)).toString()
-  )
-
-  // const quote = await swapQuoteByInputToken(
-  //   globalpoolKey,
-  //   swapA2B ? tokenMintAKey : tokenMintBKey,
-  //   swapInputAmountAdjusted,
-  //   maxSlippage,
-  //   connection,
-  //   programId
-  // )
-
-  const tickArrayLowerKey = getTickArrayKeyFromTickIndex(
-    globalpoolKey,
-    tickLowerIndex,
-    tickSpacing,
-    programId
-  )
-
-  const tickArrayUpperKey = getTickArrayKeyFromTickIndex(
-    globalpoolKey,
-    tickUpperIndex,
-    tickSpacing,
-    programId
-  )
 
   //
   // Swap setup
@@ -220,13 +171,10 @@ async function main() {
     },
     jupiter
   )
-  // consoleLogFull(routeInfos)
-  // console.log(swapRoutes)
   if (!swapRoutes) return null
 
   // Routes are sorted based on outputAmount, so ideally the first route is the best.
   const bestRoute = swapRoutes[0]
-  // console.log(bestRoute)
 
   //
   // For test only, fix the route's whirlpool data pubkeys for tick arrays
@@ -255,10 +203,7 @@ async function main() {
   const message = TransactionMessage.decompile(swapTransaction.message, {
     addressLookupTableAccounts: res.addressLookupTableAccounts,
   })
-  // console.log(message.instructions)
 
-  console.log('whirlpool data')
-  console.log(bestRoute.marketInfos[0].amm)
   if (bestRoute.marketInfos[0].amm.label === 'Orca (Whirlpools)') {
     const { whirlpoolData } = bestRoute.marketInfos[0].amm as unknown as {
       whirlpoolData: {
@@ -271,54 +216,13 @@ async function main() {
         tickArrays: any
       }
     }
-    console.log('whirlpoolsConfig', whirlpoolData.whirlpoolsConfig.toBase58())
-    console.log('tokenVaultA', whirlpoolData.tokenVaultA.toBase58())
-    console.log('tokenVaultB', whirlpoolData.tokenVaultB.toBase58())
-    // console.log('config', orcaAmm.whirlpoolsConfig.toBase58())
-    // console.log('tokenMintA', orcaAmm.tokenMintA.toBase58())
-    // console.log('tokenMintB', orcaAmm.tokenMintB.toBase58())
-    // console.log('tokenVaultA', orcaAmm.tokenVaultA.toBase58())
-    // console.log('tokenVaultB', orcaAmm.tokenVaultB.toBase58())
-    // consoleLogFull(orcaAmm.rewardInfos)
-    // consoleLogFull(orcaAmm.tickArrays)
-    ;(
-      bestRoute.marketInfos[0].amm as unknown as {
-        whirlpoolData: { tickArrays: any }
-      }
-    ).whirlpoolData.tickArrays = {
-      aToB: [
-        new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
-        new PublicKey('8LGqqS5P6kFy6LGYSVr5byaqVXcaqWh2PAUjmGzut4zM'),
-        new PublicKey('C6ZMoA93UfQMsJm2khN2gQr6vyTpujXFiLLxG3VeLEp6'),
-      ],
-      bToA: [
-        new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
-        new PublicKey('FUifo3d4gzAyE4k9ZZjKWmBhfHskCiVF4S9QgsGyjJVD'),
-        new PublicKey('HamuvLZt4pM1DBikuiF1hpnmK1EX9yLv9BUotHUJMBvp'),
-      ],
-    }
   } else if (bestRoute.marketInfos[0].amm.label !== 'Orca') {
     throw new Error(
       `Invalid exchange route, ${bestRoute.marketInfos[0].amm.label}`
     )
   }
 
-  // const setupInstructions = message.instructions.slice(0, -1)
-  // consoleLogFull(setupInstructions)
-  // await createTransactionChained(
-  //   provider.connection,
-  //   provider.wallet,
-  //   setupInstructions,
-  //   []
-  // ).buildAndExecute()
-
   const swapInstruction = message.instructions.slice(-1)[0]
-  // consoleLogFull(swapInstruction)
-  // console.log(swapInstruction.programId.toBase58())
-  // console.log(swapInstruction.keys.length)
-
-  // Discriminator must equal e5 17 cb 97 7a e3 ad 2a
-  // console.log(swapInstruction.data.subarray(0, 8))
 
   const swapAccounts: AccountMeta[] = [
     // Jupiter Program ID hard-coded in the program, BUT we still need the program ID as the first account
@@ -341,49 +245,8 @@ async function main() {
     }
     swapAccounts.push(key)
   }
-  console.log('swapAccounts len', swapAccounts.length)
 
-  const openLoanPositionAccounts = {
-    owner: positionAuthority,
-    globalpool: globalpoolKey,
-
-    position: positionKey,
-    positionMint: positionMintKeypair.publicKey,
-    positionTokenAccount,
-
-    tokenOwnerAccountA,
-    tokenOwnerAccountB,
-    tokenVaultA,
-    tokenVaultB,
-    tokenMintA: tokenMintAKey,
-    tokenMintB: tokenMintBKey,
-    tokenPriceFeedA: tokenOracleA,
-    tokenPriceFeedB: tokenOracleB,
-
-    tickArrayLower: tickArrayLowerKey,
-    tickArrayUpper: tickArrayUpperKey,
-
-    // sys
-    tokenProgram: TOKEN_PROGRAM_ID,
-    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    systemProgram: SystemProgram.programId,
-    rent: SYSVAR_RENT_PUBKEY,
-  }
-
-  const openLoanPositionParams = {
-    // amount: quote.amount,
-    // otherAmountThreshold: quote.otherAmountThreshold,
-    // sqrtPriceLimit: quote.sqrtPriceLimit,
-    // amountSpecifiedIsInput: quote.amountSpecifiedIsInput,
-    // aToB: quote.aToB,
-    liquidityAmount: borrowAmountLiquidity, // borrow amount in liquidity amount format
-    tickLowerIndex,
-    tickUpperIndex,
-    borrowA,
-    loanDurationSlots: new BN(10_000), // 10k slots * 0.4s = 66m 40s
-  }
-
-  const openTradePositionAccounts = {
+  const repayTradePositionAccounts = {
     owner: positionAuthority,
     globalpool: globalpoolKey,
 
@@ -404,7 +267,7 @@ async function main() {
     rent: SYSVAR_RENT_PUBKEY,
   }
 
-  const openTradePositionParams = {
+  const repayTradePositionParams = {
     slippageBps: bestRoute.slippageBps,
     platformFeeBps: maxJupiterPlatformSlippage,
     // Swap data
@@ -414,58 +277,23 @@ async function main() {
     // swapInstructionData: swapInstruction.data,
     swapInstructionData: swapInstruction.data,
   }
-  consoleLogFull(openTradePositionParams)
 
   const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
     units: 1_000_000,
   })
 
-  const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-    microLamports: 1,
-  })
-
-  const loanTxId = await createTransactionChained(
-    provider.connection,
-    provider.wallet,
-    [
-      program.instruction.openLoanPosition(openLoanPositionParams, {
-        accounts: openLoanPositionAccounts,
-      }),
-    ],
-    [positionMintKeypair]
-  ).buildAndExecute()
-
-  const tradeTxId = await createTransactionChained(
+  await createTransactionChained(
     provider.connection,
     provider.wallet,
     [
       modifyComputeUnits,
-      addPriorityFee,
-      program.instruction.openTradePosition(openTradePositionParams, {
-        accounts: openTradePositionAccounts,
+      program.instruction.repayTradePosition(repayTradePositionParams, {
+        accounts: repayTradePositionAccounts,
         remainingAccounts: swapAccounts,
       }),
     ],
     []
   ).buildAndExecute()
-
-  console.log(loanTxId, tradeTxId)
-
-  const tokenVaultAAfter = new BN(
-    await getTokenBalance(provider, globalpoolInfo.tokenVaultA)
-  )
-  const tokenVaultBAfter = new BN(
-    await getTokenBalance(provider, globalpoolInfo.tokenVaultB)
-  )
-
-  console.log(
-    'token Vault A after: ',
-    tokenVaultAAfter.div(new BN(mintA.decimals)).toString()
-  )
-  console.log(
-    'token Vault B after: ',
-    tokenVaultBAfter.div(new BN(mintB.decimals)).toString()
-  )
 }
 
 main().catch((err) => {

@@ -245,11 +245,12 @@ pub fn open_loan_position(
 
     let collateral_amount = loan_manager::calculate_collateral(
         token_borrow_amount,
+        u128::from(params.liquidity_amount),
         is_borrow_token_a,
-        // collateral_token_owner_account.amount,
         params.tick_lower_index,
         params.tick_upper_index,
-        ctx.accounts.globalpool.tick_current_index,
+        &ctx.accounts.token_mint_a,
+        &ctx.accounts.token_mint_b,
         &ctx.accounts.token_price_feed_a,
         &ctx.accounts.token_price_feed_b,
         Clock::get()?.unix_timestamp,

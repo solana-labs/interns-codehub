@@ -130,6 +130,9 @@ pub enum ErrorCode {
     TryToDeserializePriceAccount,
     #[msg("Invalid argument provided")]
     InvalidArgument,
+
+    #[msg("Collateral calculation error")]
+    CollateralCalculationError,
 }
 
 impl From<TryFromIntError> for ErrorCode {

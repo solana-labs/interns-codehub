@@ -148,6 +148,11 @@ async function main() {
       tickUpperIndex: tickCurrentIndex + 64,
       liquidityAmount: new anchor.BN(100), // 100 SOL worth
     },
+    {
+      tickLowerIndex: -39104,
+      tickUpperIndex: -37696,
+      liquidityAmount: new anchor.BN(10_000), // 10k USDC worth
+    }
     // {
     //   tickLowerIndex: tickCurrentIndex - Math.floor(TICK_ARRAY_SIZE/3) * tickSpacing,
     //   tickUpperIndex: tickCurrentIndex + Math.ceil(TICK_ARRAY_SIZE/3) * tickSpacing,

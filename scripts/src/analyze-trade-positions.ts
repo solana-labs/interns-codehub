@@ -114,7 +114,7 @@ async function main() {
   const cachedTokenMints: Map<string, Mint> = new Map()
 
   for (const position of positions) {
-    const globalpoolKey = position.data.globalpool
+    const { globalpool: globalpoolKey, positionMint } = position.data
 
     // use cache or fetch
     if (!cachedGlobalpoolData.has(globalpoolKey.toBase58())) {
@@ -186,7 +186,7 @@ async function main() {
       true
     )
 
-    const mockInterval = 44 * poolTickSpacing
+    const mockInterval = 22 * poolTickSpacing
 
     const mockTick1 = tickUpperIndex + mockInterval
     const mockPrice1 = PriceMath.tickIndexToPrice(
@@ -216,7 +216,7 @@ async function main() {
       true
     )
 
-    const mockTick3 = tickUpperIndex - mockInterval // mid-point of the position range
+    const mockTick3 = (tickUpperIndex + tickLowerIndex) / 2 // mid-point of the position range
     const mockPrice3 = PriceMath.tickIndexToPrice(
       mockTick3,
       mintA.decimals,
@@ -230,9 +230,9 @@ async function main() {
       true
     )
 
+    console.log(`  position pubkey: ${position.key.toBase58().padEnd(44, ' ')}`)
+    console.log(`  position mint:   ${positionMint.toBase58().padEnd(44, ' ')}`)
     console.log(
-      ' '.repeat(2),
-      position.key.toBase58().padEnd(44, ' '),
       `  [pool: ${truncatedAddress(globalpoolKey.toBase58())}]  `,
       `  ctick: ${tickCurrentIndex}`
     )

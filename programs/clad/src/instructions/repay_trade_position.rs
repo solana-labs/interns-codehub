@@ -3,7 +3,9 @@ use {
         errors::ErrorCode,
         math::{get_amount_delta_a, get_amount_delta_b, sqrt_price_from_tick_index},
         state::*,
-        util::{sort_token_amount_for_loan, verify_position_authority},
+        util::{
+            sort_token_amount_for_loan, transfer_from_owner_to_vault, verify_position_authority,
+        },
     },
     anchor_lang::prelude::*,
     anchor_spl::{
@@ -161,124 +163,36 @@ pub fn repay_trade_position(
     msg!("delta_a: {}", delta_a);
     msg!("delta_b: {}", delta_b);
 
-    /*
+    if delta_a > 0 {
+        transfer_from_owner_to_vault(
+            &ctx.accounts.owner,
+            &ctx.accounts.token_owner_account_a,
+            &ctx.accounts.token_vault_a,
+            &ctx.accounts.token_program,
+            delta_a,
+        )?;
+    }
 
-    let (initial_loan_token_balance, initial_other_token_balance) = sort_token_amount_for_loan(
-        &ctx.accounts.token_vault_a,
-        &ctx.accounts.token_vault_b,
-        is_borrow_a,
-    );
+    if delta_b > 0 {
+        transfer_from_owner_to_vault(
+            &ctx.accounts.owner,
+            &ctx.accounts.token_owner_account_b,
+            &ctx.accounts.token_vault_b,
+            &ctx.accounts.token_program,
+            delta_b,
+        )?;
+    }
 
-    //
-    // Set up swap from other token to borrowed token
-    //
-
-    // 0th index is router pid, so skip it
-    let swap_route_accounts: Vec<AccountMeta> = (&ctx.remaining_accounts[1..])
-        .iter()
-        .map(|acct| {
-            let is_signer = acct.key == &ctx.accounts.globalpool.key();
-            if acct.is_writable {
-                AccountMeta::new(*acct.key, is_signer)
-            } else {
-                AccountMeta::new_readonly(*acct.key, is_signer)
-            }
-        })
-        .collect();
-
-    //
-    // TODO: Validate that the receiver of the token swap is the globalpool's token vault
-    //
-
-    //
-    // Execute swap
-    //
-
-    let swap_instruction = Instruction {
-        program_id: jupiter_cpi::id(), // == JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB
-        accounts: swap_route_accounts,
-        data: params.swap_instruction_data.clone(),
-    };
-
-    program::invoke_signed(
-        &swap_instruction,
-        &ctx.remaining_accounts[..],
-        &[&ctx.accounts.globalpool.seeds()],
-    )?;
-
-    //
-    // Verify swap
-    //
-
-    // Update token vault amounts
-    ctx.accounts.token_vault_a.reload()?;
-    ctx.accounts.token_vault_b.reload()?;
-
-    let (post_loan_token_balance, post_other_token_balance) = sort_token_amount_for_loan(
-        &ctx.accounts.token_vault_a,
-        &ctx.accounts.token_vault_b,
-        is_borrow_a,
-    );
-
-    // 1. Require that Other Token was the swapped to Loan Token.
-    // => Loan Token balance should increase
-    // => Other Token balance should decrease
-    require!(
-        initial_loan_token_balance < post_loan_token_balance,
-        ErrorCode::InvalidLoanTradeSwapDirection
-    );
-    require!(
-        initial_other_token_balance > post_other_token_balance,
-        ErrorCode::InvalidLoanTradeSwapDirection
-    );
-
-    // 2. Require that the swap out amount equals the previous liquidity swapped amount.
-
-    // This calculation should come after checking that the balances were modified legally (1).
-    let swapped_amount_in = initial_other_token_balance
-        .checked_sub(post_other_token_balance)
-        .unwrap();
-
-    let swapped_amount_out = post_loan_token_balance
-        .checked_sub(initial_loan_token_balance)
-        .unwrap();
-
-    require!(
-        swapped_amount_out == ctx.accounts.position.liquidity_swapped,
-        ErrorCode::InvalidLoanTradeSwapResult
-    );
-
-    // 3. Require that the tokens were deposited the right amount.
-    //
-
-    //
-    // TODO: Must implement this to make sure that the user did not swap to an external account.
-    //
-    // NOTE: Verify the swap instruction data as well (by slicing and matching numbers).
-    //
-
-    // require!(
-    //     post_swapped_token_balance,
-    //     ErrorCode::InvalidLoanTradeSwapResult
-    // );
-
-    msg!("diff loan_token_balance: {}", swapped_amount_in);
-    msg!("diff swapped_token_balance: {}", swapped_amount_out);
-
-    //
-    // Post-swap Update
-    //
-
-    // // Update position's liquidity_available & liquidity_swapped
-    // ctx.accounts
-    //     .position
-    //     .update_liquidity_swapped(swapped_amount_in)?;
+    // if is_borrow_a {
+    //     ctx.accounts.position.update_liquidity_swapped(-delta_b)?;
+    // } else {
+    //     ctx.accounts.position.update_liquidity_swapped(-delta_a)?;
+    // }
 
     // // Update globalpool's swapped token amount
     // ctx.accounts
     //     .globalpool
     //     .update_liquidity_trade_locked(swapped_amount_out, is_borrow_a)?;
-    */
 
     Ok(())
 }
