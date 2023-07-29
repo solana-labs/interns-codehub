@@ -71,8 +71,6 @@ pub fn repay_trade_position(
 ) -> Result<()> {
     verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
 
-    let is_borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);
-
     //
     // WARNING:
     //
@@ -87,10 +85,6 @@ pub fn repay_trade_position(
     // Potential Mitigation:
     // - Use TWAP of tick_current_index
     //
-
-    let tick_current_index = ctx.accounts.globalpool.tick_current_index;
-    let loan_tick_lower_index = ctx.accounts.position.tick_lower_index;
-    let loan_tick_upper_index = ctx.accounts.position.tick_upper_index;
 
     //
     // Consider three cases of repaying (closing) a trade position.

@@ -51,18 +51,17 @@ impl TradePosition {
         self.token_mint_collateral.eq(&globalpool.token_mint_b)
     }
 
+    pub fn has_matured(&self) -> Result<bool> {
+        Ok(Clock::get()?.slot > self.open_slot + self.duration)
+    }
+
     // Long:  borrowing Token B (quote) & swapping to Token A (base)
     // Short: borrowing Token A (base)  & swapping to Token B (quote)
     // Long  => collateral: Token A
     // Short => collateral: Token B
-    pub fn is_long(&self, globalpool: &Account<Globalpool>) -> bool {
-        !self.is_borrow_a(globalpool)
-    }
-
-    // See above `is_long`
-    pub fn is_long_check_borrow(is_borrow_token_a: bool) -> bool {
-        !is_borrow_token_a
-    }
+    // pub fn is_long(&self, globalpool: &Account<Globalpool>) -> bool {
+    //     !self.is_borrow_a(globalpool)
+    // }
 
     pub fn update(&mut self, update: &TradePositionUpdate) {
         self.loan_token_available = update.loan_token_available;

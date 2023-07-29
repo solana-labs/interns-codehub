@@ -133,6 +133,9 @@ pub enum ErrorCode {
 
     #[msg("Collateral calculation error")]
     CollateralCalculationError,
+
+    #[msg("Loan not matured")]
+    LoanNotMatured,
 }
 
 impl From<TryFromIntError> for ErrorCode {
