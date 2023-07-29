@@ -60,7 +60,7 @@ impl Clad {
         self.permissions = permissions;
         self.clad_bump = clad_bump;
 
-        self.update_protocol_fee_rate(protocol_fee_rate);
+        self.update_protocol_fee_rate(protocol_fee_rate)?;
 
         Ok(())
     }

@@ -29,7 +29,7 @@ pub struct OpenTradePosition<'info> {
     )]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_a.mint == globalpool.token_mint_a)]
+    #[account(mut, token::mint = globalpool.token_mint_a)]
     pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, address = globalpool.token_vault_a)]
@@ -38,7 +38,7 @@ pub struct OpenTradePosition<'info> {
     #[account(address = globalpool.token_mint_a)]
     pub token_mint_a: Box<Account<'info, Mint>>,
 
-    #[account(mut, constraint = token_owner_account_b.mint == globalpool.token_mint_b)]
+    #[account(mut, token::mint = globalpool.token_mint_b)]
     pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, address = globalpool.token_vault_b)]
@@ -170,12 +170,18 @@ pub fn open_trade_position(
     // Update position's liquidity_available & liquidity_swapped
     ctx.accounts
         .position
-        .update_liquidity_swapped(swapped_amount_in)?;
+        .update_liquidity_swapped(swapped_amount_in, swapped_amount_out)?;
+
+    // Require that ALL amount of the loan token was swapped.
+    require!(
+        ctx.accounts.position.loan_token_available == 0,
+        ErrorCode::InvalidLoanTradeSwapResult
+    );
 
     // Update globalpool's swapped token amount
     ctx.accounts
         .globalpool
-        .update_liquidity_trade_locked(swapped_amount_out, is_borrow_a)?;
+        .update_liquidity_trade_locked(ctx.accounts.position.liquidity_borrowed)?;
 
     Ok(())
 }

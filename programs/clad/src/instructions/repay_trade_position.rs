@@ -1,18 +1,16 @@
 use {
     crate::{
-        errors::ErrorCode,
+        // errors::ErrorCode,
         math::{get_amount_delta_a, get_amount_delta_b, sqrt_price_from_tick_index},
         state::*,
-        util::{
-            sort_token_amount_for_loan, transfer_from_owner_to_vault, verify_position_authority,
-        },
+        util::{transfer_from_owner_to_vault, verify_position_authority},
     },
     anchor_lang::prelude::*,
     anchor_spl::{
         associated_token::AssociatedToken,
         token::{self, Mint, Token, TokenAccount},
     },
-    solana_program::{instruction::Instruction, program},
+    // solana_program::{instruction::Instruction, program},
 };
 
 #[derive(Accounts)]
@@ -67,7 +65,7 @@ pub struct RepayTradePositionParams {
 
 pub fn repay_trade_position(
     ctx: Context<RepayTradePosition>,
-    params: &RepayTradePositionParams,
+    _params: &RepayTradePositionParams,
 ) -> Result<()> {
     verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
 

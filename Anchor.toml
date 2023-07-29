@@ -20,6 +20,8 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 programs/clad/tests/anch
 2-create-lp = "ts-node -p scripts/src/create-liquidity-position.ts"
 3-do-swap = "ts-node -p scripts/src/do-swap.ts"
 4-open-trade = "ts-node -p scripts/src/open-trade-position.ts"
+5-close-trade = "ts-node -p scripts/src/close-trade-position.ts"
+6-liquidate-trade = "ts-node -p scripts/src/liquidate-trade-position.ts"
 
 # For cloning addresses
 [test.validator]
@@ -67,9 +69,13 @@ address = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
 [[test.validator.clone]]
 address = "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE"
 
-# Orca Whirlpool SOL-USDC
+# Orca Whirlpool SOL-USDC (fee 200, tickSpacing 2)
 [[test.validator.clone]]
 address = "FpCMFDFGYotvufJ7HrFHsWEiiQCGbkLCtwHiDnh7o28Q"
+
+# Orca Whirlpool SOL-USDC (fee 500, tickSpacing 8)
+[[test.validator.clone]]
+address = "7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm"
 
 # Orca tick array
 [[test.validator.clone]]
@@ -198,6 +204,14 @@ address = "6mQ8xEaHdTikyMvvMxUctYch6dUjnKgfoeib2msyMMi1"
 # Orca token vault
 [[test.validator.clone]]
 address = "AQ36QRk3HAe6PHqBCtKTQnYKpt2kAagq9YoeTqUPMGHx"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "9RfZwn2Prux6QesG1Noo4HzMEBv3rPndJ2bN2Wwd6a7p"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "BVNo8ftg2LkkssnWT4ZWdtoFaevnfD6ExYeramwM27pe"
 
 # Orca config
 [[test.validator.clone]]

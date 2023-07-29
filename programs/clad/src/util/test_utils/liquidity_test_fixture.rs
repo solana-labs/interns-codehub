@@ -1,17 +1,11 @@
-use {
-    crate::{
-        manager::{
-            globalpool_manager::*, liquidity_manager::ModifyLiquidityUpdate,
-            tick_manager::next_tick_cross_update,
-        },
-        math::{add_liquidity_delta, Q64_RESOLUTION},
-        state::{
-            globalpool_builder::GlobalpoolBuilder, liquidity_position_builder::LiquidityPositionBuilder,
-            tick::*, tick_builder::TickBuilder, Globalpool, LiquidityPosition,
-            LiquidityPositionUpdate,
-        },
+use crate::{
+    manager::{liquidity_manager::ModifyLiquidityUpdate, tick_manager::next_tick_cross_update},
+    math::{add_liquidity_delta, Q64_RESOLUTION},
+    state::{
+        globalpool_builder::GlobalpoolBuilder,
+        liquidity_position_builder::LiquidityPositionBuilder, tick::*, tick_builder::TickBuilder,
+        Globalpool, LiquidityPosition, LiquidityPositionUpdate,
     },
-    anchor_lang::prelude::*,
 };
 
 const BELOW_LOWER_TICK_INDEX: i32 = -120;
@@ -145,10 +139,7 @@ impl LiquidityTestFixture {
         }
     }
 
-    pub fn apply_update(
-        &mut self,
-        update: &ModifyLiquidityUpdate,
-    ) {
+    pub fn apply_update(&mut self, update: &ModifyLiquidityUpdate) {
         self.globalpool.liquidity_available = update.globalpool_liquidity;
         self.tick_lower.update(&update.tick_lower_update);
         self.tick_upper.update(&update.tick_upper_update);

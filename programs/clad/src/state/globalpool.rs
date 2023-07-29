@@ -26,22 +26,14 @@ pub struct Globalpool {
     // Portion of fee rate taken stored as basis points
     pub protocol_fee_rate: u16,
 
-    // liquidity: u128 Maximum amount that can be held by Solana account
-
-    //
+    // L in Uniswap v3 eq. (X64.64 in this case)
     pub liquidity_available: u128,
 
-    // Liquidity of Token A on loan (actual token amount)
-    pub liquidity_borrowed_a: u64,
+    // Borrowed L
+    pub liquidity_borrowed: u128,
 
-    // Liquidity of Token B on loan (actual token amount)
-    pub liquidity_borrowed_b: u64,
-
-    // Liquidity of Token A swapped from Token B for trade positions (for ledger purposes) (actual token amount)
-    pub liquidity_trade_locked_a: u64,
-
-    // Liquidity of Token B swapped from Token A for trade positions (for ledger purposes) (actual token amount)
-    pub liquidity_trade_locked_b: u64,
+    // Borrowed L that got swapped to the opposite token
+    pub liquidity_trade_locked: u128,
 
     // MAX/MIN at Q32.64, but using Q64.64 for rounder bytes
     // Q64.64
@@ -128,10 +120,8 @@ impl Globalpool {
         self.protocol_fee_rate = protocol_fee_rate;
 
         self.liquidity_available = 0;
-        self.liquidity_borrowed_a = 0;
-        self.liquidity_borrowed_b = 0;
-        self.liquidity_trade_locked_a = 0;
-        self.liquidity_trade_locked_b = 0;
+        self.liquidity_borrowed = 0;
+        self.liquidity_trade_locked = 0;
 
         self.sqrt_price = sqrt_price;
         self.tick_current_index = tick_index_from_sqrt_price(&sqrt_price);
@@ -151,7 +141,6 @@ impl Globalpool {
         self.fee_growth_global_b = 0;
 
         self.inception_time = to_timestamp_u64(Clock::get()?.unix_timestamp)?;
-
 
         Ok(())
     }
@@ -183,22 +172,11 @@ impl Globalpool {
         }
     }
 
-    pub fn update_liquidity_trade_locked(
-        &mut self,
-        liquidity_swapped_out: u64,
-        is_borrow_a: bool, // true: swapped out to Token B | false: swapped out to Token A
-    ) -> Result<()> {
-        if is_borrow_a {
-            self.liquidity_trade_locked_b = self
-                .liquidity_trade_locked_b
-                .checked_add(liquidity_swapped_out)
-                .unwrap();
-        } else {
-            self.liquidity_trade_locked_a = self
-                .liquidity_trade_locked_a
-                .checked_add(liquidity_swapped_out)
-                .unwrap();
-        }
+    pub fn update_liquidity_trade_locked(&mut self, liquidity_swapped_out: u128) -> Result<()> {
+        self.liquidity_trade_locked = self
+            .liquidity_trade_locked
+            .checked_add(liquidity_swapped_out)
+            .unwrap();
         Ok(())
     }
 

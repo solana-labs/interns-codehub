@@ -56,9 +56,10 @@ pub fn decrease_liquidity(
     )?;
 
     let (delta_a, delta_b) = calculate_liquidity_token_deltas(
+        ctx.accounts.position.tick_lower_index,
+        ctx.accounts.position.tick_upper_index,
         ctx.accounts.globalpool.tick_current_index,
         ctx.accounts.globalpool.sqrt_price,
-        &ctx.accounts.position,
         liquidity_delta,
     )?;
 

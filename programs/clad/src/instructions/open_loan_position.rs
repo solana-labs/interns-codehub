@@ -4,10 +4,7 @@ use {
         manager::{liquidity_manager, loan_manager},
         math::*,
         state::*,
-        util::{
-            mint_position_token_and_remove_authority, to_timestamp_u64,
-            transfer_from_owner_to_vault,
-        },
+        util::{mint_position_token_and_remove_authority, transfer_from_owner_to_vault},
     },
     anchor_lang::prelude::*,
     anchor_spl::{
@@ -52,7 +49,7 @@ pub struct OpenLoanPosition<'info> {
 	)]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_a.mint == globalpool.token_mint_a)]
+    #[account(mut, token::mint = globalpool.token_mint_a)]
     pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, address = globalpool.token_vault_a)]
@@ -61,7 +58,7 @@ pub struct OpenLoanPosition<'info> {
     #[account(address = globalpool.token_mint_a)]
     pub token_mint_a: Box<Account<'info, Mint>>,
 
-    #[account(mut, constraint = token_owner_account_b.mint == globalpool.token_mint_b)]
+    #[account(mut, token::mint = globalpool.token_mint_b)]
     pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, address = globalpool.token_vault_b)]
@@ -208,7 +205,6 @@ pub fn open_loan_position(
         &ctx.accounts.tick_array_upper,
         liquidity_delta,
         token_borrow_amount,
-        params.borrow_a,
     )?;
 
     //
@@ -220,8 +216,8 @@ pub fn open_loan_position(
         collateral_token_owner_account,
         collateral_token_vault,
         collateral_token_mint,
-        borrowed_token_owner_account,
-        borrowed_token_vault,
+        _borrowed_token_owner_account,
+        _borrowed_token_vault,
         borrowed_token_mint,
     ) = if is_collateral_token_a {
         (

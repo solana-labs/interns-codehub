@@ -19,10 +19,8 @@ export type GlobalpoolData = {
   feeRateSeed: number
   protocolFeeRate: number
   liquidityAvailable: bigint
-  liquidityBorrowedA: bigint
-  liquidityBorrowedB: bigint
-  liquidityTradeLockedA: bigint
-  liquidityTradeLockedB: bigint
+  liquidityBorrowed: bigint
+  liquidityTradeLocked: bigint
   sqrtPrice: bigint
   tickCurrentIndex: number
   protocolFeeOwedA: bigint
@@ -60,6 +58,7 @@ export type TradePositionData = {
   liquidityBorrowed: BN // u128
   loanTokenAvailable: BN // u64
   loanTokenSwapped: BN // u64
+  tradeTokenAmount: BN // u64
   collateralAmount: BN // u64
   tokenMintLoan: PublicKey
   tokenMintCollateral: PublicKey
@@ -72,8 +71,7 @@ export type TickData = {
   initialized: boolean
   liquidityNet: BN
   liquidityGross: BN
-  liquidityBorrowedA: BN
-  liquidityBorrowedB: BN
+  liquidityBorrowed: BN
   feeGrowthOutsideA: BN
   feeGrowthOutsideB: BN
 }

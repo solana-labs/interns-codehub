@@ -3,7 +3,7 @@ use {
         globalpool_manager::next_globalpool_liquidity,
         tick_manager::next_tick_modify_liquidity_update_from_loan,
     },
-    crate::{errors::ErrorCode, math::*, state::*, util::TickSequence},
+    crate::{errors::ErrorCode, math::*, state::*},
     anchor_lang::prelude::{AccountLoader, *},
     anchor_spl::token::Mint,
     solana_program::clock::UnixTimestamp,
@@ -38,7 +38,6 @@ pub fn calculate_modify_loan<'info>(
     tick_array_upper: &AccountLoader<'info, TickArray>,
     liquidity_delta: i128,
     borrowed_amount: u64,
-    borrow_a: bool,
 ) -> Result<ModifyLoanUpdate> {
     // Disallow only updating position fee growth when position has zero liquidity
     if borrowed_amount == 0 {
@@ -84,7 +83,6 @@ pub fn calculate_modify_loan<'info>(
         globalpool.fee_growth_global_b,
         liquidity_delta,
         false,
-        borrow_a,
     )?;
 
     let tick_upper_update = next_tick_modify_liquidity_update_from_loan(
@@ -95,7 +93,6 @@ pub fn calculate_modify_loan<'info>(
         globalpool.fee_growth_global_b,
         liquidity_delta,
         true,
-        borrow_a,
     )?;
 
     //
@@ -110,10 +107,11 @@ pub fn calculate_modify_loan<'info>(
     let position_update = TradePositionUpdate {
         loan_token_available,
         loan_token_swapped: position.loan_token_swapped,
+        trade_token_amount: position.trade_token_amount,
     };
-    msg!("position_update: {:?}", position_update);
-    msg!("tick_lower_update: {:?}", tick_lower_update);
-    msg!("tick_upper_update: {:?}", tick_upper_update);
+    // msg!("position_update: {:?}", position_update);
+    // msg!("tick_lower_update: {:?}", tick_lower_update);
+    // msg!("tick_upper_update: {:?}", tick_upper_update);
 
     Ok(ModifyLoanUpdate {
         globalpool_liquidity: next_global_liquidity,
@@ -410,47 +408,3 @@ pub fn calculate_borrowed_ticks(
     }
 }
  */
-
-pub fn borrow(
-    globalpool: &Globalpool,
-    loan_tick_sequence: &mut TickSequence,
-    amount: u64,
-    start_tick_index: i32,
-    borrow_a: bool, // true = borrow Token A, false = borrow Token B
-) -> Result<PostBorrowUpdate> {
-    if amount == 0 {
-        return Err(ErrorCode::ZeroBorrowableAmount.into());
-    }
-
-    let tick_spacing = globalpool.tick_spacing;
-    let borrow_b = !borrow_a;
-
-    let mut amount_remaining = amount;
-    let mut amount_calculated = 0;
-    let mut curr_liquidity = globalpool.liquidity_available;
-    let mut curr_tick_index = start_tick_index;
-    let mut curr_array_index: usize = 0;
-
-    while amount_remaining > 0 {
-        // TODO: check if `borrow_a` is directly translatable to `a_to_b`
-        let (next_array_index, next_tick_index) = loan_tick_sequence
-            .get_next_initialized_tick_index(
-                curr_tick_index,
-                tick_spacing,
-                !borrow_a,
-                curr_array_index,
-            )?;
-
-        if (borrow_a && next_tick_index > curr_tick_index)
-            || borrow_b && next_tick_index < curr_tick_index
-        {
-            return Err(ErrorCode::TickArraySequenceInvalidIndex.into());
-        }
-
-        let (next_tick, next_tick_initialized) = loan_tick_sequence
-            .get_tick(next_array_index, next_tick_index, tick_spacing)
-            .map_or_else(|_| (None, false), |tick| (Some(tick), tick.initialized));
-    }
-
-    Ok(PostBorrowUpdate::default())
-}

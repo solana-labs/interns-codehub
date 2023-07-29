@@ -78,8 +78,7 @@ pub fn next_tick_modify_liquidity_update(
         initialized: true,
         liquidity_net,
         liquidity_gross,
-        liquidity_borrowed_a: tick.liquidity_borrowed_a,
-        liquidity_borrowed_b: tick.liquidity_borrowed_b,
+        liquidity_borrowed: tick.liquidity_borrowed,
         fee_growth_outside_a,
         fee_growth_outside_b,
     })
@@ -92,9 +91,7 @@ pub fn next_tick_modify_liquidity_update_from_loan(
     fee_growth_global_a: u128,
     fee_growth_global_b: u128,
     liquidity_delta: i128,
-    // is_borrow: bool, // true = borrow liquidity, false = repay liquidity
     is_upper_tick: bool,
-    borrow_a: bool,
 ) -> Result<TickUpdate, ErrorCode> {
     let mut update = next_tick_modify_liquidity_update(
         tick,
@@ -106,12 +103,8 @@ pub fn next_tick_modify_liquidity_update_from_loan(
         is_upper_tick,
     )?;
 
-    if borrow_a {
-        update.liquidity_borrowed_a += liquidity_delta;
-    } else {
-        update.liquidity_borrowed_b += liquidity_delta;
-    }
-    msg!("update: {:?}", update);
+    update.liquidity_borrowed += liquidity_delta;
+    // msg!("update: {:?}", update);
 
     Ok(update)
 }
@@ -169,17 +162,13 @@ pub fn next_fee_growths_inside(
 
 #[cfg(test)]
 mod tick_manager_tests {
-    use {
-        crate::{
-            errors::ErrorCode,
-            manager::tick_manager::{
-                next_fee_growths_inside, next_tick_cross_update, next_tick_modify_liquidity_update,
-                TickUpdate,
-            },
-            math::Q64_RESOLUTION,
-            state::{tick_builder::TickBuilder, Tick},
+    use crate::{
+        errors::ErrorCode,
+        manager::tick_manager::{
+            next_fee_growths_inside, next_tick_cross_update, next_tick_modify_liquidity_update,
+            TickUpdate,
         },
-        anchor_lang::prelude::Pubkey,
+        state::{tick_builder::TickBuilder, Tick},
     };
 
     #[test]
@@ -329,8 +318,7 @@ mod tick_manager_tests {
                     initialized: true,
                     liquidity_net: 42069,
                     liquidity_gross: 42069,
-                    liquidity_borrowed_a: 0,
-                    liquidity_borrowed_b: 0,
+                    liquidity_borrowed: 0,
                     fee_growth_outside_a: 100,
                     fee_growth_outside_b: 100,
                 },

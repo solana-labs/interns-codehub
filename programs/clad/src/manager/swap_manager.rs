@@ -26,7 +26,7 @@ pub fn swap(
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
     a_to_b: bool,
-    timestamp: u64,
+    _timestamp: u64,
 ) -> Result<PostSwapUpdate> {
     if sqrt_price_limit < MIN_SQRT_PRICE_X64 || sqrt_price_limit > MAX_SQRT_PRICE_X64 {
         return Err(ErrorCode::SqrtPriceOutOfBounds.into());

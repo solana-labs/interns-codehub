@@ -33,7 +33,7 @@ async function main() {
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
 
   const swapA2B = true // swap A to B (SOL to USDC)
-  const swapInputAmount = new BN(1) // 1 SOL
+  const swapInputAmount = new BN(50) // x SOL
   const maxSlippage = Percentage.fromFraction(1, 100)
 
   const globalpoolInfo = await getAccountData(
@@ -173,20 +173,38 @@ async function main() {
   console.log(`  tickArray1: ${quote.tickArray1.toBase58()}`)
   console.log(`  tickArray2: ${quote.tickArray2.toBase58()}`)
 
-  const tokenVaultABefore = new BN(
+  const authorityTokenAccountABefore = new BN(
     await getTokenBalance(provider, authorityTokenAccountA)
   )
-  const tokenVaultBBefore = new BN(
+  const authorityTokenAccountBBefore = new BN(
     await getTokenBalance(provider, authorityTokenAccountB)
   )
 
+  const tokenVaultABefore = new BN(await getTokenBalance(provider, tokenVaultA))
+  const tokenVaultBBefore = new BN(await getTokenBalance(provider, tokenVaultB))
+
+  console.log('Token A - BEFORE')
   console.log(
-    'token Vault A before: ',
-    tokenVaultABefore.div(new BN(10 ** mintA.decimals)).toString()
+    `  Authority: ${authorityTokenAccountABefore
+      .div(new BN(10 ** mintA.decimals))
+      .toString()}`
   )
   console.log(
-    'token Vault B before: ',
-    tokenVaultBBefore.div(new BN(10 ** mintB.decimals)).toString()
+    `  Vault:     ${tokenVaultABefore
+      .div(new BN(10 ** mintA.decimals))
+      .toString()}`
+  )
+  console.log()
+  console.log('Token B - BEFORE')
+  console.log(
+    `  Authority: ${authorityTokenAccountBBefore
+      .div(new BN(10 ** mintB.decimals))
+      .toString()}`
+  )
+  console.log(
+    `  Vault:     ${tokenVaultBBefore
+      .div(new BN(10 ** mintB.decimals))
+      .toString()}`
   )
 
   const swapAccounts = {
@@ -211,7 +229,7 @@ async function main() {
     aToB: quote.aToB,
   }
 
-  const txId = await createTransactionChained(
+  await createTransactionChained(
     provider.connection,
     provider.wallet,
     [
@@ -222,23 +240,46 @@ async function main() {
     []
   ).buildAndExecute()
 
-  console.log(txId)
-
-  const tokenVaultAAfter = new BN(
+  const authorityTokenAccountAAfter = new BN(
     await getTokenBalance(provider, authorityTokenAccountA)
   )
-  const tokenVaultBAfter = new BN(
+  const authorityTokenAccountBAfter = new BN(
     await getTokenBalance(provider, authorityTokenAccountB)
   )
 
+  const tokenVaultAAfter = new BN(await getTokenBalance(provider, tokenVaultA))
+  const tokenVaultBAfter = new BN(await getTokenBalance(provider, tokenVaultB))
+
+  console.log('Token A - AFTER')
   console.log(
-    'token Vault A after: ',
-    tokenVaultAAfter.div(new BN(10 ** mintA.decimals)).toString()
+    `  Authority: ${authorityTokenAccountAAfter
+      .div(new BN(10 ** mintA.decimals))
+      .toString()}`
   )
   console.log(
-    'token Vault B after: ',
-    tokenVaultBAfter.div(new BN(10 ** mintB.decimals)).toString()
+    `  Vault:     ${tokenVaultAAfter
+      .div(new BN(10 ** mintA.decimals))
+      .toString()}`
   )
+  console.log()
+  console.log('Token B - AFTER')
+  console.log(
+    `  Authority: ${authorityTokenAccountBAfter
+      .div(new BN(10 ** mintB.decimals))
+      .toString()}`
+  )
+  console.log(
+    `  Vault:     ${tokenVaultBAfter
+      .div(new BN(10 ** mintB.decimals))
+      .toString()}`
+  )
+
+  const tokenVaultADiff = tokenVaultAAfter.sub(tokenVaultABefore).abs()
+  const tokenVaultBDiff = tokenVaultBAfter.sub(tokenVaultBBefore).abs()
+  const price = swapA2B
+    ? tokenVaultADiff.div(tokenVaultBDiff)
+    : tokenVaultBDiff.div(tokenVaultADiff)
+  console.log(` Price: ${price.toString()} ${swapA2B ? 'A/B' : 'B/A'}`)
 }
 
 main().catch((err) => {

@@ -1,9 +1,6 @@
 use {
     super::{Globalpool, Tick},
-    crate::{
-        errors::ErrorCode,
-        math::{get_liquidity_delta_a, get_liquidity_delta_b, sqrt_price_from_tick_index},
-    },
+    crate::errors::ErrorCode,
     anchor_lang::prelude::*,
 };
 
@@ -21,6 +18,7 @@ pub struct TradePosition {
 
     pub loan_token_available: u64, // Token available (borrowed from globalpool) for this loan position. (the actual amount scaled to decimal exponent, not notional liquidity amount)
     pub loan_token_swapped: u64, // Liquidity swapped (for opening position) for this loan position. (the actual amount scaled to decimal exponent, not notional liquidity amount)
+    pub trade_token_amount: u64, // Amount of token received from swapping `loan_token` to the position's long/short token (the actual amount scaled to decimal exponent, not notional liquidity amount)
 
     pub collateral_amount: u64, // Amount of collateral locked (not sqrt_price or liquidity, the actual amount scaled to decimal exponent)
 
@@ -36,6 +34,7 @@ pub struct TradePosition {
 pub struct TradePositionUpdate {
     pub loan_token_available: u64,
     pub loan_token_swapped: u64,
+    pub trade_token_amount: u64,
     // pub ticks: Vec<TickLoan>,
 }
 
@@ -66,6 +65,7 @@ impl TradePosition {
     pub fn update(&mut self, update: &TradePositionUpdate) {
         self.loan_token_available = update.loan_token_available;
         self.loan_token_swapped = update.loan_token_swapped;
+        self.trade_token_amount = update.trade_token_amount;
     }
 
     pub fn init_position(
@@ -120,7 +120,11 @@ impl TradePosition {
         Ok(())
     }
 
-    pub fn update_liquidity_swapped(&mut self, loan_token_swapped: u64) -> Result<()> {
+    pub fn update_liquidity_swapped(
+        &mut self,
+        loan_token_swapped: u64,
+        trade_token_received: u64,
+    ) -> Result<()> {
         self.loan_token_available = self
             .loan_token_available
             .checked_sub(loan_token_swapped)
@@ -128,6 +132,10 @@ impl TradePosition {
         self.loan_token_swapped = self
             .loan_token_swapped
             .checked_add(loan_token_swapped)
+            .unwrap();
+        self.trade_token_amount = self
+            .trade_token_amount
+            .checked_add(trade_token_received)
             .unwrap();
         Ok(())
     }

@@ -1,6 +1,4 @@
-use crate::errors::ErrorCode;
-use crate::math::{add_liquidity_delta, checked_mul_div};
-use crate::state::*;
+use crate::{errors::ErrorCode, math::add_liquidity_delta, state::*};
 
 // Calculates the next global liquidity for a globalpool depending on its position relative
 // to the lower and upper tick indexes and the liquidity_delta.
