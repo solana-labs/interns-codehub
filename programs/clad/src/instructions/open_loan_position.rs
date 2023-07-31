@@ -204,7 +204,7 @@ pub fn open_loan_position(
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
         liquidity_delta,
-        token_borrow_amount,
+        token_borrow_amount as i64,
     )?;
 
     //

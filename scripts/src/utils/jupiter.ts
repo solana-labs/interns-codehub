@@ -35,7 +35,7 @@ export async function getRoutesFromJupiter(
   params: SwapRouteParams,
   jupiter: Jupiter
 ) {
-  const { a2b, tokenA, tokenB, amount, slippageBps, feeBps } = params
+  const { a2b, tokenA, tokenB, amount, slippageBps, swapMode, feeBps } = params
 
   const inputMint = a2b ? tokenA : tokenB
   const outputMint = a2b ? tokenB : tokenA
@@ -55,7 +55,7 @@ export async function getRoutesFromJupiter(
       //       which requires creating ATA for the program for each hopped token.
       //       So just do direct routes for now.
       onlyDirectRoutes: true,
-      swapMode: SwapMode.ExactIn,
+      swapMode: swapMode || SwapMode.ExactIn,
       filterTopNResult: 2,
     })
     .then((res) => res.routesInfos)

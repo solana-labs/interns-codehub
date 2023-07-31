@@ -37,7 +37,7 @@ pub fn calculate_modify_loan<'info>(
     tick_array_lower: &AccountLoader<'info, TickArray>,
     tick_array_upper: &AccountLoader<'info, TickArray>,
     liquidity_delta: i128,
-    borrowed_amount: u64,
+    borrowed_amount: i64,
 ) -> Result<ModifyLoanUpdate> {
     // Disallow only updating position fee growth when position has zero liquidity
     if borrowed_amount == 0 {
@@ -62,14 +62,16 @@ pub fn calculate_modify_loan<'info>(
     )?;
 
     //
-    // Verify that enough liquidity exists in Ticks.
+    // Verify that enough liquidity exists in Ticks, if liquidity is to-be-borrowed (ie. positive)
     // Note: Must check both the lower & upper tick's `liquidity_gross`.
     //
-    let liquidity_delta_u128 = liquidity_delta.abs() as u128;
-    if liquidity_delta_u128 > tick_lower.liquidity_gross
-        && liquidity_delta_u128 > tick_upper.liquidity_gross
-    {
-        return Err(ErrorCode::InsufficientLiquidityToBorrow.into());
+    if liquidity_delta > 0 {
+        let liquidity_delta_u128 = liquidity_delta.abs() as u128;
+        if liquidity_delta_u128 > tick_lower.liquidity_gross
+            && liquidity_delta_u128 > tick_upper.liquidity_gross
+        {
+            return Err(ErrorCode::InsufficientLiquidityToBorrow.into());
+        }
     }
 
     //
@@ -100,10 +102,21 @@ pub fn calculate_modify_loan<'info>(
     // Note: Add the absolute value of `liquidty_delta` as it's negative when borrowing (used to subtract liquidity from
     //       the pool) but the position itself needs to represent the borrowed liquidity that's now available (positive).
     //
-    let loan_token_available = position
-        .loan_token_available
-        .checked_add(borrowed_amount)
-        .unwrap();
+
+    msg!("loan_token_available: {:?}", position.loan_token_available);
+    msg!("borrowed_amount: {:?}", borrowed_amount);
+    let loan_token_available = if borrowed_amount > 0 {
+        position
+            .loan_token_available
+            .checked_add(borrowed_amount as u64)
+            .unwrap()
+    } else {
+        position
+            .loan_token_available
+            .checked_sub(borrowed_amount as u64)
+            .unwrap()
+    };
+
     let position_update = TradePositionUpdate {
         loan_token_available,
         loan_token_swapped: position.loan_token_swapped,

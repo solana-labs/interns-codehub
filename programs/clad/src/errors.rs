@@ -136,6 +136,8 @@ pub enum ErrorCode {
 
     #[msg("Loan not matured")]
     LoanNotMatured,
+    #[msg("Invalid repayment amount")]
+    InvalidRepaymentAmount,
 }
 
 impl From<TryFromIntError> for ErrorCode {

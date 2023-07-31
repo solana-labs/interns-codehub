@@ -1,10 +1,7 @@
-use {
-    crate::{
-        errors::ErrorCode,
-        math::add_liquidity_delta,
-        state::{Tick, TickUpdate},
-    },
-    anchor_lang::prelude::msg,
+use crate::{
+    errors::ErrorCode,
+    math::add_liquidity_delta,
+    state::{Tick, TickUpdate},
 };
 
 pub fn next_tick_cross_update(
@@ -28,19 +25,20 @@ pub fn next_tick_modify_liquidity_update(
     fee_growth_global_b: u128,
     liquidity_delta: i128,
     is_upper_tick: bool,
+    is_loan_accounting: bool,
 ) -> Result<TickUpdate, ErrorCode> {
     // noop if there is no change in liquidity
     if liquidity_delta == 0 {
-        msg!("tick {:?} has liquidity delta = 0", tick_index);
+        // msg!("tick {:?} has liquidity delta = 0", tick_index);
         return Ok(TickUpdate::from(tick));
     }
 
     let liquidity_gross = add_liquidity_delta(tick.liquidity_gross, liquidity_delta)?;
 
     // Update to an uninitialized tick if remaining liquidity is being removed
-    if liquidity_gross == 0 {
+    if liquidity_gross == 0 && !is_loan_accounting {
         // return Ok(TickUpdate { liquidity_borrowed: tick.liquidity_borrowed, ..Default::default() });
-        msg!("tick {:?} has liquidity gross = 0", tick_index);
+        // msg!("tick {:?} has liquidity gross = 0", tick_index);
         return Ok(TickUpdate::default());
     }
 
@@ -67,12 +65,6 @@ pub fn next_tick_modify_liquidity_update(
 
     let gross = tick.liquidity_gross;
     let net = tick.liquidity_net;
-    msg!(
-        "liquidity (tick {:?}): gross {:?} / net {:?}",
-        tick_index,
-        gross,
-        net
-    );
 
     Ok(TickUpdate {
         initialized: true,
@@ -101,6 +93,7 @@ pub fn next_tick_modify_liquidity_update_from_loan(
         fee_growth_global_b,
         liquidity_delta,
         is_upper_tick,
+        true,
     )?;
 
     update.liquidity_borrowed += liquidity_delta;
@@ -431,6 +424,7 @@ mod tick_manager_tests {
                 test.fee_growth_global_b,
                 test.liquidity_delta,
                 test.is_upper_tick,
+                false,
             )
             .unwrap();
 
@@ -527,6 +521,7 @@ mod tick_manager_tests {
                 0,
                 test.liquidity_delta,
                 test.is_upper_tick,
+                false,
             )
             .unwrap_err();
 

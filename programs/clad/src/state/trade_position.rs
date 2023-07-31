@@ -122,21 +122,41 @@ impl TradePosition {
 
     pub fn update_liquidity_swapped(
         &mut self,
-        loan_token_swapped: u64,
-        trade_token_received: u64,
+        loan_token_swapped: i64,
+        trade_token_received: i64,
     ) -> Result<()> {
-        self.loan_token_available = self
-            .loan_token_available
-            .checked_sub(loan_token_swapped)
-            .unwrap();
-        self.loan_token_swapped = self
-            .loan_token_swapped
-            .checked_add(loan_token_swapped)
-            .unwrap();
-        self.trade_token_amount = self
-            .trade_token_amount
-            .checked_add(trade_token_received)
-            .unwrap();
+        if loan_token_swapped > 0 {
+            self.loan_token_available = self
+                .loan_token_available
+                .checked_sub(loan_token_swapped as u64)
+                .unwrap();
+            self.loan_token_swapped = self
+                .loan_token_swapped
+                .checked_add(loan_token_swapped as u64)
+                .unwrap();
+        } else {
+            self.loan_token_available = self
+                .loan_token_available
+                .checked_add(loan_token_swapped.abs() as u64)
+                .unwrap();
+            self.loan_token_swapped = self
+                .loan_token_swapped
+                .checked_sub(loan_token_swapped.abs() as u64)
+                .unwrap();
+        }
+
+        if trade_token_received > 0 {
+            self.trade_token_amount = self
+                .trade_token_amount
+                .checked_add(trade_token_received as u64)
+                .unwrap();
+        } else {
+            self.trade_token_amount = self
+                .trade_token_amount
+                .checked_sub(trade_token_received.abs() as u64)
+                .unwrap();
+        }
+
         Ok(())
     }
 

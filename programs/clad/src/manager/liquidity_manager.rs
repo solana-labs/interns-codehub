@@ -113,6 +113,7 @@ fn _calculate_modify_liquidity(
         globalpool.fee_growth_global_b,
         liquidity_delta,
         false,
+        false,
     )?;
 
     let tick_upper_update = next_tick_modify_liquidity_update(
@@ -123,6 +124,7 @@ fn _calculate_modify_liquidity(
         globalpool.fee_growth_global_b,
         liquidity_delta,
         true,
+        false,
     )?;
 
     let (fee_growth_inside_a, fee_growth_inside_b) = next_fee_growths_inside(

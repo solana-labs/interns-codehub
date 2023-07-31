@@ -170,7 +170,7 @@ pub fn open_trade_position(
     // Update position's liquidity_available & liquidity_swapped
     ctx.accounts
         .position
-        .update_liquidity_swapped(swapped_amount_in, swapped_amount_out)?;
+        .update_liquidity_swapped(swapped_amount_in as i64, swapped_amount_out as i64)?;
 
     // Require that ALL amount of the loan token was swapped.
     require!(

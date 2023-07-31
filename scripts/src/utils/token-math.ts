@@ -12,14 +12,18 @@ export type TokenAmounts = {
 export function getTokenAmountsFromLiquidity(
   liquidity: BN,
   currentSqrtPrice: BN,
-  lowerSqrtPrice: BN,
-  upperSqrtPrice: BN,
+  lowerTick: number,
+  upperTick: number,
   round_up: boolean
 ): TokenAmounts {
+  const lowerSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(lowerTick)
+  const upperSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(upperTick)
+
   const _liquidity = new Decimal(liquidity.toString())
   const _currentPrice = new Decimal(currentSqrtPrice.toString())
   const _lowerPrice = new Decimal(lowerSqrtPrice.toString())
   const _upperPrice = new Decimal(upperSqrtPrice.toString())
+
   let tokenA, tokenB
   if (currentSqrtPrice.lt(lowerSqrtPrice)) {
     // x = L * (pb - pa) / (pa * pb)

@@ -86,7 +86,7 @@ async function main() {
     new anchor.BN(tickSpacing).toArrayLike(Buffer, 'le', 2),
   ]
 
-  const [globalpoolKey, globalpoolBump] = PublicKey.findProgramAddressSync(
+  const [globalpoolKey] = PublicKey.findProgramAddressSync(
     globalpoolSeeds,
     programId
   )
@@ -104,12 +104,6 @@ async function main() {
   // const tokenVaultA = await createAndMintToAssociatedTokenAccount(
   //   provider,
   //   tokenMintA,
-  //   0,
-  //   globalpoolKey,
-  // )
-  // const tokenVaultB = await createAndMintToAssociatedTokenAccount(
-  //   provider,
-  //   tokenMintB,
   //   0,
   //   globalpoolKey,
   // )

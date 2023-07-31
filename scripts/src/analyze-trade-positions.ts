@@ -109,8 +109,8 @@ async function main() {
     const tokenAmountsToRepayCurrent = getTokenAmountsFromLiquidity(
       position.data.liquidityBorrowed,
       new BN(currentSqrtPrice.toString()),
-      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
-      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      tickLowerIndex,
+      tickUpperIndex,
       true
     )
 
@@ -125,8 +125,8 @@ async function main() {
     const tokenAmountsToRepayMock1 = getTokenAmountsFromLiquidity(
       position.data.liquidityBorrowed,
       PriceMath.tickIndexToSqrtPriceX64(mockTick1),
-      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
-      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      tickLowerIndex,
+      tickUpperIndex,
       true
     )
 
@@ -139,8 +139,8 @@ async function main() {
     const tokenAmountsToRepayMock2 = getTokenAmountsFromLiquidity(
       position.data.liquidityBorrowed,
       PriceMath.tickIndexToSqrtPriceX64(mockTick2),
-      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
-      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      tickLowerIndex,
+      tickUpperIndex,
       true
     )
 
@@ -153,8 +153,8 @@ async function main() {
     const tokenAmountsToRepayMock3 = getTokenAmountsFromLiquidity(
       position.data.liquidityBorrowed,
       PriceMath.tickIndexToSqrtPriceX64(mockTick3),
-      PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
-      PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
+      tickLowerIndex,
+      tickUpperIndex,
       true
     )
 

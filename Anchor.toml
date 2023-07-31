@@ -77,6 +77,10 @@ address = "FpCMFDFGYotvufJ7HrFHsWEiiQCGbkLCtwHiDnh7o28Q"
 [[test.validator.clone]]
 address = "7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm"
 
+# Orca Whirlpool SOL-USDC (fee 3000, tickSpacing 64)
+[[test.validator.clone]]
+address = "HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ"
+
 # Orca tick array
 [[test.validator.clone]]
 address = "8cSEbQP389xmezdqPZ5qLma7YeCeQa8tuSsT67PYfomr"
@@ -155,6 +159,10 @@ address = "HZfG2mtxiuL3dQeHw6VqRFHWR33nzHhJ5seWVabRfC6J"
 
 # Orca tick array
 [[test.validator.clone]]
+address = "5Xk2UQvSsvXyvV4VP75KBh6PAMUjiF1xvFBUkh4mSg7a"
+
+# Orca tick array
+[[test.validator.clone]]
 address = "4Sz4W2pC1YaLZyVP6ptNXNf727c6BtnB5BEYNQhHdCxN"
 
 # Orca tick array
@@ -171,11 +179,39 @@ address = "Em3TMAnaiTjHUUVngGgfFpB2Q3WFo3oXXcjpTbcEm198"
 
 # Orca tick array
 [[test.validator.clone]]
+address = "7WqjtUUrZntXiWz5gQZyAMyL6iMRdQ2o8u27HRdCFnB6"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "2Wg45BET6HwsPpTE5titBtchk97jZe2Ed3MhAfJ4SQvF"
+
+# Orca tick array
+[[test.validator.clone]]
 address = "7Nzbe7RWYv3KdWEEo415nJaa43BRUQnLs18MBrqQVx4d"
 
 # Orca tick array
 [[test.validator.clone]]
 address = "8ZDXfrx7gc6rabJNR1ssrKTY6T2qAZNEpiUq2Ph9JnfQ"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "EVqGhR2ukNuqZNfvFFAitrX6UqrRm2r8ayKX9LH9xHzK"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "C8o6QPGfuJD9XmNQY9ZTMXJE5qSDv4LHXaRA3D26GQ4M"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "93a168GhU5TKPri9jdkjysXhfb13z1BqGh5miGs2Pq6a"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "2Eh8HEeu45tCWxY6ruLLRN6VcTSD7bfshGj7bZA87Kne"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "A2W6hiA2nf16iqtbZt9vX8FJbiXjv3DBUG3DgTja61HT"
 
 # Orca tick array
 [[test.validator.clone]]
@@ -212,6 +248,14 @@ address = "9RfZwn2Prux6QesG1Noo4HzMEBv3rPndJ2bN2Wwd6a7p"
 # Orca token vault
 [[test.validator.clone]]
 address = "BVNo8ftg2LkkssnWT4ZWdtoFaevnfD6ExYeramwM27pe"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "3YQm7ujtXWJU2e9jhp2QGHpnn1ShXn12QjvzMvDgabpX"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "2JTw1fE2wz1SymWUQ7UqpVtrTuKjcd6mWwYwUJUCh2rq"
 
 # Orca config
 [[test.validator.clone]]

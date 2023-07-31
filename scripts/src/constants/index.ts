@@ -1,4 +1,5 @@
 import { BN } from '@coral-xyz/anchor'
+import { SingleLevelAmmValidator } from '@jup-ag/core/dist/lib/ammValidator'
 import { PublicKey } from '@solana/web3.js'
 
 export { Clad } from '@/target/types/clad'
@@ -68,6 +69,45 @@ export const SAMO = new PublicKey(
   '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'
 )
 
-export const pythOracleSOL = new PublicKey('H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG')
+export const pythOracleSOL = new PublicKey(
+  'H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG'
+)
 
-export const pythOracleUSDC = new PublicKey('Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD')
+export const pythOracleUSDC = new PublicKey(
+  'Gnt27xtC473ZT2Mw5u8wZ68Z3gULkSTb5DuxJy7eJotD'
+)
+
+export const testJupiterAmmsToExclude: SingleLevelAmmValidator = {
+  Aldrin: true,
+  Crema: true,
+  Cropper: true,
+  Cykura: true,
+  DeltaFi: true,
+  GooseFX: true,
+  Invariant: true,
+  Lifinity: true,
+  'Lifinity V2': true,
+  Marinade: true,
+  Mercurial: true,
+  Meteora: true,
+  Orca: false,
+  'Orca (Whirlpools)': false,
+  Raydium: true,
+  'Raydium CLMM': true,
+  Saber: true,
+  Serum: true,
+  Step: true,
+  Penguin: true,
+  Saros: true,
+  Stepn: true,
+  Sencha: true,
+  'Saber (Decimals)': true,
+  Dradex: true,
+  Balansol: true,
+  Openbook: true,
+  Oasis: true,
+  BonkSwap: true,
+  Phoenix: true,
+  Symmetry: true,
+  Unknown: true,
+}
