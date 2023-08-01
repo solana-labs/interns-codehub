@@ -13,3 +13,7 @@ test-ledger
 .env*
 **/.env
 !.env.example
+
+/app-ref
+/sdk
+/ui-ref

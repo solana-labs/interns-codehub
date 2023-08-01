@@ -18,6 +18,7 @@ pub struct OpenTradePosition<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    #[account(mut)]
     pub globalpool: Box<Account<'info, Globalpool>>,
 
     #[account(mut, has_one = globalpool)]
@@ -179,9 +180,9 @@ pub fn open_trade_position(
     );
 
     // Update globalpool's swapped token amount
-    ctx.accounts
-        .globalpool
-        .update_liquidity_trade_locked(ctx.accounts.position.liquidity_borrowed)?;
+    // ctx.accounts
+    //     .globalpool
+    //     .update_liquidity_trade_locked(ctx.accounts.position.liquidity_borrowed as i128)?;
 
     Ok(())
 }

@@ -1,4 +1,4 @@
-import { Jupiter } from '@jup-ag/core'
+import { Jupiter, SwapMode } from '@jup-ag/core'
 import { Percentage } from '@orca-so/common-sdk'
 import { PoolUtil, toTokenAmount } from '@orca-so/whirlpools-sdk'
 import {
@@ -27,6 +27,9 @@ import { getRoutesFromJupiter } from './utils/jupiter'
 import { getUserTradePositions } from './utils/position'
 import { createTransactionChained } from './utils/txix'
 import { createAndMintToManyATAs } from './utils/token'
+import { getTickArrayKeyFromTickIndex } from './utils/tick-arrays'
+import { getTokenAmountsFromLiquidity } from './utils/token-math'
+import { ZERO_BN, testJupiterAmmsToExclude } from './constants'
 
 async function main() {
   const {
@@ -46,13 +49,6 @@ async function main() {
 
   console.log(`Clad: ${cladKey.toBase58()}`)
   console.log(`Globalpool: ${globalpoolKey.toBase58()}`)
-
-  const borrowA = false // borrow USDC (B)
-  const isTradeA2B = borrowA // swap USDC (B) to SOL (A)
-
-  // const borrowAmount = new BN(100 * Math.pow(100, (borrowA ? mintA : mintB).decimals)) // 100 USDC
-  const borrowAmount = 100 // 100 USDC
-  const borrowAmountExpo = borrowAmount * Math.pow(10, mintB.decimals) // above scaled to decimal exponent
 
   const maxSlippage = Percentage.fromFraction(1, 100)
   const maxJupiterPlatformSlippage = 0
@@ -74,6 +70,8 @@ async function main() {
 
   console.log(`Token A: ${mintA.address.toBase58()}`)
   console.log(`Token B: ${mintB.address.toBase58()}`)
+  console.log(`Token A Vault: ${tokenVaultA.toBase58()}`)
+  console.log(`Token B Vault: ${tokenVaultB.toBase58()}`)
 
   const mintAmount = new BN(100_000) // mint 100k of each token
   const [tokenOwnerAccountA, tokenOwnerAccountB] =
@@ -83,165 +81,207 @@ async function main() {
     await getUserTradePositions(positionAuthority, connection, programId)
   )[0]
 
-  const { mint: positionMintPubkey, key: positionKey } = tradePosition
-  console.log(tradePosition)
+  const {
+    mint: positionMintPubkey,
+    key: positionKey,
+    data: tradePositionData,
+  } = tradePosition
+
+  const {
+    collateralAmount,
+    liquidityBorrowed,
+    loanTokenSwapped,
+    tradeTokenAmount,
+    tokenMintCollateral,
+  } = tradePositionData
+
   const positionTokenAccount = getAssociatedTokenAddressSync(
     positionMintPubkey,
     positionAuthority
   )
 
-  // TODO: programatically find Ticks with enough liquidity for the trade
-  const tickLowerIndex = -45056 // globalpoolInfo.tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing
-  const tickUpperIndex = -39552 // globalpoolInfo.tickCurrentIndex + tickSpacing
+  const tickArrayLowerKey = getTickArrayKeyFromTickIndex(
+    globalpoolKey,
+    tradePositionData.tickLowerIndex,
+    tickSpacing,
+    programId
+  )
 
-  // NOTE: At the top end of the price range, tick calcuation is off therefore the results can be off
-  const borrowAmountLiquidity = PoolUtil.estimateLiquidityFromTokenAmounts(
-    globalpoolInfo.tickCurrentIndex,
-    tickLowerIndex,
-    tickUpperIndex,
-    toTokenAmount(
-      borrowA ? borrowAmountExpo : 0,
-      borrowA ? 0 : borrowAmountExpo
+  const tickArrayUpperKey = getTickArrayKeyFromTickIndex(
+    globalpoolKey,
+    tradePositionData.tickUpperIndex,
+    tickSpacing,
+    programId
+  )
+
+  const currentTickIndex = globalpoolInfo.tickCurrentIndex
+  const currentSqrtPrice = new BN(globalpoolInfo.sqrtPrice.toString())
+  // MOCK
+  // const currentTickIndex = -44224 // 12.00 B/A (USDC/SOL)
+  // const currentTickIndex =
+  //   Math.round(
+  //     (tradePositionData.tickLowerIndex + tradePositionData.tickUpperIndex) /
+  //       (2 * tickSpacing)
+  //   ) * tickSpacing // mid-point of position's tick range
+  // const currentSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(currentTickIndex)
+
+  console.log(`Tick Current: ${currentTickIndex}`)
+
+  const isBorrowA = tokenMintCollateral.equals(globalpoolInfo.tokenMintB)
+  // isBorrowA = true  => prev borrowed A & swapped to B, so now swap B to A & repay A
+  // isBorrowA = false => prev borrowed B & swapped to A, so now swap A to B & repay B
+
+  const { tokenA: repayTokenA, tokenB: repayTokenB } =
+    getTokenAmountsFromLiquidity(
+      liquidityBorrowed,
+      currentSqrtPrice,
+      tradePositionData.tickLowerIndex,
+      tradePositionData.tickUpperIndex,
+      true
     )
+
+  const borrowedDeltaA = isBorrowA ? loanTokenSwapped : ZERO_BN
+  const borrowedDeltaB = isBorrowA ? ZERO_BN : loanTokenSwapped
+  const availableDeltaA = isBorrowA
+    ? ZERO_BN
+    : tradeTokenAmount.add(collateralAmount)
+  const availableDeltaB = isBorrowA
+    ? tradeTokenAmount.add(collateralAmount)
+    : ZERO_BN
+  const swapNeededDeltaA = new BN(
+    Math.max(0, repayTokenA.sub(availableDeltaA).toNumber())
+  )
+  const swapNeededDeltaB = new BN(
+    Math.max(0, repayTokenB.sub(availableDeltaB).toNumber())
   )
 
-  console.log(`Tick Lower: ${tickLowerIndex}`)
-  console.log(`Tick Upper: ${tickUpperIndex}`)
-  console.log(`Tick Current: ${globalpoolInfo.tickCurrentIndex}`)
+  console.log('repayTokenA', repayTokenA.toString())
+  console.log('borrowedDeltaA', borrowedDeltaA.toString())
+  console.log('availableDeltaA', availableDeltaA.toString())
+  console.log('swapNeededDeltaA', swapNeededDeltaA.toString())
+  console.log('repayTokenB', repayTokenB.toString())
+  console.log('borrowedDeltaB', borrowedDeltaB.toString())
+  console.log('availableDeltaB', availableDeltaB.toString())
+  console.log('swapNeededDeltaB', swapNeededDeltaB.toString())
 
-  //
-  // Swap setup
-  //
-
-  const jupiter = await Jupiter.load({
-    connection: new Connection(envVars.rpcEndpointMainnetBeta), // must use mainnet-beta RPC here
-    cluster: 'mainnet-beta',
-    user: positionAuthority,
-    wrapUnwrapSOL: false,
-    routeCacheDuration: 0,
-    // For testing only, only cloned Orca accounts on localnet
-    ammsToExclude: {
-      Aldrin: true,
-      Crema: true,
-      Cropper: true,
-      Cykura: true,
-      DeltaFi: true,
-      GooseFX: true,
-      Invariant: true,
-      Lifinity: true,
-      'Lifinity V2': true,
-      Marinade: true,
-      Mercurial: true,
-      Meteora: true,
-      Orca: false,
-      'Orca (Whirlpools)': false,
-      Raydium: true,
-      'Raydium CLMM': true,
-      Saber: true,
-      Serum: true,
-      Step: true,
-      Penguin: true,
-      Saros: true,
-      Stepn: true,
-      Sencha: true,
-      'Saber (Decimals)': true,
-      Dradex: true,
-      Balansol: true,
-      Openbook: true,
-      Oasis: true,
-      BonkSwap: true,
-      Phoenix: true,
-      Symmetry: true,
-      Unknown: true,
-    },
-  })
-
-  // Gets best route
-  const swapRoutes = await getRoutesFromJupiter(
-    {
-      a2b: isTradeA2B,
-      tokenA: tokenMintAKey,
-      tokenB: tokenMintBKey,
-      // amount: 1 * Math.pow(10, isTradeA2B ? mintA.decimals : mintB.decimals), // 1 usdc or 1 sol
-      amount: borrowAmountExpo, // input token amount scaled to decimal exponent (& NOT in liquidity amount)
-      slippageBps: 30, // 0.3%
-      feeBps: 0.0,
-    },
-    jupiter
-  )
-  if (!swapRoutes) return null
-
-  // Routes are sorted based on outputAmount, so ideally the first route is the best.
-  const bestRoute = swapRoutes[0]
-
-  //
-  // For test only, fix the route's whirlpool data pubkeys for tick arrays
-  //
-
-  for (const marketInfo of bestRoute.marketInfos) {
-    if (marketInfo.notEnoughLiquidity)
-      throw new Error('Not enough liquidity on swap venue')
+  if (swapNeededDeltaA.isZero() && swapNeededDeltaB.isZero()) {
+    console.log('No swap needed')
+  } else if (!swapNeededDeltaA.isZero() && !swapNeededDeltaB.isZero()) {
+    throw Error('Invalid repayment amount, both token A & B needed')
   }
 
-  const res = await jupiter
-    .exchange({ routeInfo: bestRoute, userPublicKey: globalpoolKey }) // globalpool trades the tokens
-    .catch((err) => {
-      console.log('DEBUG: Failed to set exchange')
-      console.error(err)
-      return null
+  let isSwapTradeA2B = false
+  let swapInTokenVault: PublicKey | undefined = undefined
+  let swapOutTokenVault: PublicKey | undefined = undefined
+  let swapOutNeeded: BN = ZERO_BN
+
+  if (swapNeededDeltaA.gt(ZERO_BN)) {
+    console.log('Need more A. Swap B to A')
+    // isSwapTradeA2B = false
+    swapInTokenVault = tokenVaultB
+    swapOutTokenVault = tokenVaultA
+    swapOutNeeded = swapNeededDeltaA
+  } else if (swapNeededDeltaB.gt(ZERO_BN)) {
+    console.log('Need more B. Swap A to B')
+    isSwapTradeA2B = true
+    swapInTokenVault = tokenVaultA
+    swapOutTokenVault = tokenVaultB
+    swapOutNeeded = swapNeededDeltaB
+  }
+
+  let swapInstructionData = Buffer.alloc(0) // default empty
+  let swapAccounts = [] as AccountMeta[]
+
+  if (swapInTokenVault && swapOutTokenVault) {
+    //
+    // Swap setup
+    //
+
+    const jupiter = await Jupiter.load({
+      connection: new Connection(envVars.rpcEndpointMainnetBeta), // must use mainnet-beta RPC here
+      cluster: 'mainnet-beta',
+      user: globalpoolKey,
+      wrapUnwrapSOL: false,
+      routeCacheDuration: 0,
+      // For testing only, only cloned Orca accounts on localnet
+      ammsToExclude: testJupiterAmmsToExclude,
     })
-  if (!res) {
-    throw new Error('Skip route with no exchange info')
-  }
-  const swapTransaction = res.swapTransaction as VersionedTransaction
-  if (!swapTransaction.message) {
-    throw new Error('Skipped route with no instructions') // skip legacy transaction
-  }
 
-  const message = TransactionMessage.decompile(swapTransaction.message, {
-    addressLookupTableAccounts: res.addressLookupTableAccounts,
-  })
+    console.log('swapOutNeeded', swapOutNeeded.toString())
 
-  if (bestRoute.marketInfos[0].amm.label === 'Orca (Whirlpools)') {
-    const { whirlpoolData } = bestRoute.marketInfos[0].amm as unknown as {
-      whirlpoolData: {
-        whirlpoolsConfig: any
-        tokenMintA: any
-        tokenMintB: any
-        tokenVaultA: any
-        tokenVaultB: any
-        rewardInfos: any
-        tickArrays: any
-      }
-    }
-  } else if (bestRoute.marketInfos[0].amm.label !== 'Orca') {
-    throw new Error(
-      `Invalid exchange route, ${bestRoute.marketInfos[0].amm.label}`
+    // Gets best route
+    const swapRoutes = await getRoutesFromJupiter(
+      {
+        a2b: isSwapTradeA2B,
+        tokenA: tokenMintAKey,
+        tokenB: tokenMintBKey,
+        amount: swapOutNeeded.toNumber(), // input token amount scaled to decimal exponent (& NOT in liquidity amount)
+        slippageBps: 100, // 1%
+        feeBps: 0.0,
+        swapMode: SwapMode.ExactOut,
+      },
+      jupiter
     )
-  }
+    if (!swapRoutes) return null
 
-  const swapInstruction = message.instructions.slice(-1)[0]
+    // Routes are sorted based on outputAmount, so ideally the first route is the best.
+    const bestRoute = swapRoutes[0]
 
-  const swapAccounts: AccountMeta[] = [
-    // Jupiter Program ID hard-coded in the program, BUT we still need the program ID as the first account
-    // because Jupiter's `route` requires the first account be the program ID.
-    {
-      isSigner: false,
-      isWritable: false,
-      pubkey: swapInstruction.programId,
-    },
-  ]
-
-  for (const key of swapInstruction.keys) {
-    if (key.isSigner) {
-      if (!key.pubkey.equals(globalpoolKey)) {
-        console.log(key.pubkey)
-        console.log('DEBUG: Skipped route with unexpected signer')
-        continue
-      }
-      key.isSigner = false
+    for (const marketInfo of bestRoute.marketInfos) {
+      if (marketInfo.notEnoughLiquidity)
+        throw new Error('Not enough liquidity on swap venue')
     }
-    swapAccounts.push(key)
+
+    const res = await jupiter
+      .exchange({ routeInfo: bestRoute, userPublicKey: globalpoolKey }) // globalpool trades the tokens
+      .catch((err) => {
+        console.log('DEBUG: Failed to set exchange')
+        console.error(err)
+        return null
+      })
+    if (!res) {
+      throw new Error('Skip route with no exchange info')
+    }
+    const swapTransaction = res.swapTransaction as VersionedTransaction
+    if (!swapTransaction.message) {
+      throw new Error('Skipped route with no instructions') // skip legacy transaction
+    }
+
+    const message = TransactionMessage.decompile(swapTransaction.message, {
+      addressLookupTableAccounts: res.addressLookupTableAccounts,
+    })
+
+    if (!bestRoute.marketInfos[0].amm.label.startsWith('Orca')) {
+      throw new Error(
+        `Invalid exchange route, ${bestRoute.marketInfos[0].amm.label}`
+      )
+    }
+
+    const swapInstruction = message.instructions.slice(-1)[0]
+
+    swapAccounts = [
+      // Jupiter Program ID hard-coded in the program, BUT we still need the program ID as the first account
+      // because Jupiter's `route` requires the first account be the program ID.
+      {
+        isSigner: false,
+        isWritable: false,
+        pubkey: swapInstruction.programId,
+      },
+    ]
+
+    for (const key of swapInstruction.keys) {
+      if (key.isSigner) {
+        if (!key.pubkey.equals(globalpoolKey)) {
+          console.log(key.pubkey)
+          console.log('DEBUG: Skipped route with unexpected signer')
+          continue
+        }
+        key.isSigner = false
+      }
+      swapAccounts.push(key)
+    }
+
+    swapInstructionData = swapInstruction.data
   }
 
   const liquidateTradePositionAccounts = {
@@ -270,14 +310,7 @@ async function main() {
   }
 
   const liquidateTradePositionParams = {
-    slippageBps: bestRoute.slippageBps,
-    platformFeeBps: maxJupiterPlatformSlippage,
-    // Swap data
-    // swapInAmount: bestRoute.inAmount.toString(),
-    // swapOutAmount: bestRoute.outAmount,
-    // swapOtherAmountThreshold: bestRoute.otherAmountThreshold.toString(),
-    // swapInstructionData: swapInstruction.data,
-    swapInstructionData: swapInstruction.data,
+    swapInstructionData: swapInstructionData,
   }
 
   console.log(liquidateTradePositionAccounts)

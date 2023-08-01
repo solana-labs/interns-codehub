@@ -63,9 +63,6 @@ pub fn next_tick_modify_liquidity_update(
             .ok_or(ErrorCode::LiquidityNetError)?
     };
 
-    let gross = tick.liquidity_gross;
-    let net = tick.liquidity_net;
-
     Ok(TickUpdate {
         initialized: true,
         liquidity_net,

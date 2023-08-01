@@ -14,6 +14,7 @@ import {
   AccountMeta,
   VersionedTransaction,
   TransactionMessage,
+  Keypair,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
@@ -296,9 +297,6 @@ async function main() {
     tokenMintA: tokenMintAKey,
     tokenMintB: tokenMintBKey,
 
-    tickArrayLower: tickArrayLowerKey,
-    tickArrayUpper: tickArrayUpperKey,
-
     // sys
     tokenProgram: TOKEN_PROGRAM_ID,
     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -311,11 +309,35 @@ async function main() {
     // lower & upper tick index are retrieved from the position
   }
 
+  const closeLoanPositionAccounts = {
+    owner: positionAuthority,
+    receiver: positionAuthority,
+    globalpool: globalpoolKey,
+
+    position: positionKey,
+    positionMint: positionMintPubkey,
+    positionTokenAccount,
+
+    tokenOwnerAccountA,
+    tokenOwnerAccountB,
+    tokenVaultA,
+    tokenVaultB,
+    tokenMintA: tokenMintAKey,
+    tokenMintB: tokenMintBKey,
+
+    tickArrayLower: tickArrayLowerKey,
+    tickArrayUpper: tickArrayUpperKey,
+
+    tokenProgram: TOKEN_PROGRAM_ID,
+    // associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+    // systemProgram: SystemProgram.programId,
+    // rent: SYSVAR_RENT_PUBKEY,
+  }
+
   const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
     units: 1_000_000,
   })
 
-  console.log(swapAccounts)
   await createTransactionChained(
     provider.connection,
     provider.wallet,
@@ -328,6 +350,17 @@ async function main() {
     ],
     []
   ).buildAndExecute()
+
+//   await createTransactionChained(
+//     provider.connection,
+//     provider.wallet,
+//     [
+//       program.instruction.closeLoanPosition({
+//         accounts: closeLoanPositionAccounts,
+//       }),
+//     ],
+//     [] // positionMintKeypair
+//   ).buildAndExecute()
 }
 
 main().catch((err) => {

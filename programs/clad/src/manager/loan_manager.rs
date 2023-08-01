@@ -113,7 +113,7 @@ pub fn calculate_modify_loan<'info>(
     } else {
         position
             .loan_token_available
-            .checked_sub(borrowed_amount as u64)
+            .checked_sub(borrowed_amount.abs() as u64)
             .unwrap()
     };
 

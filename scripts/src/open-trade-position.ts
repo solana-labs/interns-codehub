@@ -92,6 +92,8 @@ async function main() {
   // console.log(tokenOwnerAccountA, tokenOwnerAccountB)
 
   const positionMintKeypair = Keypair.generate()
+  console.log('secretKey')
+  console.log(positionMintKeypair.secretKey)
   const [positionKey] = PublicKey.findProgramAddressSync(
     [Buffer.from('trade_position'), positionMintKeypair.publicKey.toBuffer()],
     programId

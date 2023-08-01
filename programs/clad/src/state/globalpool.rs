@@ -172,11 +172,21 @@ impl Globalpool {
         }
     }
 
-    pub fn update_liquidity_trade_locked(&mut self, liquidity_swapped_out: u128) -> Result<()> {
-        self.liquidity_trade_locked = self
-            .liquidity_trade_locked
-            .checked_add(liquidity_swapped_out)
-            .unwrap();
+    pub fn update_liquidity_trade_locked(&mut self, liquidity_swapped_out: i128) -> Result<()> {
+        msg!("liquidity_trade_locked: {}", self.liquidity_trade_locked);
+        msg!("liquidity_swapped_out: {}", liquidity_swapped_out);
+        if liquidity_swapped_out > 0 {
+            self.liquidity_trade_locked = self
+                .liquidity_trade_locked
+                .checked_add(liquidity_swapped_out as u128)
+                .unwrap();
+        } else {
+            self.liquidity_trade_locked = self
+                .liquidity_trade_locked
+                .checked_sub(liquidity_swapped_out.abs() as u128)
+                .unwrap();
+        }
+        msg!("liquidity_trade_locked: {}", self.liquidity_trade_locked);
         Ok(())
     }
 

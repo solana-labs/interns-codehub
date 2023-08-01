@@ -114,8 +114,8 @@ pub fn increase_liquidity(
         liquidity_delta,
     )?;
 
-    msg!("Delta A: {:?}", delta_a);
-    msg!("Delta B: {:?}", delta_b);
+    // msg!("Delta A: {:?}", delta_a);
+    // msg!("Delta B: {:?}", delta_b);
 
     if delta_a > params.token_max_a {
         return Err(ErrorCode::TokenMaxExceeded.into());

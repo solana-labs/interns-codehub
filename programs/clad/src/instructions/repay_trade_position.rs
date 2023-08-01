@@ -2,12 +2,11 @@ use {
     crate::{
         errors,
         manager::{
-            liquidity_manager::{self, calculate_liquidity_token_deltas},
-            loan_manager,
+            liquidity_manager::calculate_liquidity_token_deltas,
             swap_manager::execute_jupiter_swap_for_globalpool,
         },
         state::*,
-        util::{transfer_from_vault_to_owner, verify_position_authority},
+        util::verify_position_authority,
     },
     anchor_lang::prelude::*,
     anchor_spl::{
@@ -22,6 +21,7 @@ pub struct RepayTradePosition<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    #[account(mut)]
     pub globalpool: Box<Account<'info, Globalpool>>,
 
     #[account(mut, has_one = globalpool)]
@@ -50,12 +50,6 @@ pub struct RepayTradePosition<'info> {
 
     #[account(address = globalpool.token_mint_b)]
     pub token_mint_b: Box<Account<'info, Mint>>,
-
-    #[account(mut, has_one = globalpool)]
-    pub tick_array_lower: AccountLoader<'info, TickArray>,
-
-    #[account(mut, has_one = globalpool)]
-    pub tick_array_upper: AccountLoader<'info, TickArray>,
 
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
@@ -157,7 +151,7 @@ pub fn repay_trade_position(
     // let outstanding_delta_b = repay_delta_b as i64 - borrowed_delta_b as i64;
 
     // This assumes the position has swapped all of loan token to the opposite (trade) token.
-    let (available_delta_a, available_delta_b) = if is_borrow_a {
+    let (mut available_delta_a, mut available_delta_b) = if is_borrow_a {
         (0, trade_token_amount + collateral_amount)
     } else {
         (trade_token_amount + collateral_amount, 0)
@@ -269,7 +263,7 @@ pub fn repay_trade_position(
             errors::ErrorCode::InvalidLoanTradeSwapDirection
         );
 
-        // Swap out balance should increase by swap_needed_delta
+        // Swap out balance should increase exactly by `swap_out_needed` (swap_needed_delta_a or swap_needed_delta_b)
         require!(
             swap_out_after_balance == swap_out_before_balance + swap_out_needed,
             errors::ErrorCode::InvalidLoanTradeSwapResult
@@ -289,78 +283,60 @@ pub fn repay_trade_position(
                 >= trade_token_before_balance,
             errors::ErrorCode::InvalidLoanTradeSwapResult
         );
+
+        let swap_in_amount = swap_in_before_balance - swap_in_after_balance;
+
+        // Update available token amounts to reflect the swap_in sent & swap_out received
+        if is_borrow_a {
+            // Swapped from token B to token A
+            available_delta_b -= swap_in_amount;
+            available_delta_a += swap_out_needed;
+        } else {
+            // Swap from token A to token B
+            available_delta_a -= swap_in_amount;
+            available_delta_b += swap_out_needed;
+        }
     }
 
-    // Post-swap updates since the token amount hole is filled
-    let available_delta_a = available_delta_a + swap_needed_delta_a;
-    let available_delta_b = available_delta_b + swap_needed_delta_b;
-
+    // Only one of these tokens will be > 0. Otherwise, there's a logic issue in the program!
     let mut leftover_token_a: u64 = 0;
     let mut leftover_token_b: u64 = 0;
 
-    if repay_delta_a > available_delta_a {
-        leftover_token_a = repay_delta_a - available_delta_a;
+    if available_delta_a > repay_delta_a {
+        leftover_token_a = available_delta_a - repay_delta_a;
     }
 
-    if repay_delta_b > available_delta_b {
-        leftover_token_b = repay_delta_b - available_delta_b;
+    if available_delta_b > repay_delta_b {
+        leftover_token_b = available_delta_b - repay_delta_b;
     }
 
     msg!("available_delta_a: {}", available_delta_a);
     msg!("repay_delta_a:     {}", repay_delta_a);
     msg!("left_over_token_a: {}", leftover_token_a);
-    msg!("");
     msg!("available_delta_b: {}", available_delta_b);
     msg!("repay_delta_b:     {}", repay_delta_b);
     msg!("left_over_token_b: {}", leftover_token_b);
 
-    if leftover_token_a > 0 {
-        transfer_from_vault_to_owner(
-            &ctx.accounts.globalpool,
-            &ctx.accounts.token_vault_a,
-            &ctx.accounts.token_owner_account_a,
-            &ctx.accounts.token_program,
-            leftover_token_a,
-        )?;
-    }
-
-    if leftover_token_b > 0 {
-        transfer_from_vault_to_owner(
-            &ctx.accounts.globalpool,
-            &ctx.accounts.token_vault_b,
-            &ctx.accounts.token_owner_account_b,
-            &ctx.accounts.token_program,
-            leftover_token_b,
-        )?;
-    }
-
     ctx.accounts
         .position
         .update_liquidity_swapped(-(loan_token_swapped as i64), -(trade_token_amount as i64))?;
-    ctx.accounts.position.update_collateral_amount(0)?;
 
-    // Last param assumes that all loaned token was swapped to trade token `open_trade_position`
-    let update = loan_manager::calculate_modify_loan(
-        &ctx.accounts.globalpool,
-        &ctx.accounts.position,
-        &ctx.accounts.tick_array_lower,
-        &ctx.accounts.tick_array_upper,
-        -(liquidity_borrowed as i128),
-        -(loan_token_swapped as i64),
-    )?;
+    // NOTE: how should we update collateral amount left
+    // if is_borrow_a {
+    //     ctx.accounts
+    //         .position
+    //         .update_collateral_amount(leftover_token_b)?;
+    // } else {
+    //     ctx.accounts
+    //         .position
+    //         .update_collateral_amount(leftover_token_a)?;
+    // }
 
-    liquidity_manager::sync_modify_liquidity_values_for_loan(
-        &mut ctx.accounts.globalpool,
-        &mut ctx.accounts.position,
-        &ctx.accounts.tick_array_lower,
-        &ctx.accounts.tick_array_upper,
-        update,
-    )?;
-
-    // // Update globalpool's swapped token amount
+    // Update globalpool's swapped token amount.
+    // Assumes that all loaned token was swapped to trade token in `open_trade_position`
     // ctx.accounts
     //     .globalpool
-    //     .update_liquidity_trade_locked(swapped_amount_out, is_borrow_a)?;
+    //     .update_liquidity_trade_locked(-(liquidity_borrowed as i128))?;
 
     Ok(())
 }
