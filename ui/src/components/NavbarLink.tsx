@@ -1,3 +1,4 @@
+import { Stack, Typography } from '@mui/material'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { cloneElement } from 'react'
@@ -18,12 +19,7 @@ export default function NavbarLink(props: Props) {
     <Link
       href={props.href}
       className={twMerge(
-        'font-medium',
-        'flex',
         'h-full',
-        'items-center',
-        'px-5',
-        'text-sm',
         'text-gray-500',
         'transition-colors',
         'active:text-gray-200',
@@ -34,10 +30,12 @@ export default function NavbarLink(props: Props) {
         props.className
       )}
     >
-      <div className="hidden md:block">{props.children}</div>
-      {cloneElement(props.icon, {
-        className: twMerge(props.icon.props.className, 'block', 'fill-current', 'h-4', 'w-4', 'md:hidden'),
-      })}
+      <Stack direction="row" px={4} alignItems="center" justifyContent="center">
+        <Typography variant="body1" className="hidden md:block">{props.children}</Typography>
+        {cloneElement(props.icon, {
+          className: twMerge(props.icon.props.className, 'block', 'fill-current', 'h-4', 'w-4', 'md:hidden'),
+        })}
+      </Stack>
     </Link>
   )
 }

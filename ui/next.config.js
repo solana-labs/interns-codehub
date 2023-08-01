@@ -7,9 +7,8 @@ const nextConfig = {
 		// !! WARN !!
 		ignoreBuildErrors: true,
 	},
-
-	reactStrictMode: true,
-  swcMinify: true,
+	// reactStrictMode: true,
+  // swcMinify: true,
 }
 
 module.exports = nextConfig

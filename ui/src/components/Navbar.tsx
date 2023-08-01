@@ -1,11 +1,8 @@
-import ChartCandlestickIcon from '@carbon/icons-react/lib/ChartCandlestick'
-import CircleDash from '@carbon/icons-react/lib/CircleDash'
-import StoragePoolIcon from '@carbon/icons-react/lib/StoragePool'
+import { Box, Container, Stack, Typography } from '@mui/material'
+import { ChartCandlestick, StoragePool, UserAdmin } from '@carbon/icons-react/lib'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { twMerge } from 'tailwind-merge'
 
-import UserAdmin from '@carbon/icons-react/lib/UserAdmin'
 import NavbarLink from '@/components/NavbarLink'
 
 const WalletMultiButtonDynamic = dynamic(
@@ -13,42 +10,45 @@ const WalletMultiButtonDynamic = dynamic(
   { ssr: false }
 )
 
-export const Navbar = () => {
+export default function Navbar() {
   return (
-    <nav
-      className={twMerge(
-        'bg-zinc-900',
-        'fixed',
-        'flex',
-        'h-14',
-        'justify-between',
-        'items-center',
-        'left-0',
-        'px-4',
-        'right-0',
-        'top-0',
-        'z-20'
-      )}
+    <Box
+      position="fixed"
+      py={2}
+      top={0}
+      left={0}
+      right={0}
+      zIndex={99999}
+      className="bg-zinc-900"
+      color="#fff"
     >
-      <Link className="hidden items-center space-x-2 md:flex" href="/">
-        <CircleDash className="h-7 w-7 fill-white/80" />
-        <div className="text-white">APP NAME</div>
-      </Link>
-      <div className="flex h-full items-center space-x-2">
-        <NavbarLink href="/trade" icon={<ChartCandlestickIcon />}>
-          Trade
-        </NavbarLink>
-        <NavbarLink href="/pools" icon={<StoragePoolIcon />}>
-          Pools
-        </NavbarLink>
-        <NavbarLink href="/admin" icon={<UserAdmin />}>
-          Admin
-        </NavbarLink>
-      </div>
-      <div className="flex flex-row items-center">
-        <p className="text-white">Connect to DEVNET!</p>
-        <WalletMultiButtonDynamic className="bg-transparent" />
-      </div>
-    </nav>
+      <Container maxWidth="lg">
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          spacing={1}
+        >
+          <Link className="hidden items-center space-x-2 md:flex" href="/">
+            <Typography variant="h5" fontWeight="bold">Clad</Typography>
+          </Link>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <NavbarLink href="/trade" icon={<ChartCandlestick />}>
+              Trade
+            </NavbarLink>
+            <NavbarLink href="/pools" icon={<StoragePool />}>
+              Pools
+            </NavbarLink>
+            <NavbarLink href="/admin" icon={<UserAdmin />}>
+              Admin
+            </NavbarLink>
+          </Stack>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <p className="text-white">Connect to DEVNET!</p>
+            <WalletMultiButtonDynamic className="bg-transparent" />
+          </Stack>
+        </Stack>
+      </Container>
+    </Box>
   )
 }

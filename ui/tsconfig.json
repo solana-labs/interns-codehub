@@ -30,6 +30,7 @@
     "declaration": true,
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
     "baseUrl": ".",
     "plugins": [
       {

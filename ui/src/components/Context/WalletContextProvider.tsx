@@ -1,6 +1,5 @@
 import { createTheme, StyledEngineProvider, ThemeProvider } from '@mui/material'
 import { deepPurple, pink } from '@mui/material/colors'
-import { WalletModalProvider as AntDesignWalletModalProvider } from '@solana/wallet-adapter-ant-design'
 import type { Adapter, WalletError } from '@solana/wallet-adapter-base'
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { WalletDialogProvider as MaterialUIWalletDialogProvider } from '@solana/wallet-adapter-material-ui'
@@ -89,9 +88,7 @@ function WalletContextProvider({ children }: React.PropsWithChildren) {
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} onError={onError} autoConnect={autoConnect}>
         <MaterialUIWalletDialogProvider>
-          <AntDesignWalletModalProvider>
-            <ReactUIWalletModalProvider>{children}</ReactUIWalletModalProvider>
-          </AntDesignWalletModalProvider>
+          <ReactUIWalletModalProvider>{children}</ReactUIWalletModalProvider>
         </MaterialUIWalletDialogProvider>
       </WalletProvider>
     </ConnectionProvider>
