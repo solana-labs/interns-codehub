@@ -13,7 +13,7 @@ pub struct MintGovernanceMetadata<'info> {
     #[account(seeds = [merkle_tree.key().as_ref()], bump)]
     /// CHECK: This account is neither written to nor read from.
     pub tree_authority: Account<'info, TreeConfig>,
-
+    /// CHECK: This account is checked in the instruction
     pub merkle_tree: AccountInfo<'info>,
     pub leaf_owner: AccountInfo<'info>,
     pub leaf_delegate: AccountInfo<'info>,

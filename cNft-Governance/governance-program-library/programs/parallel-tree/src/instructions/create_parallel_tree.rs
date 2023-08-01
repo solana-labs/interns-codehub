@@ -10,6 +10,7 @@ use crate::utils::allocate_account::*;
 pub struct CreateParallelTree<'info> {
     #[account(seeds = [merkle_tree.key().as_ref()], bump)]
     pub tree_authority: Account<'info, TreeConfig>,
+    /// CHECK: This account is checked in the instruction
     pub merkle_tree: UncheckedAccount<'info>,
     pub payer: Signer<'info>,
     pub system_program: Program<'info, System>,
