@@ -4,6 +4,7 @@ use {
     anchor_lang::prelude::*,
 };
 
+// Should zero_copy?
 #[account]
 #[derive(Default)]
 pub struct TradePosition {
