@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material'
+import { Box, Container, Typography } from '@mui/material'
 
 import TradePosition from '@/components/Positions/TradePosition'
 // import LiquidityPosition from '@/components/Positions/LiquidityPosition'
@@ -11,7 +11,7 @@ interface PositionsProps {
 
 export default function Positions(props: PositionsProps) {
   return (
-    <>
+    <Container maxWidth="lg">
       <Box>
         <Typography variant="h5">Trade Positions</Typography>
         {props.tradePositions.length ? props.tradePositions.map((tradePosition) => (
@@ -23,6 +23,6 @@ export default function Positions(props: PositionsProps) {
       <Box mt={4}>
         <Typography variant="h5">Liquidity Positions</Typography>
       </Box>
-    </>
+    </Container>
   )
 }
