@@ -1,10 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit'
 
-import { genericAppReducer, tradePositionReducer } from '@/slices'
+import { genericAppReducer, liquidityPositionReducer, tradePositionReducer } from '@/slices'
 
 const store = configureStore({
 	reducer: {
 		generic: genericAppReducer,
+		liquidityPosition: liquidityPositionReducer,
 		tradePosition: tradePositionReducer,
 	},
 	devTools: true,

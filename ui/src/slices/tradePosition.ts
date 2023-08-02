@@ -1,9 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { Connection, PublicKey } from '@solana/web3.js'
 
+import { CLAD_PROGRAM_ID } from '@/constants'
+import { getUserTradePositions } from '@/lib/getPositions'
 import type { RootState } from '@/store'
 import { UserTradePosition } from '@/types/user'
-import { getUserTradePositions } from '@/lib/getPositions'
 
 // Define a type for the slice state
 export interface TradePositionState {
@@ -23,9 +24,9 @@ export const fetchTradePositionsByUser = createAsyncThunk<
 	async (user: PublicKey, { getState }) => {
 		const state = getState() as RootState
 
-		if (!state.generic.rpc || !state.generic.programId) return []
+		if (!state.generic.rpc) return []
 
-		return getUserTradePositions(user, new Connection(state.generic.rpc), state.generic.programId);
+		return getUserTradePositions(user, new Connection(state.generic.rpc), CLAD_PROGRAM_ID);
 	}
 );
 

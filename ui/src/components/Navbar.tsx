@@ -39,6 +39,9 @@ export default function Navbar() {
             <NavbarLink href="/pools" icon={<StoragePool />}>
               Pools
             </NavbarLink>
+            <NavbarLink href="/positions" icon={<StoragePool />}>
+              Positions
+            </NavbarLink>
             <NavbarLink href="/admin" icon={<UserAdmin />}>
               Admin
             </NavbarLink>

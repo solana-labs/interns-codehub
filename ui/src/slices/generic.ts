@@ -1,24 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
-import { PublicKey, clusterApiUrl } from '@solana/web3.js'
+import { clusterApiUrl } from '@solana/web3.js'
 
 import type { RootState } from '@/store'
 
 // Define a type for the slice state
 export interface GenericAppState {
-  network: WalletAdapterNetwork
+  network: WalletAdapterNetwork | 'localnet'
   // Need to use Helius since the default cluster API doesn't support some operations we need to use
   rpc: string
-  // Clad Program ID
-  programId: PublicKey | undefined
 }
 
 // Define the initial state using that type
 const initialState: GenericAppState = {
-  network: WalletAdapterNetwork.Devnet,
-  rpc: clusterApiUrl(WalletAdapterNetwork.Devnet),
-  programId: undefined,
+  network: process.env.NEXT_PUBLIC_NODE_ENV === 'production' ? WalletAdapterNetwork.Devnet : 'localnet',
+  rpc: process.env.NEXT_PUBLIC_NODE_ENV === 'production' ? clusterApiUrl(WalletAdapterNetwork.Devnet) : 'http://127.0.0.1:8899',
 }
 
 export const genericAppSlice = createSlice({
@@ -27,6 +24,7 @@ export const genericAppSlice = createSlice({
   reducers: {
     changeNetwork: (state, action: PayloadAction<WalletAdapterNetwork>) => {
       state.network = action.payload
+      state.rpc = clusterApiUrl(action.payload)
     },
   },
 })

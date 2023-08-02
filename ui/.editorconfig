@@ -15,6 +15,7 @@ indent_style = tab
 indent_size = 4
 
 [*.{ts,js,tsx,css,mts}]
+indent_style = space
 indent_size = 2
 
 # The JSON files contain newlines inconsistently

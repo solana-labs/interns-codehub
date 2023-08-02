@@ -1,40 +1,28 @@
-import { useWallet } from "@solana/wallet-adapter-react";
+import { Box, Typography } from '@mui/material'
+
+import TradePosition from '@/components/Positions/TradePosition'
+// import LiquidityPosition from '@/components/Positions/LiquidityPosition'
+import { UserLiquidityPosition, UserTradePosition } from '@/types/user'
 
 interface PositionsProps {
-  className?: string;
+  tradePositions: UserTradePosition[]
+  liquidityPositions: UserLiquidityPosition[]
 }
 
 export default function Positions(props: PositionsProps) {
-  const { publicKey } = useWallet();
-
-  // const positionData = useGlobalStore((state) => state.positionData);
-
-  // if (positionData.status === "pending") {
-  //   return <LoadingSpinner className="text-4xl" />;
-  // }
-
-  // if (!publicKey) {
-  //   return (
-  //     <div className={props.className}>
-  //       <header className="mb-5 flex items-center space-x-4">
-  //         <div className="font-medium text-white">My Positions</div>
-  //       </header>
-
-  //       <NoPositions emptyString="No Open Positions" />
-  //     </div>
-  //   );
-  // }
-
   return (
-    <div className={props.className}>
-			Positions
-      {/* <header className="mb-5 flex items-center space-x-4">
-        <div className="font-medium text-white">My Positions</div>
-        {positionData.status === "pending" && (
-          <LoadingDots className="text-white" />
+    <>
+      <Box>
+        <Typography variant="h5">Trade Positions</Typography>
+        {props.tradePositions.length ? props.tradePositions.map((tradePosition) => (
+          <TradePosition key={tradePosition.key.toBase58()} position={tradePosition} />
+        )) : (
+          <Typography variant="body1">No trade positions</Typography>
         )}
-      </header>
-      <ExistingPositions /> */}
-    </div>
-  );
+      </Box>
+      <Box mt={4}>
+        <Typography variant="h5">Liquidity Positions</Typography>
+      </Box>
+    </>
+  )
 }
