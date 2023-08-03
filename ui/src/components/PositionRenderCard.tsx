@@ -9,6 +9,14 @@ export enum PositionRenderCardSize {
   SMALL
 }
 
+// no need to export
+enum PositionStatus {
+  LONG,
+  SHORT,
+  IN_RANGE,
+  OUT_OF_RANGE,
+}
+
 export type PositionRenderToken = {
   pubkey: PublicKey
   symbol: string
@@ -42,7 +50,7 @@ export type PositionRenderCardProps = {
   positionKey: PublicKey
   tickLowerIndex: number
   tickUpperIndex: number
-  tickOpenIndex: number // current index at the time of position creation
+  tickOpenIndex?: number // current index at the time of position creation (only for trade position)
   tickCurrentIndex: number // current index of the globalpool
   tickSpacing: number
   amount: BN | number | string
@@ -75,7 +83,7 @@ export default function PositionRenderCustomizableCard(props: PositionRenderCard
   }, [tokenA, tokenB])
   const curve = useMemo(() => getCurve(tickLowerIndex, tickUpperIndex, tickSpacing), [tickLowerIndex, tickUpperIndex, tickSpacing])
   const overRange = tickLowerIndex > tickCurrentIndex ? 1 : tickUpperIndex < tickCurrentIndex ? -1 : 0
-  const isLong = tickUpperIndex < tickOpenIndex
+  const isLongOrInRange = !!tickOpenIndex ? tickUpperIndex < tickOpenIndex ? PositionStatus.LONG : PositionStatus.SHORT : overRange === 1 ? PositionStatus.IN_RANGE : PositionStatus.OUT_OF_RANGE
 
   if (!baseToken || !quoteToken) return (<></>)
 
@@ -83,7 +91,7 @@ export default function PositionRenderCustomizableCard(props: PositionRenderCard
     <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} xmlns="http://www.w3.org/2000/svg" xmlnsXlink='http://www.w3.org/1999/xlink'>
       {generateSVGDefs(colors, size)}
       {generateSVGBorderWithText(baseToken, quoteToken, colors, size)}
-      {generateSVGCardMantle(baseToken, quoteToken, amount, size, isLong)}
+      {generateSVGCardMantle(baseToken, quoteToken, amount, size, isLongOrInRange)}
       {size === PositionRenderCardSize.BIG && generageSvgCurve(overRange, curve)}
       {generateSVGCurveCircle(overRange)}
       {generateSVGPositionDataAndLocationCurve(positionKey, tickLowerIndex, tickUpperIndex, size)}
@@ -205,25 +213,49 @@ function generateSVGBorderWithText(baseToken: PositionRenderToken, quoteToken: P
   )
 }
 
-function generateSVGCardMantle(baseToken: PositionRenderToken, quoteToken: PositionRenderToken, amount: BN | number | string, size: PositionRenderCardSize, isLong: boolean) {
+function generateSVGCardMantle(baseToken: PositionRenderToken, quoteToken: PositionRenderToken, amount: BN | number | string, size: PositionRenderCardSize, pstat: PositionStatus) {
   const { WIDTH } = parseSize(size)
   const fadeHeight = size === PositionRenderCardSize.BIG ? '240px' : '160px'
   const fontSize = size === PositionRenderCardSize.BIG ? '36px' : '24px'
   const textX = size === PositionRenderCardSize.BIG ? '32px' : '24px'
   const textY = size === PositionRenderCardSize.BIG ? { one: '70px', two: '115px' } : { one: '60px', two: '100px' }
-  
+
   const fromTop = 32
   const fromLeft = size === PositionRenderCardSize.BIG ? 32 : 25
 
-  const directionText = isLong ? 'LONG' : 'SHORT'
-  const directionColor = isLong ? 'rgba(81, 189, 68, 0.8)' : 'rgba(239, 98, 81, 0.8)'
+  let directionText = 'LONG'
+  let directionColor = 'rgba(81, 189, 68, 0.8)'
+  let directionStrLen = directionText.length
+  switch (pstat) {
+    // case PositionStatus.LONG:
+    //   directionText = 'LONG'
+    //   directionColor = 'rgba(81, 189, 68, 0.8)'
+    //   directionStrLen = directionText.length
+    //   break
+    case PositionStatus.SHORT:
+      directionText = 'SHORT'
+      directionColor = 'rgba(239, 98, 81, 0.8)'
+      directionStrLen = directionText.length
+      break
+    case PositionStatus.IN_RANGE:
+      directionText = 'IN RANGE'
+      directionColor = 'rgba(81, 189, 68, 0.8)'
+      directionStrLen = directionText.length
+      break
+    case PositionStatus.OUT_OF_RANGE:
+      directionText = 'OFF RANGE'
+      directionColor = 'rgba(150, 150, 150, 0.8)'
+      directionStrLen = directionText.length + 2
+  }
+
+  const isTrade = pstat === PositionStatus.LONG || pstat === PositionStatus.SHORT
 
   return (
     <g mask="url(#fade-symbol)">
       <rect fill="none" x="0px" y="0px" width={`${WIDTH}px`} height={fadeHeight} />
 
       <g style={{ transform: xyToTranslatePx(fromLeft, fromTop) }}>
-        <rect width={`${(7 * (directionText.length + 3)).toString()}px`} height="24px" rx="11px" ry="11px" fill={directionColor} />
+        <rect width={`${(7 * (directionStrLen + 3)).toString()}px`} height="24px" rx="11px" ry="11px" fill={directionColor} />
         <text x="7px" y="18px" fontFamily="\'Courier New\', monospace" fontSize="15px" fill="white">
           {directionText}
         </text>
@@ -234,7 +266,7 @@ function generateSVGCardMantle(baseToken: PositionRenderToken, quoteToken: Posit
           {baseToken.symbol} / {quoteToken.symbol}
         </text>
         <text y={textY.two} x={textX} fill="white" fontFamily="\'Courier New\', monospace" fontWeight="200" fontSize={fontSize}>
-          {amount.toLocaleString()}
+          {isTrade ? amount.toLocaleString() : `${(parseFloat(amount.toString()) / 10_000.0).toFixed(2)}%`}
         </text>
       </g>
 

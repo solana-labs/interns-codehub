@@ -1,12 +1,11 @@
-import { Box, Container, Typography } from "@mui/material";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useEffect } from "react";
+import { Box, Container, Typography } from "@mui/material"
+import { useWallet } from "@solana/wallet-adapter-react"
+import { useEffect } from "react"
 
-import { TradePositionPreview } from '@/components/PositionPreview'
-// import LiquidityPosition from '@/components/Positions/LiquidityPosition'
-import { useAppDispatch, useAppSelector } from '@/hooks';
-import { fetchTradePositionsByUser, selectTradePositions } from '@/slices/tradePosition';
-import { fetchLiquidityPositionsByUser, selectLiquidityPositions } from '@/slices/liquidityPosition';
+import { LiquidityPositionPreview, TradePositionPreview } from '@/components/PositionPreview'
+import { useAppDispatch, useAppSelector } from '@/hooks'
+import { fetchTradePositionsByUser, selectTradePositions } from '@/slices/tradePosition'
+import { fetchLiquidityPositionsByUser, selectLiquidityPositions } from '@/slices/liquidityPosition'
 
 export default function PositionIndexPage() {
   const dispatch = useAppDispatch()
@@ -24,7 +23,7 @@ export default function PositionIndexPage() {
   return (
     <Container maxWidth="lg">
       <Box>
-        <Typography variant="h5" fontWeight="bold">Trade Positions</Typography>
+        <Typography variant="h5" fontWeight="bold" py={1} px={2}>Trade Positions</Typography>
         {tradePositions.length ? tradePositions.map((tradePosition) => (
           <TradePositionPreview key={tradePosition.key.toBase58()} position={tradePosition} />
         )) : (
@@ -32,8 +31,12 @@ export default function PositionIndexPage() {
         )}
       </Box>
       <Box mt={4}>
-        <Typography variant="h5" fontWeight="bold">Liquidity Positions</Typography>
-        <Typography variant="body1">No liquidity positions</Typography>
+        <Typography variant="h5" fontWeight="bold" py={1} px={2}>Liquidity Positions</Typography>
+        {liquidityPositions.length ? liquidityPositions.map((liquidityPosition) => (
+          <LiquidityPositionPreview key={liquidityPosition.key.toBase58()} position={liquidityPosition} />
+        )) : (
+          <Typography variant="body1">No trade positions</Typography>
+        )}
       </Box>
     </Container>
   )
