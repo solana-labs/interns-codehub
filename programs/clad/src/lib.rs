@@ -99,17 +99,6 @@ pub mod clad {
         return instructions::close_liquidity_position(ctx);
     }
 
-    pub fn open_loan_position(
-        ctx: Context<OpenLoanPosition>,
-        params: OpenLoanPositionParams,
-    ) -> Result<()> {
-        return instructions::open_loan_position(ctx, &params);
-    }
-
-    pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
-        return instructions::close_loan_position(ctx);
-    }
-
     pub fn open_trade_position(
         ctx: Context<OpenTradePosition>,
         params: OpenTradePositionParams,
