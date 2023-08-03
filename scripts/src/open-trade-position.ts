@@ -31,15 +31,12 @@ import { PoolUtil, toTokenAmount } from '@orca-so/whirlpools-sdk'
 async function main() {
   const {
     provider,
-    fundedSigner,
     program,
     programId,
     connection,
     tickSpacing,
     tokenMintA: mintA,
     tokenMintB: mintB,
-    tokenOracleA,
-    tokenOracleB,
     cladKey,
     globalpoolKey,
   } = await getPostPoolInitParams()
