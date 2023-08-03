@@ -27,14 +27,34 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 programs/clad/tests/anch
 [test.validator]
 url = "https://api.mainnet-beta.solana.com"
 
-# Wrapped SOL (wSOL)
+# Wrapped SOL (wSOL), owner: https://solscan.io/account/83v8iPyZihDEjDdY8RdZddyZNyUtXngz69Lgo9Kt5d6d
 [[test.validator.clone]]
-address = "D3CDPQLoa9jY1LXCkpUqd3JQDWz8DX1LDE1dhmJt9fq4"
+address = "D3CDPQLoa9jY1LXCkpUqd3JQDWz8DX1LDE1dhmJt9fq4"DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263
 
 # Modified USDC (mint authority set to local user)
 [[test.validator.account]]
 address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 filename = "scripts/accounts/usdc.json"
+
+# Modified BONK (mint authority set to local user)
+[[test.validator.account]]
+address = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
+filename = "scripts/accounts/bonk.json"
+
+# Modified FIDA (mint authority set to local user)
+[[test.validator.account]]
+address = "EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp"
+filename = "scripts/accounts/fida.json"
+
+# Modified HNT (mint authority set to local user)
+[[test.validator.account]]
+address = "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux"
+filename = "scripts/accounts/hnt.json"
+
+# Modified IOT (mint authority set to local user)
+[[test.validator.account]]
+address = "iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns"
+filename = "scripts/accounts/iot.json"
 
 # Pyth Oracle
 [[test.validator.clone]]

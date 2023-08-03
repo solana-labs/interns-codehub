@@ -17,3 +17,4 @@ test-ledger
 /app-ref
 /sdk
 /ui-ref
+/scripts/accounts/*.json
