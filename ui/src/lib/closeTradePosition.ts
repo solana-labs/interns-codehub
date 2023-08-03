@@ -16,7 +16,6 @@ import {
   AccountMeta,
   VersionedTransaction,
   TransactionMessage,
-  clusterApiUrl,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
@@ -158,14 +157,13 @@ export default async function closeTradePosition(params: CloseTradePositionParam
     throw Error('Invalid repayment amount, both token A & B needed')
   }
 
-  let isSwapTradeA2B = false
+  let isSwapTradeA2B = false // true in else-if below
   let swapInTokenVault: PublicKey | undefined = undefined
   let swapOutTokenVault: PublicKey | undefined = undefined
   let swapOutNeeded: BN = ZERO_BN
 
   if (swapNeededDeltaA.gt(ZERO_BN)) {
     console.log('Need more A. Swap B to A')
-    // isSwapTradeA2B = false
     swapInTokenVault = tokenVaultB
     swapOutTokenVault = tokenVaultA
     swapOutNeeded = swapNeededDeltaA
@@ -299,8 +297,6 @@ export default async function closeTradePosition(params: CloseTradePositionParam
   const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
     units: 1_000_000,
   })
-
-  console.log(program)
 
   await program.methods
     .repayTradePosition(repayTradePositionParams)

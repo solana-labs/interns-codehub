@@ -133,3 +133,10 @@ export function estimateLiquidityForTokenB(
 
   return tokenAmount.shln(64).div(delta)
 }
+
+export function toTokenAmount(a: number, b: number): TokenAmounts {
+  return {
+    tokenA: new BN(a.toString()),
+    tokenB: new BN(b.toString()),
+  };
+}
