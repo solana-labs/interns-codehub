@@ -7,8 +7,10 @@ use crate::program_test::token_metadata_test::TokenMetadataTest;
 use crate::program_test::tools::NopOverride;
 use anchor_lang::prelude::Pubkey;
 use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
 use bytemuck::try_from_bytes;
 use solana_program::instruction::AccountMeta;
+use solana_program::keccak;
 use solana_program_test::{ BanksClientError, ProgramTest };
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::Keypair;
@@ -152,9 +154,9 @@ impl ParallelTreeTest {
         &mut self,
         parallel_tree_cookie: &ParallelTreeCookie,
         nft_leaf_cookie: &NftLeafCookie,
-        leaf_proof_cookie: &mut LeafProofCookie,
+        leaf_proof_cookie: &LeafProofCookie,
         wallet_cookie: &WalletCookie
-    ) -> Result<(), BanksClientError> {
+    ) -> Result<GovernanceMetadata, BanksClientError> {
         self.with_mint_governance_metadata_ix(
             parallel_tree_cookie,
             nft_leaf_cookie,
@@ -170,11 +172,11 @@ impl ParallelTreeTest {
         &mut self,
         parallel_tree_cookie: &ParallelTreeCookie,
         nft_leaf_cookie: &NftLeafCookie,
-        leaf_proof_cookie: &mut LeafProofCookie,
+        leaf_proof_cookie: &LeafProofCookie,
         wallet_cookie: &WalletCookie,
         instruction_override: F,
         signers_override: Option<&[&Keypair]>
-    ) -> Result<(), BanksClientError> {
+    ) -> Result<GovernanceMetadata, BanksClientError> {
         let message = GovernanceMetadata {
             realm: Realm {
                 key: Pubkey::new_unique(), // using random realm for test
@@ -190,7 +192,7 @@ impl ParallelTreeTest {
                 root: leaf_proof_cookie.root,
                 nonce: leaf_proof_cookie.nonce,
                 index: leaf_proof_cookie.index,
-                message,
+                message: message.clone(),
             })
         );
 
@@ -214,7 +216,168 @@ impl ParallelTreeTest {
             data,
         };
 
-        let proofs = &mut leaf_proof_cookie.proofs;
+        let proofs = &mut leaf_proof_cookie.proofs.clone();
+        create_parallel_tree_ix.accounts.append(proofs);
+
+        instruction_override(&mut create_parallel_tree_ix);
+
+        let default_signers = &[&wallet_cookie.signer];
+        let signers = signers_override.unwrap_or(default_signers);
+
+        self.bench.process_transaction(&[create_parallel_tree_ix], Some(signers)).await?;
+
+        Ok(message)
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_modify_governance_metadata(
+        &mut self,
+        parallel_tree_cookie: &ParallelTreeCookie,
+        nft_leaf_cookie: &NftLeafCookie,
+        leaf_proof_cookie: &LeafProofCookie,
+        previous_message: &GovernanceMetadata,
+        wallet_cookie: &WalletCookie
+    ) -> Result<(), BanksClientError> {
+        self.with_modify_governance_metadata_ix(
+            parallel_tree_cookie,
+            nft_leaf_cookie,
+            leaf_proof_cookie,
+            previous_message,
+            wallet_cookie,
+            NopOverride,
+            None
+        ).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_modify_governance_metadata_ix<F: Fn(&mut Instruction)>(
+        &mut self,
+        parallel_tree_cookie: &ParallelTreeCookie,
+        nft_leaf_cookie: &NftLeafCookie,
+        leaf_proof_cookie: &LeafProofCookie,
+        previous_message: &GovernanceMetadata,
+        wallet_cookie: &WalletCookie,
+        instruction_override: F,
+        signers_override: Option<&[&Keypair]>
+    ) -> Result<(), BanksClientError> {
+        let data_hash = keccak::hashv(&[previous_message.try_to_vec()?.as_slice()]).to_bytes();
+
+        let message = GovernanceMetadata {
+            realm: Realm {
+                key: Pubkey::new_unique(), // using random realm for test
+                verified: true,
+            },
+            owner: wallet_cookie.address,
+            compressed_nft: nft_leaf_cookie.asset_id,
+            governance_weight: 2,
+        };
+
+        let data = anchor_lang::InstructionData::data(
+            &(spl_parallel_tree::instruction::ModifyGovernanceMetadata {
+                root: leaf_proof_cookie.root,
+                nonce: leaf_proof_cookie.nonce,
+                index: leaf_proof_cookie.index,
+                data_hash,
+                message,
+            })
+        );
+
+        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+            &(spl_parallel_tree::accounts::ModifyGovernanceMetadata {
+                parallel_tree_authority: parallel_tree_cookie.authority,
+                parallel_tree: parallel_tree_cookie.address,
+                leaf_owner: wallet_cookie.address,
+                leaf_delegate: wallet_cookie.address,
+                tree_delegate: wallet_cookie.address,
+                system_program: anchor_lang::solana_program::system_program::id(),
+                log_wrapper: spl_noop::id(),
+                compression_program: spl_account_compression::id(),
+            }),
+            None
+        );
+
+        let mut create_parallel_tree_ix = Instruction {
+            program_id: spl_parallel_tree::id(),
+            accounts,
+            data,
+        };
+
+        let proofs = &mut leaf_proof_cookie.proofs.clone();
+        create_parallel_tree_ix.accounts.append(proofs);
+
+        instruction_override(&mut create_parallel_tree_ix);
+
+        let default_signers = &[&wallet_cookie.signer];
+        let signers = signers_override.unwrap_or(default_signers);
+
+        self.bench.process_transaction(&[create_parallel_tree_ix], Some(signers)).await?;
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_remove_governance_metadata(
+        &mut self,
+        parallel_tree_cookie: &ParallelTreeCookie,
+        nft_leaf_cookie: &NftLeafCookie,
+        leaf_proof_cookie: &LeafProofCookie,
+        previous_message: &GovernanceMetadata,
+        wallet_cookie: &WalletCookie
+    ) -> Result<(), BanksClientError> {
+        self.with_remove_governance_metadata_ix(
+            parallel_tree_cookie,
+            nft_leaf_cookie,
+            leaf_proof_cookie,
+            previous_message,
+            wallet_cookie,
+            NopOverride,
+            None
+        ).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_remove_governance_metadata_ix<F: Fn(&mut Instruction)>(
+        &mut self,
+        parallel_tree_cookie: &ParallelTreeCookie,
+        nft_leaf_cookie: &NftLeafCookie,
+        leaf_proof_cookie: &LeafProofCookie,
+        previous_message: &GovernanceMetadata,
+        wallet_cookie: &WalletCookie,
+        instruction_override: F,
+        signers_override: Option<&[&Keypair]>
+    ) -> Result<(), BanksClientError> {
+        let data_hash = keccak::hashv(&[previous_message.try_to_vec()?.as_slice()]).to_bytes();
+        let data = anchor_lang::InstructionData::data(
+            &(spl_parallel_tree::instruction::RemoveGovernanceMetadata {
+                root: leaf_proof_cookie.root,
+                nonce: leaf_proof_cookie.nonce,
+                index: leaf_proof_cookie.index,
+                data_hash,
+                asset_id: nft_leaf_cookie.asset_id,
+            })
+        );
+
+        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+            &(spl_parallel_tree::accounts::RemoveGovernanceMetadata {
+                parallel_tree_authority: parallel_tree_cookie.authority,
+                parallel_tree: parallel_tree_cookie.address,
+                leaf_owner: wallet_cookie.address,
+                leaf_delegate: wallet_cookie.address,
+                tree_delegate: wallet_cookie.address,
+                system_program: anchor_lang::solana_program::system_program::id(),
+                log_wrapper: spl_noop::id(),
+                compression_program: spl_account_compression::id(),
+            }),
+            None
+        );
+
+        let mut create_parallel_tree_ix = Instruction {
+            program_id: spl_parallel_tree::id(),
+            accounts,
+            data,
+        };
+
+        let proofs = &mut leaf_proof_cookie.proofs.clone();
         create_parallel_tree_ix.accounts.append(proofs);
 
         instruction_override(&mut create_parallel_tree_ix);

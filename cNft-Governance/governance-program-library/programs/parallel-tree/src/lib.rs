@@ -50,10 +50,10 @@ pub mod parallel_tree {
         nonce: u64,
         index: u32, // still don't understand why need both index and nonce
         data_hash: [u8; 32],
-        nft_mint: Pubkey
+        asset_id: Pubkey
     ) -> Result<()> {
         log_version();
-        instructions::remove_governance_metadata(ctx, root, nonce, index, data_hash, nft_mint)
+        instructions::remove_governance_metadata(ctx, root, nonce, index, data_hash, asset_id)
     }
 }
 

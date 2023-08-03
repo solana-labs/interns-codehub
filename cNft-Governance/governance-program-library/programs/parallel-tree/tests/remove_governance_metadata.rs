@@ -4,7 +4,7 @@ use solana_sdk::transport::TransportError;
 mod program_test;
 
 #[tokio::test]
-async fn test_mint_governance_metadata() -> Result<(), TransportError> {
+async fn test_remove_governance_metadata() -> Result<(), TransportError> {
     let mut parallel_tree_test = ParallelTreeTest::start_new().await;
 
     let wallet_cookie = parallel_tree_test.bench.with_wallet().await;
@@ -44,11 +44,28 @@ async fn test_mint_governance_metadata() -> Result<(), TransportError> {
     ).await?;
 
     // mint governance metadata to parallel tree
-    parallel_tree_test.with_mint_governance_metadata(
+    let message = parallel_tree_test.with_mint_governance_metadata(
         &parallel_tree_cookie,
         &nft_leaf_cookie,
         &leaf_proof_cookie,
         &wallet_cookie
     ).await?;
+
+    parallel_tree_test.bench.advance_clock().await;
+
+    // remove governance metadata to parallel tree
+    let leaf_proof_cookie2 = parallel_tree_test.get_leaf_proof(
+        &parallel_tree_cookie,
+        &nft_leaf_cookie
+    ).await?;
+
+    parallel_tree_test.with_remove_governance_metadata(
+        &parallel_tree_cookie,
+        &nft_leaf_cookie,
+        &leaf_proof_cookie2,
+        &message,
+        &wallet_cookie
+    ).await?;
+
     Ok(())
 }
