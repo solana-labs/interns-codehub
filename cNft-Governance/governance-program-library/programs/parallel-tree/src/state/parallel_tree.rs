@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use crate::error::ParallelTreeError;
-use spl_account_compression::ConcurrentMerkleTree;
+use spl_account_compression::{ self, ConcurrentMerkleTree };
 use spl_account_compression::state::CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1;
 use std::cmp::max;
 use std::mem::size_of;
@@ -27,6 +27,10 @@ impl ParallelTree {
 
 pub fn get_parallel_tree_seeds<'a>(merkle_tree: &'a Pubkey) -> [&'a [u8]; 2] {
     [b"spl-governance", merkle_tree.as_ref()]
+}
+
+pub fn get_parallel_tree_address(merkle_tree: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&get_parallel_tree_seeds(merkle_tree), &crate::id()).0
 }
 
 pub fn merkle_tree_get_size(max_depth: usize, max_buffer_size: usize) -> Result<usize> {
@@ -66,5 +70,28 @@ pub fn merkle_tree_get_size(max_depth: usize, max_buffer_size: usize) -> Result<
             );
             err!(ParallelTreeError::ConcurrentMerkleTreeConstantsError)
         }
+    }
+}
+
+pub const TREE_AUTHORITY_SIZE: usize = 32 + 32 + 8 + 8 + 1 + 15; // 15 bytes padding
+
+#[account]
+#[derive(Copy, Debug, PartialEq, Eq)]
+pub struct TreeConfig {
+    pub tree_creator: Pubkey,
+    pub tree_delegate: Pubkey,
+    pub total_mint_capacity: u64,
+    pub num_minted: u64,
+    pub is_public: bool,
+}
+
+impl TreeConfig {
+    pub fn increment_mint_count(&mut self) {
+        self.num_minted = self.num_minted.saturating_add(1);
+    }
+
+    pub fn contains_mint_capacity(&self, requested_capacity: u64) -> bool {
+        let remaining_mints = self.total_mint_capacity.saturating_sub(self.num_minted);
+        requested_capacity <= remaining_mints
     }
 }

@@ -6,6 +6,7 @@ use crate::state::*;
 
 #[derive(Accounts)]
 pub struct RemoveGovernanceMetadata<'info> {
+    /// CHECK: This account is checked in the instruction
     #[account(mut, seeds = [b"spl-governance".as_ref(), merkle_tree.key().as_ref()], bump)]
     pub parallel_tree: UncheckedAccount<'info>,
 
@@ -14,7 +15,9 @@ pub struct RemoveGovernanceMetadata<'info> {
     pub tree_authority: Account<'info, TreeConfig>,
     /// CHECK: This account is checked in the instruction
     pub merkle_tree: AccountInfo<'info>,
+    /// CHECK: This account is checked in the instruction
     pub leaf_owner: AccountInfo<'info>,
+    /// CHECK: This account is checked in the instruction
     pub leaf_delegate: AccountInfo<'info>,
 
     pub log_wrapper: Program<'info, Noop>,

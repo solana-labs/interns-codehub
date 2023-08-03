@@ -16,4 +16,16 @@ pub enum ParallelTreeError {
 
     #[msg("Invalid Account Address")]
     InvalidAccountAddress,
+
+    #[msg("Invalid Parallel Tree Creator")]
+    InvalidParallelTreeCreator,
+
+    #[msg("Unmatched Max Depth")]
+    UnmatchedMaxDepth,
+
+    #[msg("Unmatched Max Buffer Size")]
+    UnmatchedMaxBufferSize,
+
+    #[msg("Invalid Parallel Tree Public Flag")]
+    InvalidParallelTreePublicFlag,
 }

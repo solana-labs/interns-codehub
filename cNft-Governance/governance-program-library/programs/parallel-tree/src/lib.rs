@@ -6,7 +6,7 @@ pub mod utils;
 use state::*;
 pub mod state;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("pmtcFF8oVLWBK2EKuGSLJtRbePDNNYyvqhEJ6cKBhMH");
 
 #[program]
 pub mod parallel_tree {
@@ -16,10 +16,11 @@ pub mod parallel_tree {
         ctx: Context<'a, 'b, 'c, 'info, CreateParallelTree<'info>>,
         max_depth: u32,
         max_buffer_size: u32,
-        canopy_depth: u32
+        canopy_depth: u32,
+        public: Option<bool>
     ) -> Result<()> {
         log_version();
-        instructions::create_parallel_tree(ctx, max_depth, max_buffer_size, canopy_depth)
+        instructions::create_parallel_tree(ctx, max_depth, max_buffer_size, canopy_depth, public)
     }
 
     pub fn mint_governance_metadata<'info>(

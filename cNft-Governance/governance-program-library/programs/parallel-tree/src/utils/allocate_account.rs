@@ -15,6 +15,7 @@ pub fn allocate_account<'a>(
     max_buffer_size: u32,
     canopy_depth: u32,
     program_id: &Pubkey,
+    owner_program_id: &Pubkey,
     system_program: &AccountInfo<'a>
 ) -> Result<(), ProgramError> {
     let (account_address, bump_seed) = Pubkey::find_program_address(
@@ -44,7 +45,7 @@ pub fn allocate_account<'a>(
         account.key,
         lamports,
         account_size as u64,
-        program_id
+        owner_program_id
     );
 
     invoke_signed(

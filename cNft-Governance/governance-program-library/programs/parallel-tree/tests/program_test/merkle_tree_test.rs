@@ -1,17 +1,20 @@
 use crate::program_test::program_test_bench::ProgramTestBench;
+use crate::program_test::program_test_bench::WalletCookie;
 use crate::program_test::tools::clone_keypair;
 use anchor_lang::err;
 use anchor_lang::error::Error;
 use anchor_lang::prelude::Pubkey;
+use borsh::BorshDeserialize;
 use bytemuck::try_from_bytes;
 use mpl_bubblegum::state::metaplex_adapter::MetadataArgs;
 use mpl_bubblegum::state::TreeConfig;
 use mpl_bubblegum::utils::get_asset_id;
-use solana_program::instruction::{ AccountMeta, Instruction };
+use solana_program::instruction::Instruction;
 use solana_program::{ msg, system_instruction, system_program };
 use solana_program_test::ProgramTest;
 use solana_sdk::{ signature::Keypair, signer::Signer, transport::TransportError };
 use spl_account_compression::state::CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1;
+use spl_account_compression::state::ConcurrentMerkleTreeHeader;
 use spl_account_compression::{ AccountCompressionError, ConcurrentMerkleTree };
 use spl_merkle_tree_reference::{ MerkleTree, Node };
 use std::mem::size_of;
@@ -68,10 +71,18 @@ pub struct MerkleTreeCookie {
     pub tree_authority: Pubkey,
     pub tree_delegate: Keypair,
     pub tree_creator: Keypair,
+    pub max_depth: u32,
+    pub max_buffer_size: u32,
     pub canopy_depth: u32,
     pub proof_tree: MerkleTree,
     pub num_minted: u64,
-    pub args: Option<MerkleTreeArgs>,
+}
+
+pub struct NftLeafCookie {
+    asset_id: Pubkey,
+    nonce: u64,
+    index: u32,
+    root: [u8; 32],
 }
 
 impl Default for MerkleTreeArgs {
@@ -128,7 +139,7 @@ impl MerkleTreeTest {
             &spl_account_compression::id()
         );
 
-        let signers = &[merkle_tree];
+        let signers = &[merkle_tree, payer];
 
         self.bench.process_transaction(&[tree_alloc_ix], Some(signers)).await?;
         Ok(())
@@ -143,25 +154,25 @@ impl MerkleTreeTest {
     #[allow(dead_code)]
     pub async fn with_merkle_tree(
         &self,
+        wallet_cookie: &WalletCookie,
         args: Option<MerkleTreeArgs>
     ) -> Result<MerkleTreeCookie, TransportError> {
         let merkle_tree = Keypair::new();
         let tree_authority = self.get_tree_authority_address(&merkle_tree.pubkey());
-        let tree_creator = clone_keypair(&self.bench.payer); //payer or random???
+        let tree_creator = clone_keypair(&wallet_cookie.signer); //payer or random???
         let tree_delegate = clone_keypair(&tree_creator);
-        let payer = &self.bench.payer;
         let args = args.unwrap_or_default();
 
         self.with_tree_alloc(
             args.max_depth as usize,
             args.max_buffer_size as usize,
             &merkle_tree,
-            &payer
+            &self.bench.payer
         ).await?;
 
         let accounts = mpl_bubblegum::accounts::CreateTree {
             tree_authority: tree_authority,
-            payer: payer.pubkey(),
+            payer: self.bench.payer.pubkey(),
             tree_creator: tree_creator.pubkey(),
             log_wrapper: spl_noop::id(),
             system_program: system_program::id(),
@@ -183,9 +194,9 @@ impl MerkleTreeTest {
             data,
         };
 
-        // let signers = &[payer];
+        let signers = &[&wallet_cookie.signer];
 
-        self.bench.process_transaction(&[create_merkle_tree_ix], None).await?;
+        self.bench.process_transaction(&[create_merkle_tree_ix], Some(signers)).await?;
 
         let proof_tree = MerkleTree::new(vec![Node::default(); 1 << args.max_depth].as_slice());
         Ok(MerkleTreeCookie {
@@ -193,10 +204,11 @@ impl MerkleTreeTest {
             tree_authority,
             tree_creator,
             tree_delegate,
+            max_depth: args.max_depth,
+            max_buffer_size: args.max_buffer_size,
             canopy_depth: 0,
             proof_tree,
             num_minted: 0,
-            args: Some(args),
         })
     }
 
@@ -240,54 +252,56 @@ impl MerkleTreeTest {
     }
 
     #[allow(dead_code)]
-    pub async fn get_leaf_verification_info(
+    pub async fn get_compressed_nft(
         &self,
         tree_cookie: &mut MerkleTreeCookie,
-        args: &LeafArgs,
-        max_depth: usize,
-        max_buffer_size: usize
-    ) -> Result<(LeafVerificationCookie, Vec<AccountMeta>, Pubkey), TransportError> {
-        let root = self.decode_root(&tree_cookie.address, max_depth, max_buffer_size).await?;
-        let asset_id = get_asset_id(&tree_cookie.address, args.nonce);
+        nonce: u64,
+        index: u32
+    ) -> Result<NftLeafCookie, TransportError> {
+        let root = self.decode_root(
+            &tree_cookie.address,
+            tree_cookie.max_depth as usize,
+            tree_cookie.max_buffer_size as usize
+        ).await?;
+        let asset_id = get_asset_id(&tree_cookie.address, nonce);
 
         // let max_num = 1 << max_depth - 1;
-        let nodes: Vec<Node> = tree_cookie.proof_tree.get_proof_of_leaf(
-            usize::try_from(args.index).unwrap()
-        );
+        // let nodes: Vec<Node> = tree_cookie.proof_tree.get_proof_of_leaf(
+        //     usize::try_from(index).unwrap()
+        // );
 
-        let mut proofs: Vec<AccountMeta> = nodes
-            .into_iter()
-            .map(|node| AccountMeta::new_readonly(Pubkey::new_from_array(node), false))
-            .collect();
+        // let mut proofs: Vec<AccountMeta> = nodes
+        //     .into_iter()
+        //     .map(|node| AccountMeta::new_readonly(Pubkey::new_from_array(node), false))
+        //     .collect();
 
-        proofs = proofs[..proofs.len() - (tree_cookie.canopy_depth as usize)].to_vec();
+        // proofs = proofs[..proofs.len() - (tree_cookie.canopy_depth as usize)].to_vec();
 
-        let collection = Collection::from_bubblegum(args.metadata.collection.as_ref().unwrap());
-        let mut creators = vec![];
-        for creator in args.metadata.creators.iter() {
-            creators.push(Creator::from_bubblegum(creator));
-        }
-
-        Ok((
-            LeafVerificationCookie {
-                name: args.metadata.name.clone(),
-                symbol: args.metadata.symbol.clone(),
-                uri: args.metadata.uri.clone(),
-                collection: Some(collection),
-                seller_fee_basis_points: args.metadata.seller_fee_basis_points,
-                primary_sale_happened: args.metadata.primary_sale_happened,
-                is_mutable: args.metadata.is_mutable,
-                edition_nonce: args.metadata.edition_nonce,
-                creators,
-                root,
-                leaf_delegate: args.delegate.pubkey(),
-                nonce: args.nonce,
-                index: args.index,
-                proof_len: proofs.len() as u8,
-            },
-            proofs,
+        Ok(NftLeafCookie {
             asset_id,
-        ))
+            root,
+            nonce,
+            index,
+        })
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_tree_authority_account(&mut self, tree_authority: &Pubkey) -> TreeConfig {
+        self.bench.get_anchor_account::<TreeConfig>(*tree_authority).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_tree_header_account(
+        &mut self,
+        merkle_tree: &Pubkey
+    ) -> ConcurrentMerkleTreeHeader {
+        //ConcurrentMerkleTreeHeader
+        let mut data = self.bench.get_account_data(*merkle_tree).await;
+        let (header_bytes, _) = data
+            .as_mut_slice()
+            .split_at_mut(CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1);
+        let header = ConcurrentMerkleTreeHeader::try_from_slice(header_bytes).unwrap();
+        header
     }
 }
 
