@@ -29,7 +29,7 @@ url = "https://api.mainnet-beta.solana.com"
 
 # Wrapped SOL (wSOL), owner: https://solscan.io/account/83v8iPyZihDEjDdY8RdZddyZNyUtXngz69Lgo9Kt5d6d
 [[test.validator.clone]]
-address = "D3CDPQLoa9jY1LXCkpUqd3JQDWz8DX1LDE1dhmJt9fq4"DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263
+address = "D3CDPQLoa9jY1LXCkpUqd3JQDWz8DX1LDE1dhmJt9fq4"
 
 # Modified USDC (mint authority set to local user)
 [[test.validator.account]]
