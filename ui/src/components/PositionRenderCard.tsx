@@ -83,7 +83,7 @@ export default function PositionRenderCustomizableCard(props: PositionRenderCard
     <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} xmlns="http://www.w3.org/2000/svg" xmlnsXlink='http://www.w3.org/1999/xlink'>
       {generateSVGDefs(colors, size)}
       {generateSVGBorderWithText(baseToken, quoteToken, colors, size)}
-      {generateSVGCardMantle(amount, size, isLong)}
+      {generateSVGCardMantle(baseToken, quoteToken, amount, size, isLong)}
       {size === PositionRenderCardSize.BIG && generageSvgCurve(overRange, curve)}
       {generateSVGCurveCircle(overRange)}
       {generateSVGPositionDataAndLocationCurve(positionKey, tickLowerIndex, tickUpperIndex, size)}
@@ -205,7 +205,7 @@ function generateSVGBorderWithText(baseToken: PositionRenderToken, quoteToken: P
   )
 }
 
-function generateSVGCardMantle(amount: BN | number | string, size: PositionRenderCardSize, isLong: boolean) {
+function generateSVGCardMantle(baseToken: PositionRenderToken, quoteToken: PositionRenderToken, amount: BN | number | string, size: PositionRenderCardSize, isLong: boolean) {
   const { WIDTH } = parseSize(size)
   const fadeHeight = size === PositionRenderCardSize.BIG ? '240px' : '160px'
   const fontSize = size === PositionRenderCardSize.BIG ? '36px' : '24px'
@@ -231,7 +231,7 @@ function generateSVGCardMantle(amount: BN | number | string, size: PositionRende
 
       <g style={{ transform: xyToTranslatePx(0, fromTop) }}>
         <text y={textY.one} x={textX} fill="white" fontFamily="\'Courier New\', monospace" fontWeight="200" fontSize={fontSize}>
-          SOL / USDC
+          {baseToken.symbol} / {quoteToken.symbol}
         </text>
         <text y={textY.two} x={textX} fill="white" fontFamily="\'Courier New\', monospace" fontWeight="200" fontSize={fontSize}>
           {amount.toLocaleString()}

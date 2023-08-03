@@ -7,6 +7,10 @@ import BonkIconCircle from "@/components/Icons/BONKIconCircle";
 export enum TokenE {
   SOL = "SOL",
   USDC = "USDC",
+  BONK = "BONK",
+  FIDA = "FIDA",
+  HNT = "HNT",
+  IOT = "IOT",
   TEST_USDC = "Test_USDC",
   TEST_BONK = "Test_BONK",
 }
@@ -18,18 +22,19 @@ type TokenEValues = `${TokenE}` // => 'SOL' | 'USDC' | 'Test_USDC' | ...
 export const TOKEN_LIST: Record<TokenEKeys, string> = {
   SOL: 'So11111111111111111111111111111111111111112',
   USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  BONK: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
+  FIDA: 'EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp',
+  HNT: 'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux',
+  IOT: 'iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns',
+
   TEST_USDC: 'tbd1',
   TEST_BONK: 'tbd2',
-}
 
-const TOKEN_MINTS = {
-  USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  SOL: "So11111111111111111111111111111111111111112",
-  USDT: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-  USDH: "USDH1SM1ojwWUga67PGrgFWUHibbjqMvuMaDkRJTgkX",
-  mSOL: "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
-  stSOL: "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj",
-};
+  // USDT: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+  // USDH: "USDH1SM1ojwWUga67PGrgFWUHibbjqMvuMaDkRJTgkX",
+  // mSOL: "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+  // stSOL: "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj",
+}
 
 type TokenListKeys = TokenEKeys
 type TokenListValues = typeof TOKEN_LIST[TokenListKeys]
@@ -45,6 +50,14 @@ export function getTokenLabel(token: TokenE) {
       return "Solana";
     case TokenE.USDC:
       return "UDC Coin";
+    case TokenE.BONK:
+      return "Bonk";
+    case TokenE.FIDA:
+      return "Bonfida";
+    case TokenE.HNT:
+      return "Helium";
+    case TokenE.IOT:
+      return "Helium IOT";
     case TokenE.TEST_USDC:
       return "Test USDC";
     case TokenE.TEST_BONK:
@@ -102,12 +115,12 @@ export function getTokenAddress(token: TokenEKeys) {
 }
 
 export const QUOTE_TOKENS: { [mint: string]: number } = {
-  [TOKEN_MINTS["USDT"]]: 100,
-  [TOKEN_MINTS["USDC"]]: 90, // USDC
-  [TOKEN_MINTS["USDH"]]: 80, // USDH
-  [TOKEN_MINTS["SOL"]]: 70, // SOL
-  [TOKEN_MINTS["mSOL"]]: 60, // mSOL
-  [TOKEN_MINTS["stSOL"]]: 50, // stSOL
+  // [TOKEN_LIST["USDT"]]: 100,
+  [TOKEN_LIST["USDC"]]: 90, // USDC
+  // [TOKEN_LIST["USDH"]]: 80, // USDH
+  [TOKEN_LIST["SOL"]]: 70, // SOL
+  // [TOKEN_LIST["mSOL"]]: 60, // mSOL
+  // [TOKEN_LIST["stSOL"]]: 50, // stSOL
 }
 
 const DEFAULT_QUOTE_PRIORITY = 0

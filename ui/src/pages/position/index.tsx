@@ -32,7 +32,8 @@ export default function PositionIndexPage() {
         )}
       </Box>
       <Box mt={4}>
-        <Typography variant="h5">Liquidity Positions</Typography>
+        <Typography variant="h5" fontWeight="bold">Liquidity Positions</Typography>
+        <Typography variant="body1">No liquidity positions</Typography>
       </Box>
     </Container>
   )

@@ -28,7 +28,6 @@ export default function TradePosition() {
 
   const wallet = useAnchorWallet()
   const program = useCladProgram(connection)
-  console.log(connection)
 
   const { position: candidatePositionKey } = router.query
 
@@ -46,7 +45,7 @@ export default function TradePosition() {
     const tokenA = {
       pubkey: position.data.tokenMintCollateral,
       symbol: tokenAddressToToken(position.data.tokenMintCollateral) || '',
-      decimals: 9, // SOL (hard-coded for now)
+      decimals: 8, // HNT (hard-coded for now)
       fixedTo: 6,
     }
 
@@ -63,8 +62,8 @@ export default function TradePosition() {
   const closePositionHandler = useCallback(async () => {
     if (!connection || !position || !globalpool || !wallet || !program) return
 
-    console.log('close position!')
-    console.log('position authority', wallet.publicKey.toBase58())
+    // console.log('close position!')
+    // console.log('position authority', wallet.publicKey.toBase58())
 
     try {
       await closeTradePosition({
@@ -73,6 +72,7 @@ export default function TradePosition() {
         globalpool,
         globalpoolKey: position.data.globalpool,
         program,
+        wallet,
       })
     } catch (err) {
       console.error(err)

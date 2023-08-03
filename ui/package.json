@@ -18,6 +18,7 @@
     "@mui/icons-material": "^5.14.1",
     "@mui/material": "^5.14.2",
     "@mui/styles": "^5.14.1",
+    "@orca-so/common-sdk": "^0.3.3",
     "@reduxjs/toolkit": "^1.9.5",
     "@solana/spl-token": "^0.3.8",
     "@solana/wallet-adapter-base": "^0.9.22",

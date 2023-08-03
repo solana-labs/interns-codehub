@@ -45,12 +45,12 @@ export default function TradePositionPreview({ position }: TradePositionPreviewP
           tokenA={{
             pubkey: position.data.tokenMintCollateral,
             symbol: tokenAddressToToken(position.data.tokenMintCollateral) || '',
-            decimals: 9
+            decimals: 8, // HNT (hard-coded for now)
           }}
           tokenB={{
             pubkey: position.data.tokenMintLoan,
             symbol: tokenAddressToToken(position.data.tokenMintLoan) || '',
-            decimals: 9
+            decimals: 6 // USDC = 6
           }}
           size={PositionRenderCardSize.SMALL}
         />

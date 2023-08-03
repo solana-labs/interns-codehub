@@ -27,11 +27,9 @@ export type GlobalpoolData = {
   protocolFeeOwedB: bigint
   tokenMintA: PublicKey
   tokenVaultA: PublicKey
-  tokenPriceFeedA: PublicKey
   feeGrowthGlobalA: bigint
   tokenMintB: PublicKey
   tokenVaultB: PublicKey
-  tokenPriceFeedB: PublicKey
   feeGrowthGlobalB: bigint
   inceptionTime: bigint
   feeAuthority: PublicKey
