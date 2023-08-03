@@ -1,25 +1,24 @@
 use anchor_lang::prelude::*;
-use crate::utils::get_asset_id::get_asset_id;
+use crate::error::ParallelTreeError;
+use crate::state::*;
+use crate::utils::get_asset_id::get_parallel_asset_id;
 use anchor_lang::solana_program::keccak;
 use spl_account_compression::{ Node, Noop, program::SplAccountCompression };
 use spl_account_compression::cpi::accounts::VerifyLeaf;
-use crate::state::*;
 
 #[derive(Accounts)]
 pub struct MintGovernanceMetadata<'info> {
-    /// CHECK: This account is checked in the instruction
-    #[account(mut, seeds = [b"spl-governance".as_ref(), merkle_tree.key().as_ref()], bump)]
-    pub parallel_tree: UncheckedAccount<'info>,
+    #[account(seeds = [parallel_tree.key().as_ref()], bump)]
+    pub parallel_tree_authority: Account<'info, TreeConfig>,
 
-    #[account(seeds = [merkle_tree.key().as_ref()], bump)]
-    /// CHECK: This account is neither written to nor read from.
-    pub tree_authority: Account<'info, TreeConfig>,
+    #[account(mut)]
     /// CHECK: This account is checked in the instruction
-    pub merkle_tree: AccountInfo<'info>,
+    pub parallel_tree: UncheckedAccount<'info>,
     /// CHECK: This account is checked in the instruction
     pub leaf_owner: AccountInfo<'info>,
     /// CHECK: This account is checked in the instruction
     pub leaf_delegate: AccountInfo<'info>,
+    pub tree_delegate: Signer<'info>,
 
     pub log_wrapper: Program<'info, Noop>,
     pub compression_program: Program<'info, SplAccountCompression>,
@@ -34,12 +33,25 @@ pub fn mint_governance_metadata<'info>(
     message: GovernanceMetadata
 ) -> Result<()> {
     let parallel_tree = &ctx.accounts.parallel_tree.to_account_info();
-    let merkle_tree = &ctx.accounts.merkle_tree.to_account_info();
     let proofs = &ctx.remaining_accounts.to_vec();
     let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let leaf_delegate = &ctx.accounts.leaf_delegate.to_account_info();
     let compression_program = &ctx.accounts.compression_program.to_account_info();
-    let tree_authority = &mut ctx.accounts.tree_authority.to_account_info();
+    let authority = &ctx.accounts.parallel_tree_authority;
+    let tree_creator = authority.tree_creator;
+    let tree_delegate = authority.tree_delegate;
+    let incoming_tree_delegate = ctx.accounts.tree_delegate.key();
+
+    if !authority.is_public {
+        require!(
+            incoming_tree_delegate == tree_creator || incoming_tree_delegate == tree_delegate,
+            ParallelTreeError::TreeAuthorityIncorrect
+        );
+    }
+
+    if !authority.contains_mint_capacity(1) {
+        return Err(ParallelTreeError::InsufficientMintCapacity.into());
+    }
 
     // to verify that the leaf should be empty
     let leaf = Node::default();
@@ -49,7 +61,7 @@ pub fn mint_governance_metadata<'info>(
 
     spl_account_compression::cpi::verify_leaf(cpi_ctx, root.clone(), leaf, index)?;
 
-    let asset_id = get_asset_id(&parallel_tree.key(), &message.nft_mint);
+    let asset_id = get_parallel_asset_id(&parallel_tree.key(), &message.compressed_nft);
     let data_hash = keccak::hashv(&[message.try_to_vec()?.as_slice()]).to_bytes();
 
     let new_leaf = LeafSchema::new_v0(
@@ -60,15 +72,15 @@ pub fn mint_governance_metadata<'info>(
         data_hash
     );
 
-    let seed = merkle_tree.key();
-    let authority_seeds = &[seed.as_ref(), &[*ctx.bumps.get("tree_authority").unwrap()]];
-    let authority_pda_signer = &[&authority_seeds[..]];
+    let seed = parallel_tree.key();
+    let seeds = &[seed.as_ref(), &[*ctx.bumps.get("parallel_tree_authority").unwrap()]];
+    let authority_pda_signer = &[&seeds[..]];
 
     let cpi_ctx = CpiContext::new_with_signer(
         compression_program.clone(),
         spl_account_compression::cpi::accounts::Modify {
-            authority: tree_authority.clone(),
-            merkle_tree: parallel_tree.clone(),
+            authority: ctx.accounts.parallel_tree_authority.to_account_info(),
+            merkle_tree: parallel_tree.to_account_info(),
             noop: ctx.accounts.log_wrapper.to_account_info(),
         },
         authority_pda_signer

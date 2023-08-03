@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::utils::get_asset_id::get_asset_id;
+use crate::utils::get_asset_id::get_parallel_asset_id;
 use spl_account_compression::{ Node, Noop, program::SplAccountCompression };
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 use crate::state::*;
@@ -41,7 +41,7 @@ pub fn remove_governance_metadata<'info>(
     let compression_program = &ctx.accounts.compression_program.to_account_info();
     let tree_authority = &mut ctx.accounts.tree_authority.to_account_info();
 
-    let asset_id = get_asset_id(&parallel_tree.key(), &nft_mint);
+    let asset_id = get_parallel_asset_id(&parallel_tree.key(), &nft_mint);
     let previous_leaf = LeafSchema::new_v0(
         asset_id,
         *leaf_owner.key,

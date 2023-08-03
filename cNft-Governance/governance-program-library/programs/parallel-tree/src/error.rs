@@ -34,4 +34,13 @@ pub enum ParallelTreeError {
 
     #[msg("Invalid Seeds")]
     InvalidSeeds,
+
+    #[msg("Leaf Authority Must Sign")]
+    LeafAuthorityMustSign,
+
+    #[msg("Tree Authority Incorrect")]
+    TreeAuthorityIncorrect,
+
+    #[msg("Insufficient Mint Capacity")]
+    InsufficientMintCapacity,
 }

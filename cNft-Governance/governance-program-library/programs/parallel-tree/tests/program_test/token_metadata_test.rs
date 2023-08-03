@@ -295,7 +295,7 @@ impl TokenMetadataTest {
         let accounts = mpl_bubblegum::accounts::MintV1 {
             tree_authority: tree_cookie.tree_authority,
             tree_delegate: tree_cookie.tree_delegate.pubkey(),
-            payer: args.owner.pubkey(),
+            payer: self.bench.payer.pubkey(),
             log_wrapper: spl_noop::id(),
             compression_program: spl_account_compression::id(),
             leaf_owner: args.owner.pubkey(),
@@ -361,7 +361,7 @@ impl TokenMetadataTest {
         let accounts = mpl_bubblegum::accounts::MintToCollectionV1 {
             tree_authority: tree_cookie.tree_authority,
             tree_delegate: tree_cookie.tree_delegate.pubkey(),
-            payer: args.owner.pubkey(),
+            payer: self.bench.payer.pubkey(),
             log_wrapper: spl_noop::id(),
             compression_program: spl_account_compression::id(),
             leaf_owner: args.owner.pubkey(),

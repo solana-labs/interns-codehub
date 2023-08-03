@@ -66,6 +66,16 @@ pub struct MerkleTreeArgs {
     pub public: Option<bool>,
 }
 
+impl Default for MerkleTreeArgs {
+    fn default() -> Self {
+        Self {
+            max_depth: 5,
+            max_buffer_size: 8,
+            public: Some(false),
+        }
+    }
+}
+
 pub struct MerkleTreeCookie {
     pub address: Pubkey,
     pub tree_authority: Pubkey,
@@ -79,20 +89,10 @@ pub struct MerkleTreeCookie {
 }
 
 pub struct NftLeafCookie {
-    asset_id: Pubkey,
-    nonce: u64,
-    index: u32,
-    root: [u8; 32],
-}
-
-impl Default for MerkleTreeArgs {
-    fn default() -> Self {
-        Self {
-            max_depth: 5,
-            max_buffer_size: 8,
-            public: Some(false),
-        }
-    }
+    pub asset_id: Pubkey,
+    pub nonce: u64,
+    pub index: u32,
+    pub root: [u8; 32],
 }
 
 pub struct MerkleTreeTest {
@@ -228,7 +228,7 @@ impl MerkleTreeTest {
     }
 
     #[allow(dead_code)]
-    pub async fn decode_root(
+    pub async fn get_tree_root(
         &self,
         tree_mint: &Pubkey,
         max_depth: usize,
@@ -258,7 +258,7 @@ impl MerkleTreeTest {
         nonce: u64,
         index: u32
     ) -> Result<NftLeafCookie, TransportError> {
-        let root = self.decode_root(
+        let root = self.get_tree_root(
             &tree_cookie.address,
             tree_cookie.max_depth as usize,
             tree_cookie.max_buffer_size as usize
