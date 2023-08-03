@@ -33,7 +33,7 @@ async function main() {
   const tokenMintAKey = tokenMintA.address
   const tokenMintBKey = tokenMintB.address
 
-  console.log('Init HNT/USDC Price: ', initPrice.toString())
+  console.log('Init USDC/HNT Price: ', initPrice.toString())
 
   //
   // Create Clad account

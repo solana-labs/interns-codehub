@@ -48,7 +48,7 @@ async function main() {
   const isTradeA2B = borrowA // swap USDC (B) to SOL (A)
 
   // const borrowAmount = new BN(100 * Math.pow(100, (borrowA ? mintA : mintB).decimals)) // 100 USDC
-  const borrowAmount = 100 // 100 USDC
+  const borrowAmount = 25 // 100 USDC
   const borrowAmountExpo = borrowAmount * Math.pow(10, mintB.decimals) // above scaled to decimal exponent
 
   const maxSlippage = Percentage.fromFraction(1, 100)
@@ -101,8 +101,13 @@ async function main() {
   )
 
   // TODO: programatically find Ticks with enough liquidity for the trade
-  const tickLowerIndex = -39104 // 20.03 USDC/SOL
-  const tickUpperIndex = -37696 // 23.06 USDC/SOL
+  // const tickLowerIndex = -39104 // 20.03 USDC/SOL
+  // const tickUpperIndex = -37696 // 23.06 USDC/SOL
+
+  // RUN: ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze-ticks.ts
+  // and find the ticks with enough liquidity_gross
+  const tickLowerIndex = -41280 // 1.61 USDC/HNT
+  const tickUpperIndex = -40000 // 1.83 USDC/HNT
 
   // NOTE: At the top end of the price range, tick calcuation is off therefore the results can be off
   const borrowAmountLiquidity = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -119,6 +124,7 @@ async function main() {
   console.log(`Tick Upper: ${tickUpperIndex}`)
   console.log(`Tick Current: ${globalpoolInfo.tickCurrentIndex}`)
   console.log(`borrowAmount: ${borrowAmount.toString()}`)
+  console.log(`borrowAmountLiquidity: ${borrowAmountLiquidity.toString()}`)
 
   const tokenVaultABefore = new BN(
     await getTokenBalance(provider, globalpoolInfo.tokenVaultA)

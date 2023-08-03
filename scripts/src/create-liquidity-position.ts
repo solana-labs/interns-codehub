@@ -125,39 +125,37 @@ async function main() {
 
   // positions to create
   const preparedLiquiditiyPositions: OpenPositionParams[] = [
-    // Deposit only Token A (SOL)
-    // {
-    //   tickLowerIndex: tickCurrentIndex,
-    //   tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE/2) * tickSpacing,
-    //   liquidityAmount: new anchor.BN(100), // 100 SOL
-    // },
-    // Deposit only Token B (USDC)
+    // Deposit both Token A and B (X & USDC)
+    {
+      tickLowerIndex: tickCurrentIndex,
+      tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE/2) * tickSpacing,
+      liquidityAmount: new anchor.BN(1000), // 1000 X
+    },
     {
       tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 2) * tickSpacing,
       tickUpperIndex: tickCurrentIndex,
-      liquidityAmount: new anchor.BN(100), // 100 USDC
+      liquidityAmount: new anchor.BN(1000), // 1000 USDC
     },
     {
       tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE) * tickSpacing,
-      tickUpperIndex: tickCurrentIndex - 128,
-      liquidityAmount: new anchor.BN(100), // 100 USDC
+      tickUpperIndex: tickCurrentIndex - 2 * tickSpacing,
+      liquidityAmount: new anchor.BN(1000), // 1000 USDC
     },
-    // // Deposit both Token A and B (SOL & USDC)
     {
       tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing,
-      tickUpperIndex: tickCurrentIndex + 64,
-      liquidityAmount: new anchor.BN(100), // 100 SOL worth
+      tickUpperIndex: tickCurrentIndex + tickSpacing,
+      liquidityAmount: new anchor.BN(1000), // 1000 X worth
     },
-    {
-      tickLowerIndex: -39104,
-      tickUpperIndex: -37696,
-      liquidityAmount: new anchor.BN(10_000), // 10k USDC worth
-    }
     // {
-    //   tickLowerIndex: tickCurrentIndex - Math.floor(TICK_ARRAY_SIZE/3) * tickSpacing,
-    //   tickUpperIndex: tickCurrentIndex + Math.ceil(TICK_ARRAY_SIZE/3) * tickSpacing,
-    //   liquidityAmount: new anchor.BN(100), // 100 SOL worth of both
-    // },
+    //   tickLowerIndex: -39104,
+    //   tickUpperIndex: -37696,
+    //   liquidityAmount: new anchor.BN(10_000), // 10k USDC worth
+    // }
+    // {
+    //   tickLowerIndex: -39104,
+    //   tickUpperIndex: -37696,
+    //   liquidityAmount: new anchor.BN(10_000), // 10k USDC worth
+    // }
   ]
 
   const defaultOpenLiquidityPositionAccounts: Omit<
@@ -284,7 +282,7 @@ async function main() {
     res[txId] = openLiquidityPositionAccounts
   }
 
-  consoleLogFull(res)
+  // consoleLogFull(res)
 }
 
 main().catch((err) => {
