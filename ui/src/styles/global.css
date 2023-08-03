@@ -2,8 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  background: #f3f4f5,
+html, body {
+  min-height: 100%;
+  width: 100vw;
+  overflow-x: hidden;
+  background: #eaebec;
 }
 
 /* :root {

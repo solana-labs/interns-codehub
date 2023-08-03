@@ -25,7 +25,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 function MainLayout({ children }: React.PropsWithChildren) {
   return (
-    <Box mt={8} py={3} className={inter.className}>
+    <Box mt={8} py={8} className={inter.className}>
       {children}
     </Box>
   )
@@ -45,6 +45,7 @@ export default function CladApp({ Component, pageProps }: AppProps) {
           pauseOnFocusLoss
           draggable
           pauseOnHover
+          style={{ zIndex: 999999 }}
         />
         <Navbar />
         {/* <StoreUpdater /> */}

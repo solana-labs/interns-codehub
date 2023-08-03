@@ -1,12 +1,12 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Container, Typography } from "@mui/material";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect } from "react";
 
+import { TradePositionPreview } from '@/components/PositionPreview'
+// import LiquidityPosition from '@/components/Positions/LiquidityPosition'
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { fetchTradePositionsByUser, selectTradePositions } from '@/slices/tradePosition';
 import { fetchLiquidityPositionsByUser, selectLiquidityPositions } from '@/slices/liquidityPosition';
-
-import Positions from '@/components/Positions'
 
 export default function PositionIndexPage() {
   const dispatch = useAppDispatch()
@@ -22,8 +22,18 @@ export default function PositionIndexPage() {
   }, [userPubkey])
 
   return (
-    <Box>
-      <Positions tradePositions={tradePositions} liquidityPositions={liquidityPositions} />
-    </Box>
+    <Container maxWidth="lg">
+      <Box>
+        <Typography variant="h5" fontWeight="bold">Trade Positions</Typography>
+        {tradePositions.length ? tradePositions.map((tradePosition) => (
+          <TradePositionPreview key={tradePosition.key.toBase58()} position={tradePosition} />
+        )) : (
+          <Typography variant="body1">No trade positions</Typography>
+        )}
+      </Box>
+      <Box mt={4}>
+        <Typography variant="h5">Liquidity Positions</Typography>
+      </Box>
+    </Container>
   )
 }

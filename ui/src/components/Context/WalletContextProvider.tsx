@@ -19,7 +19,7 @@ import { toast } from 'react-toastify'
 import React, { useCallback, useMemo } from 'react'
 
 import { AutoConnectProvider } from '@/components/Context/AutoConnectProvider'
-import { useAutoConnect } from '@/hooks/useAutoConnect'
+import { useAutoConnect } from '@/hooks'
 
 const theme = createTheme({
   palette: {

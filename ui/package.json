@@ -10,10 +10,11 @@
   },
   "dependencies": {
     "@carbon/icons-react": "^11.23.1",
-    "@coral-xyz/anchor": "^0.28.1-beta.1",
+    "@coral-xyz/anchor": "^0.26",
     "@coral-xyz/borsh": "^0.28.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@jup-ag/core": "^4.0.0-beta.21",
     "@mui/icons-material": "^5.14.1",
     "@mui/material": "^5.14.2",
     "@mui/styles": "^5.14.1",

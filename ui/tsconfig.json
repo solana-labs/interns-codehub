@@ -38,7 +38,13 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["src/*"],
+      // Need the manual mapping to @solana/spl-token, otherwise
+      // stupid @jup-ag/core breaks the package resolution and uses 0.1.8
+      //
+      // If you still see the error persist, make sure to run `yarn install`
+      // in the root `clad` directory to override the jup-ag's solana dependency
+      "@solana/spl-token": ["../node_modules/@solana/spl-token"]
     }
   },
   "exclude": ["./out/**/*", "./node_modules/**/*", "**/*.test.ts"],

@@ -9,6 +9,18 @@ const nextConfig = {
 	},
 	// reactStrictMode: true,
   // swcMinify: true,
+
+	webpack: (config, { isServer }) => {
+    if (!isServer) {
+			// Anchor relies on `fs` so we skip it on browser (since we don't use Anchor's NodeWallet)
+      config.resolve.fallback.fs = false
+    }
+    return config
+  },
+
+	// publicRuntimeConfig: {
+	// 	NEXT_PUBLIC_SOLANA_RPC_MAINNET: process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET,
+	// }
 }
 
 module.exports = nextConfig

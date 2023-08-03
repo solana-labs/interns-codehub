@@ -59,4 +59,10 @@ export const tradePositionSlice = createSlice({
 // Other code such as selectors can use the imported `RootState` type
 export const selectTradePositions = (state: RootState) => state.tradePosition.positions
 
+export const selectTradePosition = (positionKey: PublicKey | string | undefined) => (state: RootState) => {
+  if (!positionKey) return undefined
+  const pk = positionKey instanceof PublicKey ? positionKey.toString() : positionKey
+  return state.tradePosition.positions.find(position => position.key.toBase58() === pk)
+}
+
 export default tradePositionSlice.reducer

@@ -71,6 +71,10 @@ export const globalpoolSlice = createSlice({
 // Other code such as selectors can use the imported `RootState` type
 export const selectGlobalpools = (state: RootState) => state.globalpool.globalpools
 
-export const selectGlobalpool = (key: PublicKey | string) => (state: RootState) => state.globalpool.globalpools[(key instanceof PublicKey) ? key.toBase58() : key]
+export const selectGlobalpool = (key: PublicKey | string | undefined) => (state: RootState) => {
+  if (!key) return undefined
+  const _key = key instanceof PublicKey ? key.toBase58() : key
+  return state.globalpool.globalpools[_key]
+}
 
 export default globalpoolSlice.reducer

@@ -1,82 +1,121 @@
 import { PublicKey } from '@solana/web3.js'
 import BN from 'bn.js'
-
-import { sortObjectByQuotePriority } from '@/lib/Token'
 import { useMemo } from 'react'
 
-type TradePositionRenderToken = {
+import { sortObjectByQuotePriority } from '@/lib/Token'
+
+export enum PositionRenderCardSize {
+  BIG,
+  SMALL
+}
+
+export type PositionRenderToken = {
   pubkey: PublicKey
   symbol: string
   decimals: number
 }
 
-type TradePositionRenderColors = {
+export type PositionRenderBgCoord = {
+  x1: number
+  x2: number
+  x3: number
+  y1: number
+  y2: number
+  y3: number
+}
+
+export type PositionRenderColors = {
   color0: string
   color1: string
   color2: string
   color3: string
 }
 
-type TradePositionRenderProps = {
+export const POSITION_DEFAULT_RENDER_COLORS: PositionRenderColors = {
+  color0: '#433799',
+  color1: '#11101E',
+  color2: '#58A0DB',
+  color3: '#C59FFB',
+}
+
+export type PositionRenderCardProps = {
   positionKey: PublicKey
   tickLowerIndex: number
   tickUpperIndex: number
-  tickCurrentIndex: number
+  tickOpenIndex: number // current index at the time of position creation
+  tickCurrentIndex: number // current index of the globalpool
   tickSpacing: number
-  loanTokenSwapped: BN
-  tokenLoan: TradePositionRenderToken
-  tokenCollateral: TradePositionRenderToken
-  colors?: TradePositionRenderColors
+  amount: BN | number | string
+  tokenA?: PositionRenderToken
+  tokenB?: PositionRenderToken
+  colors?: PositionRenderColors
+  size?: PositionRenderCardSize
 }
 
-// constant
-const bgCoord = {
-  x1: 145, x2: 175, x3: 205,
-  y1: 145, y2: 175, y3: 205
-}
-
-export default function TradePositionRender(props: TradePositionRenderProps) {
+export default function PositionRenderCustomizableCard(props: PositionRenderCardProps) {
   const {
     positionKey,
     tickLowerIndex,
     tickUpperIndex,
+    tickOpenIndex,
     tickCurrentIndex,
     tickSpacing,
-    loanTokenSwapped,
-    tokenCollateral,
-    tokenLoan,
+    amount,
+    tokenA,
+    tokenB,
   } = props
 
-  const colors = props.colors || {
-    color0: '#433799',
-    color1: '#11101E',
-    color2: '#58A0DB',
-    color3: '#C59FFB',
-  }
+  const colors = props.colors || POSITION_DEFAULT_RENDER_COLORS
+  const size = props.size || PositionRenderCardSize.BIG
+  const { WIDTH, HEIGHT } = parseSize(size)
 
-  const [baseToken, quoteToken] = useMemo(() => [tokenCollateral, tokenLoan].sort(sortObjectByQuotePriority('pubkey')), [tokenCollateral, tokenLoan])
+  const [baseToken, quoteToken] = useMemo(() => {
+    if (!tokenA || !tokenB) return [undefined, undefined]
+    return [tokenA, tokenB].sort(sortObjectByQuotePriority('pubkey'))
+  }, [tokenA, tokenB])
   const curve = useMemo(() => getCurve(tickLowerIndex, tickUpperIndex, tickSpacing), [tickLowerIndex, tickUpperIndex, tickSpacing])
   const overRange = tickLowerIndex > tickCurrentIndex ? 1 : tickUpperIndex < tickCurrentIndex ? -1 : 0
+  const isLong = tickUpperIndex < tickOpenIndex
 
   if (!baseToken || !quoteToken) return (<></>)
 
   return (
-    <svg width="290" height="500" viewBox="0 0 290 500" xmlns="http://www.w3.org/2000/svg" xmlnsXlink='http://www.w3.org/1999/xlink'>
-      {generateSVGDefs(colors)}
-      {generateSVGBorderWithText(baseToken, quoteToken, colors)}
-      {generateSVGCardMantle(loanTokenSwapped)}
-      {generageSvgCurve(overRange, curve)}
+    <svg width={WIDTH} height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} xmlns="http://www.w3.org/2000/svg" xmlnsXlink='http://www.w3.org/1999/xlink'>
+      {generateSVGDefs(colors, size)}
+      {generateSVGBorderWithText(baseToken, quoteToken, colors, size)}
+      {generateSVGCardMantle(amount, size, isLong)}
+      {size === PositionRenderCardSize.BIG && generageSvgCurve(overRange, curve)}
       {generateSVGCurveCircle(overRange)}
-      {generateSVGPositionDataAndLocationCurve(positionKey, tickLowerIndex, tickUpperIndex)}
+      {generateSVGPositionDataAndLocationCurve(positionKey, tickLowerIndex, tickUpperIndex, size)}
     </svg>
   )
 }
 
-function generateSVGDefs(colors: TradePositionRenderColors) {
-  const base64EncodeFirst = Buffer.from(`<svg width='290' height='500' viewBox='0 0 290 500' xmlns='http://www.w3.org/2000/svg'><rect width='290px' height='500px' fill="${colors.color0}" /></svg>`, 'utf8').toString('base64')
-  const base64EncodeSecond = Buffer.from(`<svg width='290' height='500' viewBox='0 0 290 500' xmlns='http://www.w3.org/2000/svg'><circle cx="${bgCoord.x1}" cy="${bgCoord.y1}" r="120px" fill="${colors.color1}" /></svg>`, 'utf8').toString('base64')
-  const base64EncodeThird = Buffer.from(`<svg width='290' height='500' viewBox='0 0 290 500' xmlns='http://www.w3.org/2000/svg'><circle cx="${bgCoord.x2}" cy="${bgCoord.y2}" r="120px" fill="${colors.color2}" /></svg>`, 'utf8').toString('base64')
-  const base64EncodeFourth = Buffer.from(`<svg width='290' height='500' viewBox='0 0 290 500' xmlns='http://www.w3.org/2000/svg'><circle cx="${bgCoord.x3}" cy="${bgCoord.y3}" r="100px" fill="${colors.color3}" /></svg>`, 'utf8').toString('base64')
+function parseSize(size?: PositionRenderCardSize) {
+  const _size = size || PositionRenderCardSize.BIG
+  return {
+    WIDTH: _size === PositionRenderCardSize.BIG ? 290 : 290,
+    HEIGHT: _size === PositionRenderCardSize.BIG ? 500 : 290,
+    bgCoord: (_size === PositionRenderCardSize.BIG ? {
+      x1: 145, x2: 175, x3: 205,
+      y1: 145, y2: 175, y3: 205
+    } : {
+      x1: 115, x2: 130, x3: 145,
+      y1: 115, y2: 130, y3: 145
+    }) as PositionRenderBgCoord
+  }
+}
+
+function generateSVGDefs(colors: PositionRenderColors, size: PositionRenderCardSize) {
+  const { WIDTH, HEIGHT, bgCoord } = parseSize(size)
+  const clipCorner = 42
+  const fadeHeight = size === PositionRenderCardSize.BIG ? '240px' : '160px'
+  const b64r = size === PositionRenderCardSize.BIG ? 120 : 80
+
+  const base64EncodeFirst = Buffer.from(`<svg width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}' xmlns='http://www.w3.org/2000/svg'><rect width='${WIDTH}px' height='${HEIGHT}px' fill="${colors.color0}" /></svg>`, 'utf8').toString('base64')
+  const base64EncodeSecond = Buffer.from(`<svg width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}' xmlns='http://www.w3.org/2000/svg'><circle cx="${bgCoord.x1}" cy="${bgCoord.y1}" r="${b64r}px" fill="${colors.color1}" /></svg>`, 'utf8').toString('base64')
+  const base64EncodeThird = Buffer.from(`<svg width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}' xmlns='http://www.w3.org/2000/svg'><circle cx="${bgCoord.x2}" cy="${bgCoord.y2}" r="${b64r}px" fill="${colors.color2}" /></svg>`, 'utf8').toString('base64')
+  const base64EncodeFourth = Buffer.from(`<svg width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}' xmlns='http://www.w3.org/2000/svg'><circle cx="${bgCoord.x3}" cy="${bgCoord.y3}" r="${b64r * 0.8}px" fill="${colors.color3}" /></svg>`, 'utf8').toString('base64')
 
   return (
     <defs>
@@ -88,9 +127,10 @@ function generateSVGDefs(colors: TradePositionRenderColors) {
         <feBlend mode="overlay" in="p0" in2="p1" />
         <feBlend mode="exclusion" in2="p2" />
         <feBlend mode="overlay" in2="p3" result="blendOut" />
-        <feGaussianBlur in="blendOut" stdDeviation="42" />
+        <feGaussianBlur in="blendOut" stdDeviation={clipCorner} />
       </filter>
-      <clipPath id="corners"><rect width="290" height="500" rx="42" ry="42" />
+      <clipPath id="corners">
+        <rect width={WIDTH} height={HEIGHT} rx={clipCorner} ry={clipCorner} />
       </clipPath>
       <path id="text-path-a" d="M40 12 H250 A28 28 0 0 1 278 40 V460 A28 28 0 0 1 250 488 H40 A28 28 0 0 1 12 460 V40 A28 28 0 0 1 40 12 z" />
       <path id="minimap" d="M234 444C234 457.949 242.21 463 253 463" />
@@ -117,26 +157,29 @@ function generateSVGDefs(colors: TradePositionRenderColors) {
         <stop offset=".95" stopColor="white" stopOpacity="0" />
       </linearGradient>
       <mask id="fade-symbol" maskContentUnits="userSpaceOnUse">
-        <rect width="290px" height="200px" fill="url(#grad-symbol)" />
+        <rect width={`${WIDTH}px`} height={fadeHeight} fill="url(#grad-symbol)" />
       </mask>
     </defs>
   )
 }
 
-function generateSVGBorderWithText(baseToken: TradePositionRenderToken, quoteToken: TradePositionRenderToken, colors: TradePositionRenderColors) {
+function generateSVGBorderWithText(baseToken: PositionRenderToken, quoteToken: PositionRenderToken, colors: PositionRenderColors, size: PositionRenderCardSize) {
   const baseTokenStr = `${baseToken.pubkey.toBase58()} • ${baseToken.symbol}`
   const quoteTokenStr = `${quoteToken.pubkey.toBase58()} • ${quoteToken.symbol}`
+  const { WIDTH, HEIGHT } = parseSize(size)
+  const ellipse = size === PositionRenderCardSize.BIG ? { rx: '180px', ry: '120px' } : { rx: '120px', ry: '80px' }
+  const rectOffset = size === PositionRenderCardSize.BIG ? 42 : 32
+
   return (
     <>
-      {/* border line */}
       <g clipPath="url(#corners)">
-        <rect fill={colors.color0} x="0px" y="0px" width="290px" height="500px" />
-        <rect style={{ filter: 'url(#f1)' }} x="0px" y="0px" width="290px" height="500px" />
+        <rect fill={colors.color0} x="0px" y="0px" width={`${WIDTH}px`} height={`${HEIGHT}px`} />
+        <rect style={{ filter: 'url(#f1)' }} x="0px" y="0px" width={`${WIDTH}px`} height={`${HEIGHT}px`} />
         <g style={{ filter: 'url(#top-region-blur)', transform: 'scale(1.5)', transformOrigin: 'center top' }}>
-          <rect fill="none" x="0px" y="0px" width="290px" height="500px" />
-          <ellipse cx="50%" cy="0px" rx="180px" ry="120px" fill="#000" opacity="0.85" />
+          <rect fill="none" x="0px" y="0px" width={`${WIDTH}px`} height={`${HEIGHT}px`} />
+          <ellipse cx="50%" cy="0px" rx={ellipse.rx} ry={ellipse.ry} fill="#000" opacity="0.85" />
         </g>
-        <rect x="0" y="0" width="290" height="500" rx="42" ry="42" fill="rgba(0,0,0,0)" stroke="rgba(255,255,255,0.2)" />
+        <rect x="0" y="0" width={WIDTH} height={HEIGHT} rx={rectOffset} ry={rectOffset} fill="rgba(0,0,0,0)" stroke="rgba(255,255,255,0.2)" />
       </g>
 
       {/* border text */}
@@ -162,17 +205,41 @@ function generateSVGBorderWithText(baseToken: TradePositionRenderToken, quoteTok
   )
 }
 
-function generateSVGCardMantle(loanTokenSwapped: BN) {
+function generateSVGCardMantle(amount: BN | number | string, size: PositionRenderCardSize, isLong: boolean) {
+  const { WIDTH } = parseSize(size)
+  const fadeHeight = size === PositionRenderCardSize.BIG ? '240px' : '160px'
+  const fontSize = size === PositionRenderCardSize.BIG ? '36px' : '24px'
+  const textX = size === PositionRenderCardSize.BIG ? '32px' : '24px'
+  const textY = size === PositionRenderCardSize.BIG ? { one: '70px', two: '115px' } : { one: '60px', two: '100px' }
+  
+  const fromTop = 32
+  const fromLeft = size === PositionRenderCardSize.BIG ? 32 : 25
+
+  const directionText = isLong ? 'LONG' : 'SHORT'
+  const directionColor = isLong ? 'rgba(81, 189, 68, 0.8)' : 'rgba(239, 98, 81, 0.8)'
+
   return (
     <g mask="url(#fade-symbol)">
-      <rect fill="none" x="0px" y="0px" width="290px" height="200px" />
-      <text y="70px" x="32px" fill="white" fontFamily="\'Courier New\', monospace" fontWeight="200" fontSize="36px">
-        SOL / USDC
-      </text>
-      <text y="115px" x="32px" fill="white" fontFamily="\'Courier New\', monospace" fontWeight="200" fontSize="36px">
-        {loanTokenSwapped.div(new BN(10 ** 6)).toString()}
-      </text>
-      <rect x="16" y="16" width="258" height="468" rx="26" ry="26" fill="rgba(0,0,0,0)" stroke="rgba(255,255,255,0.2)" />
+      <rect fill="none" x="0px" y="0px" width={`${WIDTH}px`} height={fadeHeight} />
+
+      <g style={{ transform: xyToTranslatePx(fromLeft, fromTop) }}>
+        <rect width={`${(7 * (directionText.length + 3)).toString()}px`} height="24px" rx="11px" ry="11px" fill={directionColor} />
+        <text x="7px" y="18px" fontFamily="\'Courier New\', monospace" fontSize="15px" fill="white">
+          {directionText}
+        </text>
+      </g>
+
+      <g style={{ transform: xyToTranslatePx(0, fromTop) }}>
+        <text y={textY.one} x={textX} fill="white" fontFamily="\'Courier New\', monospace" fontWeight="200" fontSize={fontSize}>
+          SOL / USDC
+        </text>
+        <text y={textY.two} x={textX} fill="white" fontFamily="\'Courier New\', monospace" fontWeight="200" fontSize={fontSize}>
+          {amount.toLocaleString()}
+        </text>
+      </g>
+
+      {/* white border line */}
+      {size === PositionRenderCardSize.BIG && <rect x="16" y="16" width="258" height="468" rx="26" ry="26" fill="rgba(0,0,0,0)" stroke="rgba(255,255,255,0.2)" />}
     </g>
   )
 }
@@ -203,44 +270,54 @@ function generateSVGCurveCircle(overRange: number) {
   return `<circle cx="${curveX1}" cy="${curveY1}" r="4px" fill="white" /><circle cx="${curveX2}" cy="${curveY2}" r="4px" fill="white" />`
 }
 
-function generateSVGPositionDataAndLocationCurve(positionKey: PublicKey, tickLowerIndex: number, tickUpperIndex: number) {
+function xyToTranslatePx(x: number, y: number) {
+  return 'translate(' + x + 'px, ' + y + 'px)'
+}
+
+function generateSVGPositionDataAndLocationCurve(positionKey: PublicKey, tickLowerIndex: number, tickUpperIndex: number, size: PositionRenderCardSize) {
   const positionKeyStr = positionKey.toBase58().slice(0, 6) + '..' + positionKey.toBase58().slice(-6)
-  const tickLowerStr = tickLowerIndex.toString()
-  const tickUpperStr = tickUpperIndex.toString()
+  const tickLowerStr = tickLowerIndex.toLocaleString()
+  const tickUpperStr = tickUpperIndex.toLocaleString()
   const str1length = positionKeyStr.length + 4
   const str2length = tickLowerStr.length + 10
   const str3length = tickUpperStr.length + 10
   const [xCoord, yCoord] = rangeLocation(tickLowerIndex, tickUpperIndex)
 
+  const fromTop = size === PositionRenderCardSize.BIG ? 384 : 180
+  const fromLeft = 29
+
+  // Big fromTop: 384px, 414px, 444px, 433px
+  // Big fromLEft: 29, 29, 29, 226
+
   return (
     <>
-      <g style={{ transform: 'translate(29px, 384px)' }}>
+      <g style={{ transform: xyToTranslatePx(fromLeft, fromTop) }}>
         <rect width={`${(7 * (str1length + 4)).toString()}px`} height="26px" rx="8px" ry="8px" fill="rgba(0,0,0,0.6)" />
-        <text x="12px" y="17px" font-family="\'Courier New\', monospace" font-size="12px" fill="white">
+        <text x="12px" y="17px" fontFamily="\'Courier New\', monospace" fontSize="12px" fill="white">
           <tspan fill="rgba(255,255,255,0.6)">ID: </tspan>
           {positionKeyStr}
         </text>
       </g>
 
-      <g style={{ transform: 'translate(29px, 414px)' }} >
+      <g style={{ transform: xyToTranslatePx(fromLeft, fromTop + 30) }} >
         <rect width={`${(7 * (str2length + 4)).toString()}px`} height="26px" rx="8px" ry="8px" fill="rgba(0,0,0,0.6)" />
-        <text x="12px" y="17px" font-family="\'Courier New\', monospace" font-size="12px" fill="white">
+        <text x="12px" y="17px" fontFamily="\'Courier New\', monospace" fontSize="12px" fill="white">
           <tspan fill="rgba(255,255,255,0.6)">Min Tick: </tspan>
           {tickLowerIndex.toLocaleString()}
         </text>
       </g>
 
-      <g style={{ transform: 'translate(29px, 444px)' }}>
+      <g style={{ transform: xyToTranslatePx(fromLeft, fromTop + 60) }}>
         <rect width={`${(7 * (str3length + 4)).toString()}px`} height="26px" rx="8px" ry="8px" fill="rgba(0,0,0,0.6)" />
-        <text x="12px" y="17px" font-family="\'Courier New\', monospace" font-size="12px" fill="white">
+        <text x="12px" y="17px" fontFamily="\'Courier New\', monospace" fontSize="12px" fill="white">
           <tspan fill="rgba(255,255,255,0.6)">Max Tick: </tspan>
           {tickUpperIndex.toLocaleString()}
         </text>
       </g>
 
-      <g style={{ transform: 'translate(226px, 433px)' }}>
+      <g style={{ transform: xyToTranslatePx(226, fromTop + 50) }}>
         <rect width="36px" height="36px" rx="8px" ry="8px" fill="none" stroke="rgba(255,255,255,0.2)" />
-        <path stroke-linecap="round" d="M8 9C8.00004 22.9494 16.2099 28 27 28" fill="none" stroke="white" />
+        <path strokeLinecap="round" d="M8 9C8.00004 22.9494 16.2099 28 27 28" fill="none" stroke="white" />
         <circle style={{ transform: `translate3d(${xCoord}px, ${yCoord}px, 0px)` }} cx="0px" cy="0px" r="4px" fill="white" />
       </g>
     </>
