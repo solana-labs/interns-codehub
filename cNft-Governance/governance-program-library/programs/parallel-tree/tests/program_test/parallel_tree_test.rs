@@ -6,7 +6,7 @@ use crate::program_test::token_metadata_test::TokenMetadataTest;
 use crate::program_test::tools::NopOverride;
 use anchor_lang::prelude::Pubkey;
 use borsh::BorshDeserialize;
-use solana_program::instruction::AccountMeta;
+use solana_program::system_instruction;
 use solana_program_test::{ BanksClientError, ProgramTest };
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::Keypair;
@@ -91,10 +91,11 @@ impl ParallelTreeTest {
         );
 
         let parallel_tree_key = get_parallel_tree_address(&tree_cookie.address);
-        let (parallel_tree_authority, _) = Pubkey::find_program_address(
+        let (parallel_tree_authority, bump) = Pubkey::find_program_address(
             &[parallel_tree_key.as_ref()],
             &spl_parallel_tree::id()
         );
+        println!("parallel_tree_authority: {}, {}", parallel_tree_authority, bump);
         let accounts = anchor_lang::ToAccountMetas::to_account_metas(
             &(spl_parallel_tree::accounts::CreateParallelTree {
                 parallel_tree_authority: parallel_tree_authority,
@@ -139,6 +140,35 @@ impl ParallelTreeTest {
         })
     }
 
+    // #[allow(dead_code)]
+    // pub async fn with_allocate_parallel_tree(
+    //     &mut self,
+    //     tree_cookie: &MerkleTreeCookie
+    // ) -> Result<(), BanksClientError> {
+    //     let parallel_tree_key = get_parallel_tree_address(&tree_cookie.address);
+
+    //     let seed = get_parallel_tree_seeds(&tree_cookie.address);
+    //     let (parallel_tree_authority, bump) = Pubkey::find_program_address(
+    //         &seed,
+    //         &spl_parallel_tree::id()
+    //     );
+    //     let mut signers_seeds = seed.to_vec();
+    //     signers_seeds.push(&[bump]);
+
+    //     let rent = self.bench.context.borrow_mut().banks_client.get_rent().await.unwrap();
+
+    //     let create_account_instruction = system_instruction::create_account(
+    //         &self.bench.context.borrow().payer.pubkey(),
+    //         &parallel_tree_key,
+    //         rent.minimum_balance(10),
+    //         10 as u64,
+    //         &spl_parallel_tree::id()
+    //     );
+
+    //     self.bench.process_transaction(&[create_account_instruction], None).await?;
+    //     Ok(())
+    // }
+
     #[allow(dead_code)]
     pub async fn get_tree_authority_account(&mut self, tree_authority: &Pubkey) -> TreeConfig {
         self.bench.get_anchor_account::<TreeConfig>(*tree_authority).await
@@ -155,5 +185,11 @@ impl ParallelTreeTest {
             .split_at_mut(CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1);
         let header = ConcurrentMerkleTreeHeader::try_from_slice(header_bytes).unwrap();
         header
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_tree_account(&mut self, merkle_tree: &Pubkey) -> Vec<u8> {
+        let data = self.bench.get_account_data(*merkle_tree).await;
+        data
     }
 }
