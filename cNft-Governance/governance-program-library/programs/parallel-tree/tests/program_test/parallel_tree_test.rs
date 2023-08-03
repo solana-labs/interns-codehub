@@ -6,7 +6,6 @@ use crate::program_test::token_metadata_test::TokenMetadataTest;
 use crate::program_test::tools::NopOverride;
 use anchor_lang::prelude::Pubkey;
 use borsh::BorshDeserialize;
-use solana_program::system_instruction;
 use solana_program_test::{ BanksClientError, ProgramTest };
 use solana_sdk::instruction::Instruction;
 use solana_sdk::signature::Keypair;
@@ -89,11 +88,11 @@ impl ParallelTreeTest {
         );
 
         let parallel_tree_key = get_parallel_tree_address(&tree_cookie.address);
-        let (parallel_tree_authority, bump) = Pubkey::find_program_address(
+        let (parallel_tree_authority, _) = Pubkey::find_program_address(
             &[parallel_tree_key.as_ref()],
             &spl_parallel_tree::id()
         );
-        println!("parallel_tree_authority: {}, {}", parallel_tree_authority, bump);
+
         let accounts = anchor_lang::ToAccountMetas::to_account_metas(
             &(spl_parallel_tree::accounts::CreateParallelTree {
                 parallel_tree_authority: parallel_tree_authority,

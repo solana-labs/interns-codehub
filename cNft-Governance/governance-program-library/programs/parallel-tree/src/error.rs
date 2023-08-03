@@ -31,4 +31,7 @@ pub enum ParallelTreeError {
 
     #[msg("Invalid Parallel Tree Public Flag")]
     InvalidParallelTreePublicFlag,
+
+    #[msg("Invalid Seeds")]
+    InvalidSeeds,
 }

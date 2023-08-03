@@ -3,7 +3,6 @@ use spl_parallel_tree::error::ParallelTreeError;
 use solana_program::instruction::InstructionError;
 use solana_program_test::BanksClientError;
 use solana_sdk::{ signature::Keypair, transaction::TransactionError };
-use spl_account_compression::error::AccountCompressionError;
 
 pub fn clone_keypair(source: &Keypair) -> Keypair {
     Keypair::from_bytes(&source.to_bytes()).unwrap()
@@ -13,7 +12,6 @@ pub fn clone_keypair(source: &Keypair) -> Keypair {
 #[allow(non_snake_case)]
 pub fn NopOverride<T>(_: &mut T) {}
 
-// cnft <-> voter assertion
 #[allow(dead_code)]
 pub fn assert_parallel_tree_err(
     banks_client_error: BanksClientError,
@@ -58,27 +56,6 @@ pub fn assert_ix_err(banks_client_error: BanksClientError, ix_error: Instruction
         TransactionError::InstructionError(_, instruction_error) => {
             assert_eq!(instruction_error, ix_error);
         }
-        _ => panic!("{:?} Is not InstructionError", tx_error),
-    }
-}
-
-#[allow(dead_code)]
-pub fn assert_compression_err(
-    banks_client_error: BanksClientError,
-    account_compression_error: AccountCompressionError
-) {
-    let tx_error = banks_client_error.unwrap();
-    println!("{:?}", tx_error);
-    println!("{:?}", account_compression_error);
-
-    match tx_error {
-        TransactionError::InstructionError(_, instruction_error) =>
-            match instruction_error {
-                InstructionError::Custom(e) => {
-                    assert_eq!(e, (account_compression_error as u32) + 6000)
-                }
-                _ => panic!("{:?} Is not InstructionError::Custom()", instruction_error),
-            }
         _ => panic!("{:?} Is not InstructionError", tx_error),
     }
 }
