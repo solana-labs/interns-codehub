@@ -359,8 +359,6 @@ async function main() {
     tokenVaultB,
     tokenMintA: tokenMintAKey,
     tokenMintB: tokenMintBKey,
-    tokenPriceFeedA: tokenOracleA,
-    tokenPriceFeedB: tokenOracleB,
 
     tickArrayLower: tickArrayLowerKey,
     tickArrayUpper: tickArrayUpperKey,
@@ -383,37 +381,10 @@ async function main() {
     tickUpperIndex,
     borrowA,
     loanDurationSlots: new BN(10_000), // 10k slots * 0.4s = 66m 40s
-  }
-
-  const openTradePositionAccounts = {
-    owner: positionAuthority,
-    globalpool: globalpoolKey,
-
-    position: positionKey,
-    positionTokenAccount,
-
-    tokenOwnerAccountA,
-    tokenOwnerAccountB,
-    tokenVaultA,
-    tokenVaultB,
-    tokenMintA: tokenMintAKey,
-    tokenMintB: tokenMintBKey,
-
-    // sys
-    tokenProgram: TOKEN_PROGRAM_ID,
-    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    systemProgram: SystemProgram.programId,
-    rent: SYSVAR_RENT_PUBKEY,
+    swapInstructionData: swapInstruction.data,
   }
 
   const openTradePositionParams = {
-    slippageBps: bestRoute.slippageBps,
-    platformFeeBps: maxJupiterPlatformSlippage,
-    // Swap data
-    // swapInAmount: bestRoute.inAmount.toString(),
-    // swapOutAmount: bestRoute.outAmount,
-    // swapOtherAmountThreshold: bestRoute.otherAmountThreshold.toString(),
-    // swapInstructionData: swapInstruction.data,
     swapInstructionData: swapInstruction.data,
   }
   consoleLogFull(openTradePositionParams)
@@ -426,32 +397,19 @@ async function main() {
     microLamports: 1,
   })
 
-  const loanTxId = await createTransactionChained(
-    provider.connection,
-    provider.wallet,
-    [
-      program.instruction.openLoanPosition(openLoanPositionParams, {
-        accounts: openLoanPositionAccounts,
-      }),
-    ],
-    [positionMintKeypair]
-  ).buildAndExecute()
-
-  const tradeTxId = await createTransactionChained(
+  await createTransactionChained(
     provider.connection,
     provider.wallet,
     [
       modifyComputeUnits,
       addPriorityFee,
-      program.instruction.openTradePosition(openTradePositionParams, {
-        accounts: openTradePositionAccounts,
+      program.instruction.openLoanPosition(openLoanPositionParams, {
+        accounts: openLoanPositionAccounts,
         remainingAccounts: swapAccounts,
       }),
     ],
-    []
+    [positionMintKeypair]
   ).buildAndExecute()
-
-  console.log(loanTxId, tradeTxId)
 
   const tokenVaultAAfter = new BN(
     await getTokenBalance(provider, globalpoolInfo.tokenVaultA)
