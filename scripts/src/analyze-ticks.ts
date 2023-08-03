@@ -110,13 +110,12 @@ async function main() {
     const { ticks } = ta.data
     for (let i = 0; i < ticks.length; i++) {
       const tick = ticks[i]
-      let [zeroNet, zeroGross, zeroBorrowedA, zeroBorrowedB] = [
+      let [zeroNet, zeroGross, zeroBorrowed] = [
         tick.liquidityNet,
         tick.liquidityGross,
-        tick.liquidityBorrowedA,
-        tick.liquidityBorrowedB,
+        tick.liquidityBorrowed,
       ].map((x) => x.isZero())
-      let isZero = zeroNet && zeroGross && zeroBorrowedA && zeroBorrowedB
+      let isZero = zeroNet && zeroGross && zeroBorrowed
 
       // const liquidityNet = tick.liquidityNet.ishrn(64) // from X64
       // const liquidityGross = tick.liquidityGross.ushrn(64) // from X64
@@ -148,19 +147,10 @@ async function main() {
         )
       }
 
-      if (!zeroBorrowedA) {
+      if (!zeroBorrowed) {
         console.log(
           ' '.repeat(4),
-          `borrowed A: ${tick.liquidityBorrowedA
-            .toLocaleString()
-            .padStart(28, ' ')}  `
-        )
-      }
-
-      if (!zeroBorrowedB) {
-        console.log(
-          ' '.repeat(4),
-          `borrowed B: ${tick.liquidityBorrowedB
+          `borrowed: ${tick.liquidityBorrowed
             .toLocaleString()
             .padStart(28, ' ')}  `
         )
