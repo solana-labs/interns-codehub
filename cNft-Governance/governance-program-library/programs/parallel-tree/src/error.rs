@@ -14,6 +14,9 @@ pub enum ParallelTreeError {
     #[msg("Concurrent Merkle Tree Data Not Empty")]
     ConcurrentMerkleTreeDataNotEmpty,
 
+    #[msg("Concurrent Authority Data Not Empty")]
+    AuthorityDataNotEmpty,
+
     #[msg("Invalid Account Address")]
     InvalidAccountAddress,
 

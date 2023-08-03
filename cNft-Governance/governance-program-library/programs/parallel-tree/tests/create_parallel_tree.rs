@@ -71,25 +71,29 @@ async fn test_create_parallel_tree_with_invalid_creator() -> Result<(), Transpor
     Ok(())
 }
 
-// #[tokio::test]
-// async fn test_create_parallel_tree_with_already_created() -> Result<(), TransportError> {
-//     let mut parallel_tree_test = ParallelTreeTest::start_new().await;
+#[tokio::test]
+async fn test_create_parallel_tree_with_already_created() -> Result<(), TransportError> {
+    let mut parallel_tree_test = ParallelTreeTest::start_new().await;
 
-//     let wallet_cookie = parallel_tree_test.bench.with_wallet().await;
-//     let tree_cookie = parallel_tree_test.merkle_tree.with_merkle_tree(&wallet_cookie, None).await?;
+    let wallet_cookie = parallel_tree_test.bench.with_wallet().await;
+    let tree_cookie = parallel_tree_test.merkle_tree.with_merkle_tree(&wallet_cookie, None).await?;
 
-//     parallel_tree_test.with_create_parallel_tree(&tree_cookie, &wallet_cookie).await?;
+    parallel_tree_test.with_create_parallel_tree(&tree_cookie, &wallet_cookie).await?;
 
-//     parallel_tree_test.bench.advance_clock().await;
-//     let parallel_tree_key = get_parallel_tree_address(&tree_cookie.address);
-//     let tree_data = parallel_tree_test.get_tree_account(&parallel_tree_key).await;
-//     assert_eq!(tree_data.is_empty(), false);
+    parallel_tree_test.bench.advance_clock().await;
+    let parallel_tree_key = get_parallel_tree_address(&tree_cookie.address);
+    let tree_data = parallel_tree_test.get_tree_account(&parallel_tree_key).await;
+    assert_eq!(tree_data.is_empty(), false);
 
-//     let err = parallel_tree_test
-//         .with_create_parallel_tree(&tree_cookie, &wallet_cookie).await
-//         .err()
-//         .unwrap();
+    let authority_key = get_authority_address(&parallel_tree_key);
+    let authority_data = parallel_tree_test.get_tree_authority_account(&authority_key).await;
+    assert_eq!(authority_data.tree_creator, wallet_cookie.address);
 
-//     assert_parallel_tree_err(err, ParallelTreeError::ConcurrentMerkleTreeDataNotEmpty);
-//     Ok(())
-// }
+    let err = parallel_tree_test
+        .with_create_parallel_tree(&tree_cookie, &wallet_cookie).await
+        .err()
+        .unwrap();
+
+    assert_parallel_tree_err(err, ParallelTreeError::ConcurrentMerkleTreeDataNotEmpty);
+    Ok(())
+}

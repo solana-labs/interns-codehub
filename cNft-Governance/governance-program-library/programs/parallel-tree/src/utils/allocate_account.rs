@@ -5,15 +5,12 @@ use solana_program::msg;
 use solana_program::{ rent::Rent, sysvar::Sysvar };
 use solana_program::system_instruction::create_account;
 use solana_program::program::invoke_signed;
-use crate::state::ParallelTree;
 
 pub fn allocate_account<'a>(
     payer: &AccountInfo<'a>,
     account: &mut AccountInfo<'a>,
     account_address_seeds: &[&[u8]],
-    max_depth: u32,
-    max_buffer_size: u32,
-    canopy_depth: u32,
+    account_size: usize,
     program_id: &Pubkey,
     owner_program_id: &Pubkey,
     system_program: &AccountInfo<'a>
@@ -33,7 +30,7 @@ pub fn allocate_account<'a>(
     }
 
     let rent = Rent::get()?;
-    let account_size = ParallelTree::get_space(max_depth, max_buffer_size, canopy_depth);
+
     let lamports = rent.minimum_balance(account_size);
 
     let mut signers_seeds = account_address_seeds.to_vec();

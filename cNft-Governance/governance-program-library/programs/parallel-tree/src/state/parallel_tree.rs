@@ -33,6 +33,14 @@ pub fn get_parallel_tree_address(merkle_tree: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(&get_parallel_tree_seeds(merkle_tree), &crate::id()).0
 }
 
+pub fn get_authority_seeds<'a>(merkle_tree: &'a Pubkey) -> [&'a [u8]; 1] {
+    [merkle_tree.as_ref()]
+}
+
+pub fn get_authority_address(merkle_tree: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&get_authority_seeds(merkle_tree), &crate::id()).0
+}
+
 pub fn merkle_tree_get_size(max_depth: usize, max_buffer_size: usize) -> Result<usize> {
     // Note: max_buffer_size MUST be a power of 2
     match (max_depth, max_buffer_size) {

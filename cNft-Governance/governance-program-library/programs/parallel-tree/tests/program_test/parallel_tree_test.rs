@@ -83,8 +83,6 @@ impl ParallelTreeTest {
     ) -> Result<ParallelTreeCookie, BanksClientError> {
         let data = anchor_lang::InstructionData::data(
             &(spl_parallel_tree::instruction::CreateParallelTree {
-                max_depth: tree_cookie.max_depth,
-                max_buffer_size: tree_cookie.max_buffer_size,
                 canopy_depth: tree_cookie.canopy_depth,
                 public: Some(false),
             })
