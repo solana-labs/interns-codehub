@@ -45,14 +45,14 @@ pub struct Globalpool {
 
     pub token_mint_a: Pubkey,  // 32
     pub token_vault_a: Pubkey, // 32
-    pub token_price_feed_a: Pubkey,
+    // pub token_price_feed_a: Pubkey,
 
     // Q64.64
     pub fee_growth_global_a: u128, // 16
 
     pub token_mint_b: Pubkey,  // 32
     pub token_vault_b: Pubkey, // 32
-    pub token_price_feed_b: Pubkey,
+    // pub token_price_feed_b: Pubkey,
 
     // Q64.64
     pub fee_growth_global_b: u128, // 16
@@ -88,8 +88,8 @@ impl Globalpool {
         token_vault_a: Pubkey,
         token_mint_b: Pubkey,
         token_vault_b: Pubkey,
-        token_price_feed_a: Pubkey,
-        token_price_feed_b: Pubkey,
+        // token_price_feed_a: Pubkey,
+        // token_price_feed_b: Pubkey,
     ) -> Result<()> {
         if token_mint_a.ge(&token_mint_b) {
             return Err(ErrorCode::InvalidTokenMintOrder.into());
@@ -131,13 +131,13 @@ impl Globalpool {
 
         self.token_mint_a = token_mint_a;
         self.token_vault_a = token_vault_a;
-        self.token_price_feed_a = token_price_feed_a;
+        // self.token_price_feed_a = token_price_feed_a;
         self.fee_growth_global_a = 0;
         self.fee_authority = fee_authority;
 
         self.token_mint_b = token_mint_b;
         self.token_vault_b = token_vault_b;
-        self.token_price_feed_b = token_price_feed_b;
+        // self.token_price_feed_b = token_price_feed_b;
         self.fee_growth_global_b = 0;
 
         self.inception_time = to_timestamp_u64(Clock::get()?.unix_timestamp)?;
