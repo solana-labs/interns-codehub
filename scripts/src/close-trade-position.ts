@@ -169,7 +169,7 @@ async function main() {
     throw Error('Invalid repayment amount, both token A & B needed')
   }
 
-  let isSwapTradeA2B = false
+  let isSwapTradeA2B = false // true in else-if below
   let swapInTokenVault: PublicKey | undefined = undefined
   let swapOutTokenVault: PublicKey | undefined = undefined
   let swapOutNeeded: BN = ZERO_BN

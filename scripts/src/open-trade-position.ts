@@ -345,7 +345,7 @@ async function main() {
   }
   console.log('swapAccounts len', swapAccounts.length)
 
-  const openLoanPositionAccounts = {
+  const openTradePositionAccounts = {
     owner: positionAuthority,
     globalpool: globalpoolKey,
 
@@ -370,7 +370,7 @@ async function main() {
     rent: SYSVAR_RENT_PUBKEY,
   }
 
-  const openLoanPositionParams = {
+  const openTradePositionParams = {
     // amount: quote.amount,
     // otherAmountThreshold: quote.otherAmountThreshold,
     // sqrtPriceLimit: quote.sqrtPriceLimit,
@@ -384,9 +384,6 @@ async function main() {
     swapInstructionData: swapInstruction.data,
   }
 
-  const openTradePositionParams = {
-    swapInstructionData: swapInstruction.data,
-  }
   consoleLogFull(openTradePositionParams)
 
   const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
@@ -403,8 +400,8 @@ async function main() {
     [
       modifyComputeUnits,
       addPriorityFee,
-      program.instruction.openLoanPosition(openLoanPositionParams, {
-        accounts: openLoanPositionAccounts,
+      program.instruction.openTradePosition(openTradePositionParams, {
+        accounts: openTradePositionAccounts,
         remainingAccounts: swapAccounts,
       }),
     ],
