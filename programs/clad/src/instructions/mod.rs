@@ -9,7 +9,6 @@ pub mod initialize_clad;
 pub mod initialize_tick_array;
 pub mod liquidate_trade_position;
 pub mod open_liquidity_position;
-pub mod open_loan_position;
 pub mod open_trade_position;
 pub mod repay_trade_position;
 pub mod swap;
@@ -18,5 +17,5 @@ pub use {
     close_liquidity_position::*, close_loan_position::*, collect_fees::*, collect_protocol_fees::*,
     create_pool::*, decrease_liquidity::*, increase_liquidity::*, initialize_clad::*,
     initialize_tick_array::*, liquidate_trade_position::*, open_liquidity_position::*,
-    open_loan_position::*, open_trade_position::*, repay_trade_position::*, swap::*,
+    open_trade_position::*, repay_trade_position::*, swap::*,
 };
