@@ -51,6 +51,22 @@ export const tokenMintUSDC = new PublicKey(
   'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 )
 
+export const tokenMintBONK = new PublicKey(
+  'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263'
+)
+
+export const tokenMintFIDA = new PublicKey(
+  'EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp'
+)
+
+export const tokenMintHNT = new PublicKey(
+  'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux'
+)
+
+export const tokenMintIOT = new PublicKey(
+  'iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns'
+)
+
 export const ORCA = new PublicKey('orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE')
 
 export const WBTC = new PublicKey(

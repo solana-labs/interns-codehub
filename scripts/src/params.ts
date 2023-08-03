@@ -7,6 +7,8 @@ import { Clad } from '@/target/types/clad'
 import {
   pythOracleSOL,
   pythOracleUSDC,
+  tokenMintBONK,
+  tokenMintHNT,
   tokenMintSOL,
   tokenMintUSDC,
 } from './constants'
@@ -49,7 +51,8 @@ export async function getConstantParams() {
   const tickSpacing = 64
   const feeRate = 3000 // per 1_000_000 (3000 => 0.3%)
 
-  const tokenMintAKey = tokenMintSOL
+  // const tokenMintAKey = tokenMintSOL
+  const tokenMintAKey = tokenMintHNT
   const tokenMintBKey = tokenMintUSDC
 
   const tokenMintA = await getMint(connection, tokenMintAKey)

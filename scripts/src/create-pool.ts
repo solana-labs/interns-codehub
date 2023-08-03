@@ -25,8 +25,6 @@ async function main() {
     tickSpacing,
     tokenMintA,
     tokenMintB,
-    tokenOracleA,
-    tokenOracleB,
     cladKey,
     initPrice,
     initSqrtPrice,
@@ -35,7 +33,7 @@ async function main() {
   const tokenMintAKey = tokenMintA.address
   const tokenMintBKey = tokenMintB.address
 
-  console.log('Init USDC/SOL Price: ', initPrice.toString())
+  console.log('Init HNT/USDC Price: ', initPrice.toString())
 
   //
   // Create Clad account
@@ -121,8 +119,6 @@ async function main() {
     tokenMintB: tokenMintB.address,
     tokenVaultA: tokenVaultA,
     tokenVaultB: tokenVaultB,
-    tokenPriceFeedA: tokenOracleA,
-    tokenPriceFeedB: tokenOracleB,
     // sys
     tokenProgram: TOKEN_PROGRAM_ID,
     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
