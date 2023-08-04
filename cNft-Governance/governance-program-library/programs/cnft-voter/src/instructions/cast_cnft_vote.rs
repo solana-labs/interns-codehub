@@ -20,7 +20,6 @@ pub struct CastCompressedNftVote<'info> {
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
 
-    // owner should be crate::id()
     /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     #[account(owner = registrar.governance_program_id)]
     voter_token_owner_record: UncheckedAccount<'info>,

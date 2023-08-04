@@ -1,5 +1,6 @@
 use crate::error::NftVoterError;
-use crate::{id, state::*};
+use crate::{ id, state::* };
+use crate::tools::accounts::close_nft_weight_record_account;
 use anchor_lang::prelude::*;
 use anchor_lang::Accounts;
 use itertools::Itertools;
@@ -25,17 +26,14 @@ pub struct CastNftVote<'info> {
         mut,
         constraint = voter_weight_record.realm == registrar.realm
         @ NftVoterError::InvalidVoterWeightRecordRealm,
-
         constraint = voter_weight_record.governing_token_mint == registrar.governing_token_mint
         @ NftVoterError::InvalidVoterWeightRecordMint,
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
 
     /// TokenOwnerRecord of the voter who casts the vote
-    #[account(
-        owner = registrar.governance_program_id
-     )]
-    /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
+    /// /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
+    #[account(owner = registrar.governance_program_id)]
     voter_token_owner_record: UncheckedAccount<'info>,
 
     /// Authority of the voter who casts the vote
@@ -45,52 +43,50 @@ pub struct CastNftVote<'info> {
     /// The account which pays for the transaction
     #[account(mut)]
     pub payer: Signer<'info>,
-
     pub system_program: Program<'info, System>,
 }
 
 /// Casts vote with the NFT
 pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastNftVote<'info>>,
-    proposal: Pubkey,
+    proposal: Pubkey
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
+    let payer = &mut ctx.accounts.payer.to_account_info();
+    let rent = Rent::get()?;
+    let mut voter_weight = 0u64;
 
     let governing_token_owner = resolve_governing_token_owner(
         registrar,
         &ctx.accounts.voter_token_owner_record,
         &ctx.accounts.voter_authority,
-        voter_weight_record,
+        voter_weight_record
     )?;
 
-    let mut voter_weight = 0u64;
-
-    // Ensure all voting nfts in the batch are unique
+    let mut to_closed_accounts = vec![];
     let mut unique_nft_mints = vec![];
 
-    let rent = Rent::get()?;
-
-    for (nft_info, nft_metadata_info, nft_vote_record_info) in
-        ctx.remaining_accounts.iter().tuples()
-    {
-        let (nft_vote_weight, nft_mint) = resolve_nft_vote_weight_and_mint(
-            registrar,
-            &governing_token_owner,
-            nft_info,
-            nft_metadata_info,
-            &mut unique_nft_mints,
-        )?;
-
-        voter_weight = voter_weight.checked_add(nft_vote_weight as u64).unwrap();
+    for (nft_mint_info, nft_weight_record_info, nft_vote_record_info) in ctx.remaining_accounts
+        .iter()
+        .tuples() {
+        if unique_nft_mints.contains(&nft_mint_info.key) {
+            return Err(NftVoterError::DuplicatedNftDetected.into());
+        }
+        let data_bytes = nft_weight_record_info.data.clone();
+        let data = NftWeightRecord::try_from_slice(&data_bytes.borrow())?;
+        voter_weight = voter_weight.checked_add(data.weight).unwrap();
 
         // Create NFT vote record to ensure the same NFT hasn't been already used for voting
         // Note: The correct PDA of the NftVoteRecord is validated in create_and_serialize_account_signed
         // It ensures the NftVoteRecord is for ('nft-vote-record',proposal,nft_mint) seeds
+        require!(nft_vote_record_info.data_is_empty(), NftVoterError::NftAlreadyVoted);
         require!(
-            nft_vote_record_info.data_is_empty(),
-            NftVoterError::NftAlreadyVoted
+            nft_weight_record_info.data_is_empty() == false,
+            NftVoterError::NftFailedVerification
         );
+        require!(*nft_weight_record_info.owner == crate::id(), NftVoterError::InvalidPdaOwner);
+        require!(data.nft_owner == governing_token_owner, NftVoterError::VoterDoesNotOwnNft);
 
         // Note: proposal.governing_token_mint must match voter_weight_record.governing_token_mint
         // We don't verify it here because spl-gov does the check in cast_vote
@@ -101,7 +97,7 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         let nft_vote_record = NftVoteRecord {
             account_discriminator: NftVoteRecord::ACCOUNT_DISCRIMINATOR,
             proposal,
-            nft_mint,
+            nft_mint: nft_mint_info.key().clone(),
             governing_token_owner,
             reserved: [0; 8],
         };
@@ -112,21 +108,27 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
             &ctx.accounts.payer.to_account_info(),
             nft_vote_record_info,
             &nft_vote_record,
-            &get_nft_vote_record_seeds(&proposal, &nft_mint),
+            &get_nft_vote_record_seeds(&proposal, &nft_mint_info.key()),
             &id(),
             &ctx.accounts.system_program.to_account_info(),
             &rent,
-            0,
+            0
         )?;
+
+        // adding this is the close the account after cpi transaction
+        // https://solana.stackexchange.com/questions/4481/error-processing-instruction-0-sum-of-account-balances-before-and-after-instruc
+        // https://solana.stackexchange.com/questions/4519/anchor-error-error-processing-instruction-0-sum-of-account-balances-before-and
+        to_closed_accounts.push(nft_weight_record_info.to_account_info());
+        unique_nft_mints.push(&nft_mint_info.key);
     }
 
-    if voter_weight_record.weight_action_target == Some(proposal)
-        && voter_weight_record.weight_action == Some(VoterWeightAction::CastVote)
+    if
+        voter_weight_record.weight_action_target == Some(proposal) &&
+        voter_weight_record.weight_action == Some(VoterWeightAction::CastVote)
     {
         // If cast_nft_vote is called for the same proposal then we keep accumulating the weight
         // this way cast_nft_vote can be called multiple times in different transactions to allow voting with any number of NFTs
-        voter_weight_record.voter_weight = voter_weight_record
-            .voter_weight
+        voter_weight_record.voter_weight = voter_weight_record.voter_weight
             .checked_add(voter_weight)
             .unwrap();
     } else {
@@ -140,5 +142,8 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
     voter_weight_record.weight_action = Some(VoterWeightAction::CastVote);
     voter_weight_record.weight_action_target = Some(proposal);
 
+    for clased_account in to_closed_accounts.iter() {
+        close_nft_weight_record_account(clased_account, payer)?;
+    }
     Ok(())
 }
