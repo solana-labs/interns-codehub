@@ -47,13 +47,22 @@ async fn test_relinquish_cnft_vote() -> Result<(), TransportError> {
         &voter_cookie
     ).await?;
 
-    let (leaf_verification_cookie, proofs, asset_id) =
+    let (leaf_verification_cookie, proofs, _) =
         cnft_voter_test.merkle_tree.get_leaf_verification_info(
             &mut tree_cookie,
             &leaf_cookie,
             5,
             8
         ).await?;
+
+    cnft_voter_test.with_create_cnft_weight_record(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&leaf_cookie],
+        &[&leaf_verification_cookie],
+        &[&proofs]
+    ).await?;
 
     let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
         &registrar_cookie,
@@ -64,8 +73,6 @@ async fn test_relinquish_cnft_vote() -> Result<(), TransportError> {
         &voter_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
-        &[&asset_id],
-        &[&proofs],
         None
     ).await?;
 
@@ -132,13 +139,22 @@ async fn test_relinquish_cnft_vote_for_proposal_in_voting_state() -> Result<(), 
         &voter_cookie
     ).await?;
 
-    let (leaf_verification_cookie, proofs, asset_id) =
+    let (leaf_verification_cookie, proofs, _) =
         cnft_voter_test.merkle_tree.get_leaf_verification_info(
             &mut tree_cookie,
             &leaf_cookie,
             5,
             8
         ).await?;
+
+    cnft_voter_test.with_create_cnft_weight_record(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&leaf_cookie],
+        &[&leaf_verification_cookie],
+        &[&proofs]
+    ).await?;
 
     let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
         &registrar_cookie,
@@ -149,8 +165,6 @@ async fn test_relinquish_cnft_vote_for_proposal_in_voting_state() -> Result<(), 
         &voter_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
-        &[&asset_id],
-        &[&proofs],
         None
     ).await?;
 
@@ -224,13 +238,22 @@ async fn test_relinquish_cnft_vote_for_proposal_in_voting_state_and_vote_record_
         &voter_cookie
     ).await?;
 
-    let (leaf_verification_cookie, proofs, asset_id) =
+    let (leaf_verification_cookie, proofs, _) =
         cnft_voter_test.merkle_tree.get_leaf_verification_info(
             &mut tree_cookie,
             &leaf_cookie,
             5,
             8
         ).await?;
+
+    cnft_voter_test.with_create_cnft_weight_record(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&leaf_cookie],
+        &[&leaf_verification_cookie],
+        &[&proofs]
+    ).await?;
 
     let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
         &registrar_cookie,
@@ -241,8 +264,6 @@ async fn test_relinquish_cnft_vote_for_proposal_in_voting_state_and_vote_record_
         &voter_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
-        &[&asset_id],
-        &[&proofs],
         None
     ).await?;
 
@@ -298,13 +319,22 @@ async fn test_relinquish_cnft_vote_with_invalid_voter_error() -> Result<(), Tran
         &voter_cookie
     ).await?;
 
-    let (leaf_verification_cookie, proofs, asset_id) =
+    let (leaf_verification_cookie, proofs, _) =
         cnft_voter_test.merkle_tree.get_leaf_verification_info(
             &mut tree_cookie,
             &leaf_cookie,
             5,
             8
         ).await?;
+
+    cnft_voter_test.with_create_cnft_weight_record(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&leaf_cookie],
+        &[&leaf_verification_cookie],
+        &[&proofs]
+    ).await?;
 
     let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
         &registrar_cookie,
@@ -315,8 +345,6 @@ async fn test_relinquish_cnft_vote_with_invalid_voter_error() -> Result<(), Tran
         &voter_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
-        &[&asset_id],
-        &[&proofs],
         None
     ).await?;
 
@@ -375,13 +403,22 @@ async fn test_relinquish_cnft_vote_unexpired_vote_weight_record() -> Result<(), 
         &voter_cookie
     ).await?;
 
-    let (leaf_verification_cookie, proofs, asset_id) =
+    let (leaf_verification_cookie, proofs, _) =
         cnft_voter_test.merkle_tree.get_leaf_verification_info(
             &mut tree_cookie,
             &leaf_cookie,
             5,
             8
         ).await?;
+
+    cnft_voter_test.with_create_cnft_weight_record(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&leaf_cookie],
+        &[&leaf_verification_cookie],
+        &[&proofs]
+    ).await?;
 
     let args = CastCompressedNftVoteArgs {
         cast_spl_gov_vote: false,
@@ -396,8 +433,6 @@ async fn test_relinquish_cnft_vote_unexpired_vote_weight_record() -> Result<(), 
         &voter_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
-        &[&asset_id],
-        &[&proofs],
         Some(args)
     ).await?;
 
@@ -456,13 +491,22 @@ async fn test_relinquish_cnft_vote_with_invalid_voter_weight_token_owner_error()
         &voter_cookie
     ).await?;
 
-    let (leaf_verification_cookie, proofs, asset_id) =
+    let (leaf_verification_cookie, proofs, _) =
         cnft_voter_test.merkle_tree.get_leaf_verification_info(
             &mut tree_cookie,
             &leaf_cookie,
             5,
             8
         ).await?;
+
+    cnft_voter_test.with_create_cnft_weight_record(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&leaf_cookie],
+        &[&leaf_verification_cookie],
+        &[&proofs]
+    ).await?;
 
     let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
         &registrar_cookie,
@@ -473,8 +517,6 @@ async fn test_relinquish_cnft_vote_with_invalid_voter_weight_token_owner_error()
         &voter_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
-        &[&asset_id],
-        &[&proofs],
         None
     ).await?;
 
@@ -537,13 +579,22 @@ async fn test_relinquish_cnft_vote_using_delegate() -> Result<(), TransportError
         &voter_cookie
     ).await?;
 
-    let (leaf_verification_cookie, proofs, asset_id) =
+    let (leaf_verification_cookie, proofs, _) =
         cnft_voter_test.merkle_tree.get_leaf_verification_info(
             &mut tree_cookie,
             &leaf_cookie,
             5,
             8
         ).await?;
+
+    cnft_voter_test.with_create_cnft_weight_record(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&leaf_cookie],
+        &[&leaf_verification_cookie],
+        &[&proofs]
+    ).await?;
 
     let cnft_vote_record_cookies = cnft_voter_test.cast_cnft_vote(
         &registrar_cookie,
@@ -554,8 +605,6 @@ async fn test_relinquish_cnft_vote_using_delegate() -> Result<(), TransportError
         &voter_cookie,
         &[&leaf_cookie],
         &[&leaf_verification_cookie],
-        &[&asset_id],
-        &[&proofs],
         None
     ).await?;
 

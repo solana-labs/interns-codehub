@@ -10,7 +10,7 @@ use crate::state::*;
 
 pub fn create_cnft_weight_record_account<'a>(
     payer: &AccountInfo<'a>,
-    account_info: &mut AccountInfo<'a>,
+    account_info: &AccountInfo<'a>,
     nft_mint: &Pubkey,
     system_program: &AccountInfo<'a>
 ) -> Result<(), ProgramError> {
@@ -51,7 +51,7 @@ pub fn create_cnft_weight_record_account<'a>(
 
 pub fn serialize_cnft_weight_record_account(
     serialized_data: &Vec<u8>,
-    account_info: &mut AccountInfo
+    account_info: &AccountInfo
 ) -> Result<(), ProgramError> {
     account_info.data.borrow_mut().copy_from_slice(&serialized_data);
     Ok(())

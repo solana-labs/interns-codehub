@@ -19,5 +19,5 @@ mod configure_collection;
 pub use cast_cnft_vote::*;
 mod cast_cnft_vote;
 
-pub use verify_compressed_nft::*;
-mod verify_compressed_nft;
+pub use create_cnft_weight_record::*;
+mod create_cnft_weight_record;

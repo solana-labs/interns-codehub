@@ -57,12 +57,12 @@ pub mod cnft_voter {
         instructions::cast_compressed_nft_vote(ctx, proposal)
     }
 
-    pub fn verify_cnft_metadata<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, VerifyCompressedNft<'info>>,
-        params: CompressedNftAsset
+    pub fn create_cnft_weight_record<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CreateCnftWeightRecord<'info>>,
+        params: Vec<CompressedNftAsset>
     ) -> Result<()> {
         log_version();
-        instructions::verify_cnft_metadata(ctx, params)
+        instructions::create_cnft_weight_record(ctx, params)
     }
 
     pub fn relinquish_compressed_nft_vote(ctx: Context<RelinquishCompressedNftVote>) -> Result<()> {

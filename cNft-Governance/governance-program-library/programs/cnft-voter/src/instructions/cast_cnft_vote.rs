@@ -7,7 +7,7 @@ use itertools::Itertools;
 use spl_governance_tools::account::create_and_serialize_account_signed;
 
 #[derive(Accounts)]
-#[instruction(proposal: Pubkey, params: Vec<CompressedNftAsset>)]
+#[instruction(proposal: Pubkey)]
 pub struct CastCompressedNftVote<'info> {
     pub registrar: Account<'info, Registrar>,
 
@@ -47,12 +47,30 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         voter_weight_record
     )?;
 
+    let mut to_closed_accounts = vec![];
+    let mut unique_cnft_weight_records: Vec<Pubkey> = vec![];
+
     for (nft_mint, cnft_weight_record, cnft_vote_record) in ctx.remaining_accounts.iter().tuples() {
-        let data_bytes = cnft_weight_record.try_borrow_mut_data()?;
-        let data = CnftWeightRecord::try_from_slice(&data_bytes)?;
+        if unique_cnft_weight_records.contains(&cnft_weight_record.key) {
+            return Err(CompressedNftVoterError::DuplicatedNftDetected.into());
+        }
+        let data_bytes = cnft_weight_record.data.clone();
+        let data = CnftWeightRecord::try_from_slice(&data_bytes.borrow())?;
         voter_weight = voter_weight.checked_add(data.weight).unwrap();
 
         require!(cnft_vote_record.data_is_empty(), CompressedNftVoterError::NftAlreadyVoted);
+        require!(
+            cnft_weight_record.data_is_empty() == false,
+            CompressedNftVoterError::NftFailedVerification
+        );
+        require!(
+            *cnft_weight_record.owner == crate::id(),
+            CompressedNftVoterError::InvalidPdaOwner
+        );
+        require!(
+            data.nft_owner == governing_token_owner,
+            CompressedNftVoterError::VoterDoesNotOwnNft
+        );
 
         let cnft_vote_record_data = CompressedNftVoteRecord {
             account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
@@ -71,7 +89,11 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
             &rent,
             0
         )?;
-        close_cnft_weight_record_account(cnft_weight_record, payer)?;
+        // adding this is the close the account after cpi transaction
+        // https://solana.stackexchange.com/questions/4481/error-processing-instruction-0-sum-of-account-balances-before-and-after-instruc
+        // https://solana.stackexchange.com/questions/4519/anchor-error-error-processing-instruction-0-sum-of-account-balances-before-and
+        to_closed_accounts.push(cnft_weight_record.to_account_info());
+        unique_cnft_weight_records.push(cnft_weight_record.key());
     }
 
     if
@@ -92,5 +114,8 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     voter_weight_record.weight_action = Some(VoterWeightAction::CastVote);
     voter_weight_record.weight_action_target = Some(proposal);
 
+    for clased_account in to_closed_accounts.iter() {
+        close_cnft_weight_record_account(clased_account, payer)?;
+    }
     Ok(())
 }

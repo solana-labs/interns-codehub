@@ -498,6 +498,7 @@ impl TokenMetadataTest {
         let data_hash = hash_metadata(&args.metadata).unwrap();
         let creator_hash = hash_creators(&args.metadata.creators.as_slice()).unwrap();
         let asset_id = get_asset_id(&tree_cookie.address, args.nonce);
+        args.asset_id = asset_id;
 
         let leaf_node = LeafSchema::new_v0(
             asset_id,

@@ -5,7 +5,7 @@ use anchor_lang::prelude::*;
 use spl_account_compression::program::SplAccountCompression;
 
 #[derive(Accounts)]
-#[instruction(voter_weight_action: VoterWeightAction, params: Vec<CompressedNftAsset>)]
+#[instruction(voter_weight_action: VoterWeightAction)]
 pub struct UpdateVoterWeightRecord<'info> {
     pub registrar: Account<'info, Registrar>,
 
@@ -41,15 +41,31 @@ pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
     }
 
     let mut voter_weight: u64 = 0u64;
+    let mut unique_cnft_weight_records: Vec<Pubkey> = vec![];
 
     for cnft_weight_record in ctx.remaining_accounts.iter() {
-        let data_bytes = cnft_weight_record.try_borrow_mut_data()?;
-        let data = CnftWeightRecord::try_from_slice(&data_bytes)?;
+        if unique_cnft_weight_records.contains(&cnft_weight_record.key) {
+            return Err(CompressedNftVoterError::DuplicatedNftDetected.into());
+        }
+
+        let data_bytes = cnft_weight_record.data.clone();
+        let data = CnftWeightRecord::try_from_slice(&data_bytes.borrow())?;
         // unwrap() is a method that can be called on Option or Result types.
         // When called on an Option<T>, it will return the value inside if it's Some(T). If it's None, it will panic and crash the program.
         // When called on a Result<T, E>, it will return the value inside if it's Ok(T). If it's Err(E), it will panic and crash the program.
         voter_weight = voter_weight.checked_add(data.weight).unwrap();
+
+        require!(
+            cnft_weight_record.data_is_empty() == false,
+            CompressedNftVoterError::NftFailedVerification
+        );
+        require!(
+            *cnft_weight_record.owner == crate::id(),
+            CompressedNftVoterError::InvalidPdaOwner
+        );
+
         close_cnft_weight_record_account(cnft_weight_record, leaf_owner)?;
+        unique_cnft_weight_records.push(cnft_weight_record.key());
     }
 
     voter_weight_record.voter_weight = voter_weight;
