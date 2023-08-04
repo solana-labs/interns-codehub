@@ -1,8 +1,9 @@
 use crate::error::CompressedNftVoterError;
+use crate::utils::accounts::close_cnft_weight_record_account;
 use crate::{ id, state::* };
 use anchor_lang::prelude::*;
 use anchor_lang::Accounts;
-use spl_account_compression::program::SplAccountCompression;
+use itertools::Itertools;
 use spl_governance_tools::account::create_and_serialize_account_signed;
 
 #[derive(Accounts)]
@@ -23,29 +24,21 @@ pub struct CastCompressedNftVote<'info> {
     /// CHECK: Owned by spl-governance instance specified in registrar.governance_program_id
     #[account(owner = registrar.governance_program_id)]
     voter_token_owner_record: UncheckedAccount<'info>,
-    /// CHECK: This account is checked in the instruction
-    pub leaf_owner: UncheckedAccount<'info>,
     pub voter_authority: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
-
-    pub compression_program: Program<'info, SplAccountCompression>,
     pub system_program: Program<'info, System>,
 }
 
 pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
-    proposal: Pubkey,
-    params: Vec<CompressedNftAsset>
+    proposal: Pubkey
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
-    let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
-    let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
-    let compression_program = &ctx.accounts.compression_program.to_account_info();
+    let payer = &mut ctx.accounts.payer.to_account_info();
     let rent = Rent::get()?;
     let mut voter_weight = 0u64;
-    let mut unique_asset_ids: Vec<Pubkey> = vec![];
 
     let governing_token_owner = resolve_governing_token_owner(
         registrar,
@@ -54,49 +47,31 @@ pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         voter_weight_record
     )?;
 
-    let mut start: usize = 0;
-    for i in 0..params.len() {
-        let param = &params[i];
-        let proof_len = param.proof_len;
-        let cnft_info = &remaining_accounts[start..start + (proof_len as usize) + 2];
+    for (nft_mint, cnft_weight_record, cnft_vote_record) in ctx.remaining_accounts.iter().tuples() {
+        let data_bytes = cnft_weight_record.try_borrow_mut_data()?;
+        let data = CnftWeightRecord::try_from_slice(&data_bytes)?;
+        voter_weight = voter_weight.checked_add(data.weight).unwrap();
 
-        let tree_account = cnft_info[0].clone();
-        let proofs = cnft_info[1..(proof_len as usize) + 1].to_vec();
-        let cnft_vote_record_info = cnft_info.last().unwrap().clone();
-        let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight(
-            &registrar,
-            &governing_token_owner,
-            &tree_account,
-            &mut unique_asset_ids,
-            &leaf_owner,
-            param,
-            proofs,
-            compression_program
-        )?;
+        require!(cnft_vote_record.data_is_empty(), CompressedNftVoterError::NftAlreadyVoted);
 
-        voter_weight = voter_weight.checked_add(cnft_vote_weight as u64).unwrap();
-
-        require!(cnft_vote_record_info.data_is_empty(), CompressedNftVoterError::NftAlreadyVoted);
-
-        let cnft_vote_record = CompressedNftVoteRecord {
+        let cnft_vote_record_data = CompressedNftVoteRecord {
             account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
             proposal,
-            asset_id,
+            asset_id: nft_mint.key().clone(),
             governing_token_owner,
             reserved: [0; 8],
         };
         create_and_serialize_account_signed(
-            &ctx.accounts.payer.to_account_info(),
-            &cnft_vote_record_info,
+            payer,
             &cnft_vote_record,
-            &[b"cnft-vote-record", proposal.as_ref(), asset_id.as_ref()],
+            &cnft_vote_record_data,
+            &[b"cnft-vote-record", proposal.as_ref(), nft_mint.key().as_ref()],
             &id(),
             &ctx.accounts.system_program.to_account_info(),
             &rent,
             0
         )?;
-
-        start += (proof_len as usize) + 2;
+        close_cnft_weight_record_account(cnft_weight_record, payer)?;
     }
 
     if
