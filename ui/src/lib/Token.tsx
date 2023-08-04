@@ -39,10 +39,18 @@ export const TOKEN_LIST: Record<TokenEKeys, string> = {
 type TokenListKeys = TokenEKeys
 type TokenListValues = typeof TOKEN_LIST[TokenListKeys]
 
-export function strAsToken(tokenStr: string): TokenE {
-  if (!Object.values<string>(TokenE).includes(tokenStr)) throw new Error(`Invalid token string`)
+export function strAsToken(tokenStr: string): TokenE | undefined {
+  if (!Object.values<string>(TokenE).includes(tokenStr)) return undefined // throw new Error(`Invalid token string`)
   return tokenStr as TokenE // this works because we enforce `tokenStr` to be any value of enum `TokenE`
 }
+
+export function isTokenStable(token: TokenE) {
+  return token === TokenE.USDC || token === TokenE.TEST_USDC
+}
+
+// export function combineTokensIntoPair(tokenA: TokenE, tokenB: TokenE) {
+//   return `${tokenA}-${tokenB}`
+// }
 
 export function getTokenLabel(token: TokenE) {
   switch (token) {
@@ -71,10 +79,20 @@ export function getSymbol(token: TokenE) {
       return "SOLUSD";
     case TokenE.USDC:
       return "USDCUSD";
+    case TokenE.BONK:
+      return "BONKUSD";
+    case TokenE.FIDA:
+      return "FIDAUSD";
+    case TokenE.HNT:
+      return "HNTUSD";
+    case TokenE.IOT:
+      return "IOTUSD";
     case TokenE.TEST_USDC:
       return "TEST_USDCUSD";
     case TokenE.TEST_BONK:
       return "TEST_BONKUSD";
+    default:
+      return "SOLUSD";
   }
 }
 
@@ -86,7 +104,7 @@ export function getTokenIcon(token: TokenE) {
       return <USDCIconCircle />;
     case TokenE.TEST_USDC:
       return <USDCIconCircle />;
-    case TokenE.TEST_BONK:
+    default:
       return <BonkIconCircle />;
   }
 }

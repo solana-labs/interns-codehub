@@ -1,52 +1,68 @@
-import { useRouter } from "next/router";
+import { Box, Container, Stack, Typography } from '@mui/material'
+import { useRouter } from 'next/router'
+import { useMemo } from 'react'
 
-// import { TradeLayout } from "@/components/Layouts/TradeLayout";
-// import { CandlestickChart } from "@/components/Chart/CandlestickChart";
-// import { TradeSidebar } from "@/components/TradeSidebar";
-import { strAsToken } from "@/lib/Token";
-// import { Positions } from "@/components/Positions";
+import CandlestickChart from '@/components/Chart/CandlestickChart'
+import LeverageTradeBox from '@/components/LeverageTradeBox'
+import { strAsToken } from '@/lib/Token'
+import SwapBox from '@/components/SwapBox'
 
-function getToken(pair: string) {
-  const [token, _] = pair.split("-");
-  return strAsToken(token || "");
-}
+export default function TradePairPage() {
+  const router = useRouter()
+  const { pair: candidatePair } = router.query
 
-function getComparisonCurrency() {
-  return "usd" as const;
-}
+  // Get base & quote token from dynamic URL
+  const [baseToken, quoteToken] = useMemo(() => {
+    let pair = Array.isArray(candidatePair) ? candidatePair[0] : candidatePair
+    if (!pair) return [undefined, undefined]
 
-export default function Page() {
-  const router = useRouter();
-  const { pair } = router.query;
+    pair = Array.isArray(pair) ? pair[0] : pair
+    if (!pair) return [undefined, undefined]
 
-  if (!pair) {
-    return <></>;
-  }
+    const split = pair.split('-')
+    if (split.length !== 2 || split.filter((x) => !x).length) return [undefined, undefined]
 
-  // @ts-ignore
-  let token: ReturnType<typeof getToken> = asToken(pair.split("-")[0]);
-  let currency: ReturnType<typeof getComparisonCurrency> =
-    getComparisonCurrency();
+    return [strAsToken(split[0] as string), strAsToken(split[1] as string)]
+  }, [candidatePair])
 
-  if (pair && Array.isArray(pair)) {
-    const tokenAndCurrency = pair[0];
-
-    if (tokenAndCurrency) {
-      token = getToken(tokenAndCurrency);
-      currency = getComparisonCurrency();
-    }
+  if (!baseToken || !quoteToken) {
+    return (
+      <Container maxWidth='lg'>
+        <Typography variant='h6' fontWeight='bold'>Invalid Trade Pair</Typography>
+      </Container>
+    )
   }
 
   return (
-    <>Trade pair</>
-    // <TradeLayout className="pt-11">
+    <Container maxWidth='lg'>
+      <Stack direction="row" alignItems="stretch" justifyContent="flex-start" spacing={6}>
+        <CandlestickChart
+          baseToken={baseToken}
+          quoteToken={quoteToken}
+          sx={{ width: '100%', maxWidth: { xs: '100%', sm: 550, md: 700 } }}
+        />
+        <Stack spacing={2} justifyContent="flex-end" py={3}>
+          {/* <SwapTokens> */}
+          <LeverageTradeBox
+            baseToken={baseToken}
+            quoteToken={quoteToken}
+          />
+          <SwapBox
+            baseToken={baseToken}
+            quoteToken={quoteToken}
+          />
+        </Stack>
+      </Stack>
+      {/* <ProvideLiquidity> */}
+    </Container>
+    // <TradeLayout className='pt-11'>
     //   <div>
     //     <TradeSidebar />
     //   </div>
     //   <div>
     //     <CandlestickChart comparisonCurrency={currency} token={token} />
-    //     <Positions className="mt-8 " />
+    //     <Positions className='mt-8 ' />
     //   </div>
     // </TradeLayout>
-  );
+  )
 }

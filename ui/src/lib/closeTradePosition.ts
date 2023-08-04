@@ -328,6 +328,11 @@ export default async function closeTradePosition(params: CloseTradePositionParam
   // console.log('resolveAtaSigners', resolveAtaSigners)
   // if (resolveAtaSigners) repayTradeSigners.push(...resolveAtaSigners)
 
+  //
+  // TODO: Dealing with SOL requires creating wrapped NATIVE_MINT account as pre-instruction,
+  //       then for post-ixs: unwrapped wSOL to SOL & closing it as post-instruction.
+  //
+
   if (tokenMintAKey.equals(NATIVE_MINT) || tokenMintBKey.equals(NATIVE_MINT)) {
     const newAccountKeypair = Keypair.generate()
     const newAccountPubkey = newAccountKeypair.publicKey
