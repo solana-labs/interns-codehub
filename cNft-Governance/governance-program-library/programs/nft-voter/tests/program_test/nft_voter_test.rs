@@ -325,7 +325,7 @@ impl NftVoterTest {
     }
 
     #[allow(dead_code)]
-    pub async fn update_nft_voter_weight_record(
+    pub async fn update_voter_weight_record(
         &self,
         registrar_cookie: &RegistrarCookie,
         voter_weight_record_cookie: &mut VoterWeightRecordCookie,
@@ -333,21 +333,23 @@ impl NftVoterTest {
         nft_cookies: &[&NftCookie]
     ) -> Result<(), BanksClientError> {
         let data = anchor_lang::InstructionData::data(
-            &(gpl_nft_voter::instruction::UpdateNftVoterWeightRecord {
+            &(gpl_nft_voter::instruction::UpdateVoterWeightRecord {
                 voter_weight_action,
             })
         );
 
-        let accounts = gpl_nft_voter::accounts::UpdateNftVoterWeightRecord {
+        let accounts = gpl_nft_voter::accounts::UpdateVoterWeightRecord {
             registrar: registrar_cookie.address,
             voter_weight_record: voter_weight_record_cookie.address,
+            payer: self.bench.payer.pubkey(),
         };
 
         let mut account_metas = anchor_lang::ToAccountMetas::to_account_metas(&accounts, None);
 
         for nft_cookie in nft_cookies {
-            account_metas.push(AccountMeta::new_readonly(nft_cookie.address, false));
-            account_metas.push(AccountMeta::new_readonly(nft_cookie.metadata, false));
+            let nft_mint = &nft_cookie.mint_cookie.address;
+            let nft_weight_record = get_nft_weight_record_address(nft_mint).0;
+            account_metas.push(AccountMeta::new(nft_weight_record, false));
         }
 
         let instructions = vec![Instruction {
@@ -357,52 +359,6 @@ impl NftVoterTest {
         }];
 
         self.bench.process_transaction(&instructions, None).await
-    }
-
-    #[allow(dead_code)]
-    pub async fn update_cnft_voter_weight_record(
-        &self,
-        registrar_cookie: &RegistrarCookie,
-        voter_weight_record_cookie: &VoterWeightRecordCookie,
-        voter_weight_action: VoterWeightAction,
-        leaf_cookies: &[&LeafArgs],
-        leaf_verification_cookies: &[&LeafVerificationCookie],
-        proofs: &[&Vec<AccountMeta>]
-    ) -> Result<(), BanksClientError> {
-        let params: Vec<LeafVerificationCookie> = leaf_verification_cookies
-            .to_vec()
-            .into_iter()
-            .map(|v| v.clone())
-            .collect();
-        let data = anchor_lang::InstructionData::data(
-            &(gpl_nft_voter::instruction::UpdateCnftVoterWeightRecord {
-                voter_weight_action: voter_weight_action.into(),
-                params,
-            })
-        );
-
-        let accounts = gpl_nft_voter::accounts::UpdateCnftVoterWeightRecord {
-            registrar: registrar_cookie.address,
-            voter_weight_record: voter_weight_record_cookie.address,
-            leaf_owner: leaf_cookies[0].owner.pubkey(),
-            compression_program: spl_account_compression::id(),
-        };
-
-        let mut update_voter_weight_record_ix = Instruction {
-            program_id: gpl_nft_voter::id(),
-            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
-            data,
-        };
-
-        for i in 0..leaf_verification_cookies.len() {
-            let proof = &mut proofs[i].clone();
-            let tree_account = AccountMeta::new_readonly(leaf_cookies[i].tree_address, false);
-
-            update_voter_weight_record_ix.accounts.push(tree_account);
-            update_voter_weight_record_ix.accounts.append(proof);
-        }
-
-        self.bench.process_transaction(&[update_voter_weight_record_ix], None).await
     }
 
     #[allow(dead_code)]
@@ -538,7 +494,6 @@ impl NftVoterTest {
         args: Option<CastNftVoteArgs>
     ) -> Result<Vec<NftVoteRecordCookie>, BanksClientError> {
         let args = args.unwrap_or_default();
-
         let data = anchor_lang::InstructionData::data(
             &(gpl_nft_voter::instruction::CastNftVote {
                 proposal: proposal_cookie.address,
@@ -558,14 +513,23 @@ impl NftVoterTest {
         let mut nft_vote_record_cookies = vec![];
 
         for nft_cookie in nft_cookies {
-            account_metas.push(AccountMeta::new_readonly(nft_cookie.address, false));
-            account_metas.push(AccountMeta::new_readonly(nft_cookie.metadata, false));
+            let nft_mint = &nft_cookie.mint_cookie.address;
+            let nft_mint_info = AccountMeta::new_readonly(*nft_mint, false);
 
-            let nft_vote_record_key = get_nft_vote_record_address(
+            let nft_weight_record = get_nft_weight_record_address(
+                &nft_cookie.mint_cookie.address
+            ).0;
+            let nft_weight_record_info = AccountMeta::new(nft_weight_record, false);
+
+            let nft_vote_record = get_nft_vote_record_address(
                 &proposal_cookie.address,
                 &nft_cookie.mint_cookie.address
             );
-            account_metas.push(AccountMeta::new(nft_vote_record_key, false));
+            let nft_vote_record_info = AccountMeta::new(nft_vote_record, false);
+
+            account_metas.push(nft_mint_info);
+            account_metas.push(nft_weight_record_info);
+            account_metas.push(nft_vote_record_info);
 
             let account = NftVoteRecord {
                 proposal: proposal_cookie.address,
@@ -576,7 +540,7 @@ impl NftVoterTest {
             };
 
             nft_vote_record_cookies.push(NftVoteRecordCookie {
-                address: nft_vote_record_key,
+                address: nft_vote_record,
                 account,
             });
         }
@@ -622,17 +586,86 @@ impl NftVoterTest {
     }
 
     #[allow(dead_code)]
-    pub async fn with_cnft_verification(
+    pub async fn with_create_nft_weight_record(
         &mut self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_cookie: &WalletCookie,
-        leaf_cookie: &LeafArgs,
-        leaf_verification_cookie: &LeafVerificationCookie,
-        proofs: &Vec<AccountMeta>
+        nft_cookies: &[&NftCookie]
     ) -> Result<(), BanksClientError> {
-        self.with_cnft_verification_using_ix(
+        self.with_create_nft_weight_record_using_ix(
+            registrar_cookie,
+            voter_weight_record_cookie,
             voter_cookie,
-            leaf_cookie,
-            leaf_verification_cookie,
+            nft_cookies,
+            NopOverride,
+            None
+        ).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_create_nft_weight_record_using_ix<F: Fn(&mut Instruction)>(
+        &mut self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
+        voter_cookie: &WalletCookie,
+        nft_cookies: &[&NftCookie],
+        instruction_override: F,
+        signers_override: Option<&[&Keypair]>
+    ) -> Result<(), BanksClientError> {
+        let accounts = gpl_nft_voter::accounts::CreateNftWeightRecord {
+            registrar: registrar_cookie.address,
+            voter_weight_record: voter_weight_record_cookie.address,
+            voter_authority: voter_cookie.address,
+            payer: self.bench.payer.pubkey(),
+            system_program: solana_sdk::system_program::id(),
+        };
+
+        let data = anchor_lang::InstructionData::data(
+            &(gpl_nft_voter::instruction::CreateNftWeightRecord {})
+        );
+
+        let mut verify_nft_info_ix = Instruction {
+            program_id: gpl_nft_voter::id(),
+            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
+            data,
+        };
+
+        for nft_cookie in nft_cookies {
+            let nft_weight_record = get_nft_weight_record_address(
+                &nft_cookie.mint_cookie.address
+            ).0;
+
+            verify_nft_info_ix.accounts.push(AccountMeta::new_readonly(nft_cookie.address, false));
+            verify_nft_info_ix.accounts.push(AccountMeta::new_readonly(nft_cookie.metadata, false));
+            verify_nft_info_ix.accounts.push(AccountMeta::new(nft_weight_record, false));
+        }
+
+        instruction_override(&mut verify_nft_info_ix);
+        let default_signers = &[&voter_cookie.signer];
+        let signers = signers_override.unwrap_or(default_signers);
+
+        self.bench.process_transaction(&[verify_nft_info_ix], Some(signers)).await?;
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub async fn with_create_cnft_weight_record(
+        &mut self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
+        voter_cookie: &WalletCookie,
+        leaf_cookies: &[&LeafArgs],
+        leaf_verification_cookies: &[&LeafVerificationCookie],
+        proofs: &[&Vec<AccountMeta>]
+    ) -> Result<(), BanksClientError> {
+        self.with_create_cnft_weight_record_using_ix(
+            registrar_cookie,
+            voter_weight_record_cookie,
+            voter_cookie,
+            leaf_cookies,
+            leaf_verification_cookies,
             &proofs,
             NopOverride,
             None
@@ -640,27 +673,36 @@ impl NftVoterTest {
     }
 
     #[allow(dead_code)]
-    pub async fn with_cnft_verification_using_ix<F: Fn(&mut Instruction)>(
+    pub async fn with_create_cnft_weight_record_using_ix<F: Fn(&mut Instruction)>(
         &mut self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_cookie: &WalletCookie,
-        leaf_cookie: &LeafArgs,
-        leaf_verification_cookie: &LeafVerificationCookie,
-        proofs: &Vec<AccountMeta>,
+        leaf_cookies: &[&LeafArgs],
+        leaf_verification_cookies: &[&LeafVerificationCookie],
+        proofs: &[&Vec<AccountMeta>],
         instruction_override: F,
         signers_override: Option<&[&Keypair]>
     ) -> Result<(), BanksClientError> {
-        // let tree_authority = &tree_cookie.tree_authority;
-        let proofs = &mut proofs.clone();
+        let params: Vec<LeafVerificationCookie> = leaf_verification_cookies
+            .to_vec()
+            .into_iter()
+            .map(|v| v.clone())
+            .collect();
 
-        let accounts = gpl_nft_voter::accounts::VerifyCompressedNft {
-            leaf_owner: leaf_cookie.owner.pubkey(),
-            payer: leaf_cookie.owner.pubkey(),
+        let accounts = gpl_nft_voter::accounts::CreateCnftWeightRecord {
+            registrar: registrar_cookie.address,
+            voter_weight_record: voter_weight_record_cookie.address,
+            voter_authority: voter_cookie.address,
+            leaf_owner: leaf_cookies[0].owner.pubkey(),
+            payer: self.bench.payer.pubkey(),
             compression_program: spl_account_compression::id(),
+            system_program: solana_sdk::system_program::id(),
         };
 
         let data = anchor_lang::InstructionData::data(
-            &(gpl_nft_voter::instruction::VerifyCnftMetadata {
-                params: leaf_verification_cookie.clone(),
+            &(gpl_nft_voter::instruction::CreateCnftWeightRecord {
+                params,
             })
         );
 
@@ -670,123 +712,31 @@ impl NftVoterTest {
             data,
         };
 
-        let tree_address = leaf_cookie.tree_address;
-        verify_cnft_info_ix.accounts.push(AccountMeta::new_readonly(tree_address, false));
-        verify_cnft_info_ix.accounts.append(proofs);
+        for i in 0..leaf_verification_cookies.len() {
+            let tree_address = leaf_cookies[i].tree_address;
+            let tree_account_info = AccountMeta::new_readonly(tree_address, false);
+            let proof = &mut proofs[i].clone();
+            let asset_id = &leaf_cookies[i].asset_id;
+
+            let cnft_weight_record = get_nft_weight_record_address(asset_id).0;
+            let cnft_weight_record_info = AccountMeta::new(cnft_weight_record, false);
+
+            verify_cnft_info_ix.accounts.push(tree_account_info);
+            verify_cnft_info_ix.accounts.append(proof);
+            verify_cnft_info_ix.accounts.push(cnft_weight_record_info);
+        }
 
         instruction_override(&mut verify_cnft_info_ix);
-        let default_signers = &[&leaf_cookie.owner, &leaf_cookie.delegate, &voter_cookie.signer];
+        let default_signers = &[
+            &leaf_cookies[0].owner,
+            &leaf_cookies[0].delegate,
+            &voter_cookie.signer,
+        ];
         let signers = signers_override.unwrap_or(default_signers);
 
         self.bench.process_transaction(&[verify_cnft_info_ix], Some(signers)).await?;
 
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub async fn cast_cnft_vote(
-        &mut self,
-        registrar_cookie: &RegistrarCookie,
-        voter_weight_record_cookie: &VoterWeightRecordCookie,
-        voter_token_owner_record_cookie: &TokenOwnerRecordCookie,
-        max_voter_weight_record_cookie: &MaxVoterWeightRecordCookie,
-        proposal_cookie: &ProposalCookie,
-        voter_cookie: &WalletCookie,
-        leaf_cookies: &[&LeafArgs],
-        leaf_verification_cookies: &[&LeafVerificationCookie],
-        asset_ids: &[&Pubkey],
-        proofs: &[&Vec<AccountMeta>],
-        args: Option<CastNftVoteArgs>
-    ) -> Result<Vec<NftVoteRecordCookie>, BanksClientError> {
-        let args = args.unwrap_or_default();
-        let params: Vec<LeafVerificationCookie> = leaf_verification_cookies
-            .to_vec()
-            .into_iter()
-            .map(|v| v.clone())
-            .collect();
-        let data = anchor_lang::InstructionData::data(
-            &(gpl_nft_voter::instruction::CastCompressedNftVote {
-                proposal: proposal_cookie.address,
-                params: params.to_vec(),
-            })
-        );
-
-        let accounts = gpl_nft_voter::accounts::CastCompressedNftVote {
-            registrar: registrar_cookie.address,
-            voter_weight_record: voter_weight_record_cookie.address,
-            voter_token_owner_record: voter_token_owner_record_cookie.address,
-            voter_authority: voter_cookie.address,
-            leaf_owner: leaf_cookies[0].owner.pubkey(),
-            payer: self.bench.payer.pubkey(),
-            compression_program: spl_account_compression::id(),
-            system_program: solana_sdk::system_program::id(),
-        };
-
-        let mut cast_cnft_vote_ix = Instruction {
-            program_id: gpl_nft_voter::id(),
-            accounts: anchor_lang::ToAccountMetas::to_account_metas(&accounts, None),
-            data,
-        };
-        let mut cnft_vote_record_cookies = vec![];
-
-        for i in 0..leaf_verification_cookies.len() {
-            let cnft_voter_record_key = get_nft_vote_record_address(
-                &proposal_cookie.address,
-                &asset_ids[i]
-            );
-            let cnft_vote_record_info = AccountMeta::new(cnft_voter_record_key, false);
-            let proof = &mut proofs[i].clone();
-            let tree_account = AccountMeta::new_readonly(leaf_cookies[i].tree_address, false);
-
-            cast_cnft_vote_ix.accounts.push(tree_account);
-            cast_cnft_vote_ix.accounts.append(proof);
-            cast_cnft_vote_ix.accounts.push(cnft_vote_record_info);
-
-            let account = NftVoteRecord {
-                proposal: proposal_cookie.address,
-                nft_mint: *asset_ids[i],
-                governing_token_owner: voter_weight_record_cookie.account.governing_token_owner,
-                account_discriminator: NftVoteRecord::ACCOUNT_DISCRIMINATOR,
-                reserved: [0; 8],
-            };
-            cnft_vote_record_cookies.push(NftVoteRecordCookie {
-                address: cnft_voter_record_key,
-                account,
-            });
-        }
-
-        let mut instructions = vec![cast_cnft_vote_ix];
-        if args.cast_spl_gov_vote {
-            // spl-gov cast vote
-            let vote = Vote::Approve(
-                vec![VoteChoice {
-                    rank: 0,
-                    weight_percentage: 100,
-                }]
-            );
-
-            let cast_vote_ix = cast_vote(
-                &self.governance.program_id,
-                &registrar_cookie.account.realm,
-                &proposal_cookie.account.governance,
-                &proposal_cookie.address,
-                &proposal_cookie.account.token_owner_record,
-                &voter_token_owner_record_cookie.address,
-                &voter_cookie.address,
-                &proposal_cookie.account.governing_token_mint,
-                &self.bench.payer.pubkey(),
-                Some(voter_weight_record_cookie.address),
-                Some(max_voter_weight_record_cookie.address),
-                vote
-            );
-
-            instructions.push(cast_vote_ix);
-        }
-
-        let signers = &[&voter_cookie.signer];
-        self.bench.process_transaction(&instructions, Some(signers)).await?;
-
-        Ok(cnft_vote_record_cookies)
     }
 
     #[allow(dead_code)]
@@ -810,5 +760,10 @@ impl NftVoterTest {
     #[allow(dead_code)]
     pub async fn get_voter_weight_record(&self, voter_weight_record: &Pubkey) -> VoterWeightRecord {
         self.bench.get_anchor_account(*voter_weight_record).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_nft_weight_recordt(&mut self, cnft_weight_record: &Pubkey) -> NftWeightRecord {
+        self.bench.get_borsh_account::<NftWeightRecord>(cnft_weight_record).await
     }
 }
