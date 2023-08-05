@@ -65,6 +65,11 @@ pub fn calculate_modify_loan<'info>(
     // Verify that enough liquidity exists in Ticks, if liquidity is to-be-borrowed (ie. positive)
     // Note: Must check both the lower & upper tick's `liquidity_gross`.
     //
+    msg!("liquidity_delta_u128: {:?}", liquidity_delta.abs() as u128);
+    let lower_gross = tick_lower.liquidity_gross;
+    let upper_gross = tick_upper.liquidity_gross;
+    msg!("tick lower liquidity gross: {:?}", lower_gross);
+    msg!("tick upper liquidity gross: {:?}", upper_gross);
     if liquidity_delta > 0 {
         let liquidity_delta_u128 = liquidity_delta.abs() as u128;
         if liquidity_delta_u128 > tick_lower.liquidity_gross
@@ -229,11 +234,11 @@ pub fn calculate_collateral(
     // This prevents JIT tick index manipulation (right before the loan).
     //
 
-    msg!("token_amount: {:?}", token_borrow_amount);
+    // msg!("token_amount: {:?}", token_borrow_amount);
     // msg!("token_price_a: {:?}", token_price_a);
     // msg!("token_price_b: {:?}", token_price_b);
-    msg!("token_price_a_b: {:?}", token_price_a_b);
-    msg!("token_price_b_a: {:?}", token_price_b_a);
+    // msg!("token_price_a_b: {:?}", token_price_a_b);
+    // msg!("token_price_b_a: {:?}", token_price_b_a);
 
     let loan_value_quoted_in_collateral_token = if is_borrow_token_a {
         token_borrow_amount
@@ -262,11 +267,11 @@ pub fn calculate_collateral(
     }
     .ok_or(ErrorCode::DivisionUnderflow)?;
 
-    msg!("worst_case_value: {:?}", worst_case_value);
-    msg!(
-        "loan_value_quoted_in_collateral_token: {:?}",
-        loan_value_quoted_in_collateral_token
-    );
+    // msg!("worst_case_value: {:?}", worst_case_value);
+    // msg!(
+    //     "loan_value_quoted_in_collateral_token: {:?}",
+    //     loan_value_quoted_in_collateral_token
+    // );
 
     if worst_case_value < loan_value_quoted_in_collateral_token {
         return Err(ErrorCode::CollateralCalculationError.into());
@@ -291,133 +296,10 @@ pub fn calculate_collateral(
     //     "borrowed_value_in_collateral_token: {:?}",
     //     borrowed_value_in_collateral_token
     // );
-    msg!(
-        "collateral_amount_with_buffer: {:?}",
-        collateral_amount_with_buffer
-    );
-
-    //
-    // WARNING: This is a temporary solution for strict testing purposes, and should not be used for production.
-    //
-
-    // let num_2_pow_neg_64 = 1_f32 / 18446744073709551616_f32;
-    // let lower_price = (lower_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
-    // let upper_price = (upper_sqrt_price as f32 * num_2_pow_neg_64).powf(2_f32);
-
-    // let (lower_price, upper_price) = if collateral_token_mint_decimals
-    //     > borrowed_token_mint_decimals
-    // {
-    //     let decimals_expo =
-    //         10_f32.powf((collateral_token_mint_decimals - borrowed_token_mint_decimals) as f32);
-    //     (lower_price * decimals_expo, upper_price * decimals_expo)
-    // } else if collateral_token_mint_decimals < borrowed_token_mint_decimals {
-    //     let decimals_expo = lower_price
-    //         / 10_f32.powf((borrowed_token_mint_decimals - collateral_token_mint_decimals) as f32);
-    //     (lower_price * decimals_expo, upper_price * decimals_expo)
-    // } else {
-    //     (lower_price, upper_price)
-    // };
+    // msg!(
+    //     "collateral_amount_with_buffer: {:?}",
+    //     collateral_amount_with_buffer
+    // );
 
     Ok(collateral_amount_with_buffer)
 }
-
-/*
-pub fn calculate_borrowed_ticks(
-    globalpool: &Globalpool,
-    loan_tick_sequence: &mut TickSequence,
-    amount: u64,
-    start_tick_index: i32,
-    borrow_a: bool, // true = borrow Token A, false = borrow Token B
-) -> Result<Vec<TickLoan>> {
-    if amount == 0 {
-        return Err(ErrorCode::ZeroBorrowableAmount.into());
-    }
-
-    let tick_spacing = globalpool.tick_spacing;
-
-    // Borrow A traverses right Ticks, Borrow B traverses left Ticks
-    // Swapping A to B deposits A and withdraws B. Borrowing B is withdrawing B.
-    let a_to_b = !borrow_a;
-
-    let mut amount_remaining = amount;
-    let mut amount_calculated = 0;
-    let mut curr_tick_index = start_tick_index;
-    let mut curr_array_index: usize = 0;
-
-    while amount_remaining > 0 {
-        let (next_array_index, next_tick_index) = loan_tick_sequence
-            .get_next_initialized_tick_index(
-                curr_tick_index,
-                tick_spacing,
-                a_to_b,
-                curr_array_index,
-            );
-
-        // Borrow A must search liquidity by decreasing tick index (traverse left).
-        // Borrow B must search liquidity by increasing tick index (traverse right).
-        // if (borrow_a && next_tick_index > curr_tick_index)
-        //     || (!borrow_a && next_tick_index < curr_tick_index)
-        // {
-        //     return Err(ErrorCode::TickArraySequenceInvalidIndex.into());
-        // }
-
-        // TODO: We skip over the first `curr_tick_index` because we fetch `next_tick` using the first
-        //       `curr_tick_index`. Fix to include the first tick as well in liquidity calculation.
-
-        let (next_tick, next_tick_initialized) = loan_tick_sequence
-            .get_tick(next_array_index, next_tick_index, tick_spacing)
-            .map_or_else(|_| (None, false), |tick| (Some(tick), tick.initialized));
-
-        // Calculate liquidity withdrawals if (next) tick is initialized.
-        if next_tick_initialized {
-            let next_tick = next_tick.unwrap();
-
-            // TODO: Does manipulating liquidity (with no fee charged) affect the future calculations of
-            //       fee calculation for swaps?
-            let tick_liquidity = next_tick.liquidity_gross;
-            let tick_loan = TickLoan {
-                tick: curr_tick_index,
-                liquidity: tick_liquidity,
-            };
-
-            let (update, next_liquidity) = calculate_update(
-                &next_tick.unwrap(),
-                a_to_b,
-                curr_liquidity,
-                fee_growth_global_a,
-                fee_growth_global_b,
-            )?;
-
-            curr_liquidity = next_liquidity;
-            swap_tick_sequence.update_tick(
-                next_array_index,
-                next_tick_index,
-                tick_spacing,
-                &update,
-            )?;
-        }
-
-        let tick_offset =
-            loan_tick_sequence.get_tick_offset(next_array_index, next_tick_index, tick_spacing)?;
-
-        // Increment to the next tick array if either condition is true:
-        //  - Search is moving left (borrow A) and the current tick is the start of the current tick array
-        //  - Search is moving right (borrow B) and the current tick is the end of the current tick array
-        curr_array_index = if (a_to_b && tick_offset == 0)
-            || (!a_to_b && tick_offset == TICK_ARRAY_SIZE as isize - 1)
-        {
-            next_array_index + 1
-        } else {
-            next_array_index
-        };
-
-        // The get_init_tick search is inclusive of the current index in an a_to_b trade.
-        // We therefore have to shift the index by 1 to advance to the next init tick to the left.
-        curr_tick_index = if a_to_b {
-            next_tick_index - 1
-        } else {
-            next_tick_index
-        };
-    }
-}
- */
