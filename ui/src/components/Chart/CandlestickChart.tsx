@@ -45,8 +45,8 @@ export default function CandlestickChart(props: CandlestickChartProps) {
           quoteToken={quoteToken}
         />
       </Stack>
-      {/*  height={{ xs: 350, sm: 450, md: 500 }} */}
-      <Box> 
+      {/* <Box height="100%"> */}
+      <Box height={{ xs: 350, sm: 450, md: 500 }}>
         <TradingViewWidget autosize symbol={pairSymbol} theme='Light' />
         <Box>
           <a

@@ -3,11 +3,15 @@ import { useRouter } from 'next/router'
 import { useMemo } from 'react'
 
 import CandlestickChart from '@/components/Chart/CandlestickChart'
-import LeverageTradeBox from '@/components/LeverageTradeBox'
+import TradeBox from '@/components/TradeBox'
+import { useAppDispatch } from '@/hooks'
 import { strAsToken } from '@/lib/Token'
-import SwapBox from '@/components/SwapBox'
+import { fetchAllGlobalpools } from '@/slices/globalpool'
 
 export default function TradePairPage() {
+  const dispatch = useAppDispatch()
+  dispatch(fetchAllGlobalpools())
+
   const router = useRouter()
   const { pair: candidatePair } = router.query
 
@@ -35,22 +39,22 @@ export default function TradePairPage() {
 
   return (
     <Container maxWidth='lg'>
-      <Stack direction="row" alignItems="stretch" justifyContent="flex-start" spacing={6}>
+      <Stack direction={{ md: 'row' }} alignItems="stretch" justifyContent="space-between" spacing={{ xs: 3, md: 6}}>
         <CandlestickChart
           baseToken={baseToken}
           quoteToken={quoteToken}
-          sx={{ width: '100%', maxWidth: { xs: '100%', sm: 550, md: 700 } }}
+          sx={{ width: '100%' }}
         />
         <Stack spacing={2} justifyContent="flex-end" py={3}>
-          {/* <SwapTokens> */}
-          <LeverageTradeBox
+          <TradeBox baseToken={baseToken} quoteToken={quoteToken} />
+          {/* <LeverageTradeBox
             baseToken={baseToken}
             quoteToken={quoteToken}
           />
           <SwapBox
             baseToken={baseToken}
             quoteToken={quoteToken}
-          />
+          /> */}
         </Stack>
       </Stack>
       {/* <ProvideLiquidity> */}

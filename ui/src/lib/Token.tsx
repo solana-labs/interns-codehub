@@ -128,8 +128,8 @@ export function tokenAddressToToken(address: PublicKey | string): TokenE | null 
   return Object.keys(TOKEN_LIST).find(key => TOKEN_LIST[key as TokenEKeys] === _address) as TokenE
 }
 
-export function getTokenAddress(token: TokenEKeys) {
-  return TOKEN_LIST[token]
+export function getTokenAddress(token: TokenE | TokenEKeys) {
+  return TOKEN_LIST[token as TokenEKeys]
 }
 
 export const QUOTE_TOKENS: { [mint: string]: number } = {

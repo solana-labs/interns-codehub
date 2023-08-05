@@ -42,6 +42,18 @@ export const fetchGlobalpool = createAsyncThunk<
   }
 )
 
+export const fetchAllGlobalpools = createAsyncThunk<
+Record<string, ExpirableGlobalpoolData>
+>(
+  'globalpool/fetchAll',
+  async ({ getState, rejectWithValue }) => {
+    const state = getState() as RootState
+    if (!state.generic.rpc) return rejectWithValue('Invalid RPC')
+
+    
+  }
+)
+
 export const globalpoolSlice = createSlice({
   name: 'globalpool',
   initialState,
@@ -75,6 +87,20 @@ export const selectGlobalpool = (key: PublicKey | string | undefined) => (state:
   if (!key) return undefined
   const _key = key instanceof PublicKey ? key.toBase58() : key
   return state.globalpool.globalpools[_key]
+}
+
+export const selectGlobalpoolByMints = (mintA: PublicKey | string | undefined, mintB: PublicKey | string | undefined, feeTier?: number) => (state: RootState) => {
+  console.log(state.globalpool)
+  if (!mintA || !mintB) return undefined
+  if (!state.globalpool.globalpools) return undefined
+
+  const _mintA = typeof mintA === 'string' ? new PublicKey(mintA) : mintA
+  const _mintB = typeof mintB === 'string' ? new PublicKey(mintB) : mintB
+
+  const list = Object.values(state.globalpool.globalpools).filter((pool) => pool.tokenMintA.equals(_mintA) && pool.tokenMintB.equals(_mintB))
+  
+  if (feeTier) return list.find((pool) => pool.feeRate === feeTier) || undefined
+  return list[0] || undefined
 }
 
 export default globalpoolSlice.reducer

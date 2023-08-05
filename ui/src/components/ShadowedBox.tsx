@@ -9,6 +9,7 @@ export default function ShadowedBox(props: PropsWithChildren & { sx?: SxProps })
 			borderRadius={2}
 			border="1px solid #eee"
 			boxShadow="0 0 20px 1px rgba(130, 130, 130, 0.15)"
+			bgcolor="#f9fafb"
 			sx={props.sx}
 		>
 			{props.children}
