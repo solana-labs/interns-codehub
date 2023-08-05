@@ -65,18 +65,14 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
     )?;
 
     let mut to_closed_accounts = vec![];
-    let mut unique_nft_mints = vec![];
+    let mut unique_nft_weight_records: Vec<Pubkey> = vec![];
 
     for (nft_mint_info, nft_weight_record_info, nft_vote_record_info) in ctx.remaining_accounts
         .iter()
         .tuples() {
-        if unique_nft_mints.contains(&nft_mint_info.key) {
+        if unique_nft_weight_records.contains(&nft_weight_record_info.key) {
             return Err(NftVoterError::DuplicatedNftDetected.into());
         }
-        let data_bytes = nft_weight_record_info.data.clone();
-        let data = NftWeightRecord::try_from_slice(&data_bytes.borrow())?;
-        voter_weight = voter_weight.checked_add(data.weight).unwrap();
-
         // Create NFT vote record to ensure the same NFT hasn't been already used for voting
         // Note: The correct PDA of the NftVoteRecord is validated in create_and_serialize_account_signed
         // It ensures the NftVoteRecord is for ('nft-vote-record',proposal,nft_mint) seeds
@@ -86,6 +82,11 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
             NftVoterError::NftFailedVerification
         );
         require!(*nft_weight_record_info.owner == crate::id(), NftVoterError::InvalidPdaOwner);
+
+        let data_bytes = nft_weight_record_info.data.clone();
+        let data = NftWeightRecord::try_from_slice(&data_bytes.borrow())?;
+        voter_weight = voter_weight.checked_add(data.weight).unwrap();
+
         require!(data.nft_owner == governing_token_owner, NftVoterError::VoterDoesNotOwnNft);
 
         // Note: proposal.governing_token_mint must match voter_weight_record.governing_token_mint
@@ -119,7 +120,7 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         // https://solana.stackexchange.com/questions/4481/error-processing-instruction-0-sum-of-account-balances-before-and-after-instruc
         // https://solana.stackexchange.com/questions/4519/anchor-error-error-processing-instruction-0-sum-of-account-balances-before-and
         to_closed_accounts.push(nft_weight_record_info.to_account_info());
-        unique_nft_mints.push(&nft_mint_info.key);
+        unique_nft_weight_records.push(nft_weight_record_info.key());
     }
 
     if
