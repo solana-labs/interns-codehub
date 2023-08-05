@@ -6,7 +6,6 @@ use solana_program_test::*;
 use solana_sdk::transport::TransportError;
 
 mod program_test;
-mod nft_test;
 
 #[tokio::test]
 async fn test_create_voter_weight_record() -> Result<(), TransportError> {

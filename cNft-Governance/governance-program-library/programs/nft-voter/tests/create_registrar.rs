@@ -1,5 +1,4 @@
 mod program_test;
-mod nft_test;
 
 use anchor_lang::prelude::{ ErrorCode, Pubkey };
 use gpl_nft_voter::error::NftVoterError;

@@ -10,7 +10,6 @@ use solana_sdk::{ signature::Keypair, signer::Signer, transport::TransportError 
 use crate::program_test::nft_voter_test::ConfigureCollectionArgs;
 
 mod program_test;
-mod nft_test;
 
 #[tokio::test]
 async fn test_configure_collection() -> Result<(), TransportError> {
