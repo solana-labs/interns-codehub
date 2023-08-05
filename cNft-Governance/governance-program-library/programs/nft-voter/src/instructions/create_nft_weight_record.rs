@@ -58,6 +58,9 @@ pub fn create_nft_weight_record<'info>(
             nft_owner: governing_token_owner.clone(),
             weight: nft_vote_weight,
         };
+        // CHECK: if this is this should not be a function, but merge the code into this instruction
+        // make this instruction the only method that can serizlize the data
+        // so in cast_nft_vote can check if the data is all zero
         serialize_nft_weight_record_account(
             &serialized_data.try_to_vec()?,
             &nft_weight_record_info

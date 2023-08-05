@@ -82,7 +82,7 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         // It ensures the NftVoteRecord is for ('nft-vote-record',proposal,nft_mint) seeds
         require!(nft_vote_record_info.data_is_empty(), NftVoterError::NftAlreadyVoted);
         require!(
-            nft_weight_record_info.data_is_empty() == false,
+            nft_weight_record_info.data_is_empty() == false, //this might be a problem
             NftVoterError::NftFailedVerification
         );
         require!(*nft_weight_record_info.owner == crate::id(), NftVoterError::InvalidPdaOwner);
