@@ -405,17 +405,21 @@ impl CompressedNftVoterTest {
     }
 
     #[allow(dead_code)]
-    pub async fn with_cnft_verification(
+    pub async fn with_create_cnft_weight_record(
         &mut self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_cookie: &WalletCookie,
-        leaf_cookie: &LeafArgs,
-        leaf_verification_cookie: &LeafVerificationCookie,
-        proofs: &Vec<AccountMeta>
+        leaf_cookies: &[&LeafArgs],
+        leaf_verification_cookies: &[&LeafVerificationCookie],
+        proofs: &[&Vec<AccountMeta>]
     ) -> Result<(), BanksClientError> {
-        self.with_cnft_verification_using_ix(
+        self.with_create_cnft_weight_record_using_ix(
+            registrar_cookie,
+            voter_weight_record_cookie,
             voter_cookie,
-            leaf_cookie,
-            leaf_verification_cookie,
+            leaf_cookies,
+            leaf_verification_cookies,
             &proofs,
             NopOverride,
             None
@@ -423,27 +427,36 @@ impl CompressedNftVoterTest {
     }
 
     #[allow(dead_code)]
-    pub async fn with_cnft_verification_using_ix<F: Fn(&mut Instruction)>(
+    pub async fn with_create_cnft_weight_record_using_ix<F: Fn(&mut Instruction)>(
         &mut self,
+        registrar_cookie: &RegistrarCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_cookie: &WalletCookie,
-        leaf_cookie: &LeafArgs,
-        leaf_verification_cookie: &LeafVerificationCookie,
-        proofs: &Vec<AccountMeta>,
+        leaf_cookies: &[&LeafArgs],
+        leaf_verification_cookies: &[&LeafVerificationCookie],
+        proofs: &[&Vec<AccountMeta>],
         instruction_override: F,
         signers_override: Option<&[&Keypair]>
     ) -> Result<(), BanksClientError> {
-        // let tree_authority = &tree_cookie.tree_authority;
-        let proofs = &mut proofs.clone();
+        let params: Vec<LeafVerificationCookie> = leaf_verification_cookies
+            .to_vec()
+            .into_iter()
+            .map(|v| v.clone())
+            .collect();
 
-        let accounts = gpl_cnft_voter::accounts::VerifyCompressedNft {
-            leaf_owner: leaf_cookie.owner.pubkey(),
-            payer: leaf_cookie.owner.pubkey(),
+        let accounts = gpl_cnft_voter::accounts::CreateCnftWeightRecord {
+            registrar: registrar_cookie.address,
+            voter_weight_record: voter_weight_record_cookie.address,
+            voter_authority: voter_cookie.address,
+            leaf_owner: leaf_cookies[0].owner.pubkey(),
+            payer: self.bench.payer.pubkey(),
             compression_program: spl_account_compression::id(),
+            system_program: solana_sdk::system_program::id(),
         };
 
         let data = anchor_lang::InstructionData::data(
-            &(gpl_cnft_voter::instruction::VerifyCnftMetadata {
-                params: leaf_verification_cookie.clone(),
+            &(gpl_cnft_voter::instruction::CreateCnftWeightRecord {
+                params,
             })
         );
 
@@ -453,12 +466,26 @@ impl CompressedNftVoterTest {
             data,
         };
 
-        let tree_address = leaf_cookie.tree_address;
-        verify_cnft_info_ix.accounts.push(AccountMeta::new_readonly(tree_address, false));
-        verify_cnft_info_ix.accounts.append(proofs);
+        for i in 0..leaf_verification_cookies.len() {
+            let tree_address = leaf_cookies[i].tree_address;
+            let tree_account_info = AccountMeta::new_readonly(tree_address, false);
+            let proof = &mut proofs[i].clone();
+            let asset_id = &leaf_cookies[i].asset_id;
+
+            let cnft_weight_record = get_cnft_weight_record_address(asset_id).0;
+            let cnft_weight_record_info = AccountMeta::new(cnft_weight_record, false);
+
+            verify_cnft_info_ix.accounts.push(tree_account_info);
+            verify_cnft_info_ix.accounts.append(proof);
+            verify_cnft_info_ix.accounts.push(cnft_weight_record_info);
+        }
 
         instruction_override(&mut verify_cnft_info_ix);
-        let default_signers = &[&leaf_cookie.owner, &leaf_cookie.delegate, &voter_cookie.signer];
+        let default_signers = &[
+            &leaf_cookies[0].owner,
+            &leaf_cookies[0].delegate,
+            &voter_cookie.signer,
+        ];
         let signers = signers_override.unwrap_or(default_signers);
 
         self.bench.process_transaction(&[verify_cnft_info_ix], Some(signers)).await?;
@@ -477,20 +504,12 @@ impl CompressedNftVoterTest {
         voter_cookie: &WalletCookie,
         leaf_cookies: &[&LeafArgs],
         leaf_verification_cookies: &[&LeafVerificationCookie],
-        asset_ids: &[&Pubkey],
-        proofs: &[&Vec<AccountMeta>],
         args: Option<CastCompressedNftVoteArgs>
     ) -> Result<Vec<CompressedNftVoteRecordCookie>, BanksClientError> {
         let args = args.unwrap_or_default();
-        let params: Vec<LeafVerificationCookie> = leaf_verification_cookies
-            .to_vec()
-            .into_iter()
-            .map(|v| v.clone())
-            .collect();
         let data = anchor_lang::InstructionData::data(
             &(gpl_cnft_voter::instruction::CastCompressedNftVote {
                 proposal: proposal_cookie.address,
-                params: params.to_vec(),
             })
         );
 
@@ -499,9 +518,7 @@ impl CompressedNftVoterTest {
             voter_weight_record: voter_weight_record_cookie.address,
             voter_token_owner_record: voter_token_owner_record_cookie.address,
             voter_authority: voter_cookie.address,
-            leaf_owner: leaf_cookies[0].owner.pubkey(),
             payer: self.bench.payer.pubkey(),
-            compression_program: spl_account_compression::id(),
             system_program: solana_sdk::system_program::id(),
         };
 
@@ -513,21 +530,25 @@ impl CompressedNftVoterTest {
         let mut cnft_vote_record_cookies = vec![];
 
         for i in 0..leaf_verification_cookies.len() {
+            let asset_id = &leaf_cookies[i].asset_id;
+            let asset_id_info = AccountMeta::new_readonly(*asset_id, false);
+
             let cnft_voter_record_key = get_cnft_vote_record_address(
                 &proposal_cookie.address,
-                &asset_ids[i]
+                &asset_id
             );
             let cnft_vote_record_info = AccountMeta::new(cnft_voter_record_key, false);
-            let proof = &mut proofs[i].clone();
-            let tree_account = AccountMeta::new_readonly(leaf_cookies[i].tree_address, false);
 
-            cast_cnft_vote_ix.accounts.push(tree_account);
-            cast_cnft_vote_ix.accounts.append(proof);
+            let cnft_weight_record = get_cnft_weight_record_address(asset_id).0;
+            let cnft_weight_record_info = AccountMeta::new(cnft_weight_record, false);
+
+            cast_cnft_vote_ix.accounts.push(asset_id_info);
+            cast_cnft_vote_ix.accounts.push(cnft_weight_record_info);
             cast_cnft_vote_ix.accounts.push(cnft_vote_record_info);
 
             let account = CompressedNftVoteRecord {
                 proposal: proposal_cookie.address,
-                asset_id: *asset_ids[i],
+                asset_id: asset_id.clone(),
                 governing_token_owner: voter_weight_record_cookie.account.governing_token_owner,
                 account_discriminator: CompressedNftVoteRecord::ACCOUNT_DISCRIMINATOR,
                 reserved: [0; 8],
@@ -578,19 +599,11 @@ impl CompressedNftVoterTest {
         registrar_cookie: &RegistrarCookie,
         voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_weight_action: VoterWeightAction,
-        leaf_cookies: &[&LeafArgs],
-        leaf_verification_cookies: &[&LeafVerificationCookie],
-        proofs: &[&Vec<AccountMeta>]
+        leaf_cookies: &[&LeafArgs]
     ) -> Result<(), BanksClientError> {
-        let params: Vec<LeafVerificationCookie> = leaf_verification_cookies
-            .to_vec()
-            .into_iter()
-            .map(|v| v.clone())
-            .collect();
         let data = anchor_lang::InstructionData::data(
             &(gpl_cnft_voter::instruction::UpdateVoterWeightRecord {
                 voter_weight_action: voter_weight_action.into(),
-                params,
             })
         );
 
@@ -607,12 +620,12 @@ impl CompressedNftVoterTest {
             data,
         };
 
-        for i in 0..leaf_verification_cookies.len() {
-            let proof = &mut proofs[i].clone();
-            let tree_account = AccountMeta::new_readonly(leaf_cookies[i].tree_address, false);
+        for leaf_cookie in leaf_cookies.iter() {
+            let asset_id = &leaf_cookie.asset_id;
+            let cnft_weight_record = get_cnft_weight_record_address(asset_id).0;
+            let account_info = AccountMeta::new(cnft_weight_record, false);
 
-            update_voter_weight_record_ix.accounts.push(tree_account);
-            update_voter_weight_record_ix.accounts.append(proof);
+            update_voter_weight_record_ix.accounts.push(account_info);
         }
 
         self.bench.process_transaction(&[update_voter_weight_record_ix], None).await
@@ -672,5 +685,13 @@ impl CompressedNftVoterTest {
         cnft_vote_record: &Pubkey
     ) -> CompressedNftVoteRecord {
         self.bench.get_borsh_account::<CompressedNftVoteRecord>(cnft_vote_record).await
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_cnft_weight_record_account(
+        &mut self,
+        cnft_weight_record: &Pubkey
+    ) -> CnftWeightRecord {
+        self.bench.get_borsh_account::<CnftWeightRecord>(cnft_weight_record).await
     }
 }

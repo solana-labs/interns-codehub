@@ -15,3 +15,9 @@ pub struct CompressedNftVoteRecord {
     /// It's a Realm member pubkey corresponding to TokenOwnerRecord.governing_token_owner
     pub governing_token_owner: Pubkey,
 }
+
+#[account]
+pub struct CnftWeightRecord {
+    pub nft_owner: Pubkey,
+    pub weight: u64,
+}

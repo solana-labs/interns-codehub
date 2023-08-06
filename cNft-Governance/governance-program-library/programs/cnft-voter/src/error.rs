@@ -94,4 +94,13 @@ pub enum CompressedNftVoterError {
 
     #[msg("Leaf Owner Must Be Voter Authority")]
     LeafOwnerMustBeVoterAuthority,
+
+    #[msg("Nft Failed Verification")]
+    NftFailedVerification,
+
+    #[msg("Invalid PDA Owner")]
+    InvalidPdaOwner,
+
+    #[msg("Account Data Not Empty")]
+    AccountDataNotEmpty,
 }

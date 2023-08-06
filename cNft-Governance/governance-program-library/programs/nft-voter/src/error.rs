@@ -100,4 +100,13 @@ pub enum NftVoterError {
 
     #[msg("Leaf Owner Must Be Voter Authority")]
     LeafOwnerMustBeVoterAuthority,
+
+    #[msg("Account Data Not Empty")]
+    AccountDataNotEmpty,
+
+    #[msg("NFT Failed Verification")]
+    NftFailedVerification,
+
+    #[msg("Invalid PDA Owner")]
+    InvalidPdaOwner,
 }

@@ -1,7 +1,7 @@
 use crate::error::NftVoterError;
 use crate::state::*;
+use crate::tools::accounts::close_nft_vote_ticket_account;
 use anchor_lang::prelude::*;
-use itertools::Itertools;
 
 /// Updates VoterWeightRecord to evaluate governance power for non voting use cases: CreateProposal, CreateGovernance etc...
 /// This instruction updates VoterWeightRecord which is valid for the current Slot and the given target action only
@@ -13,7 +13,7 @@ use itertools::Itertools;
 /// which were already used to calculate the total weight
 #[derive(Accounts)]
 #[instruction(voter_weight_action:VoterWeightAction)]
-pub struct UpdateNftVoterWeightRecord<'info> {
+pub struct UpdateVoterWeightRecord<'info> {
     /// The NFT voting Registrar
     pub registrar: Account<'info, Registrar>,
 
@@ -26,14 +26,16 @@ pub struct UpdateNftVoterWeightRecord<'info> {
         @ NftVoterError::InvalidVoterWeightRecordMint,
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
 }
 
-pub fn update_nft_voter_weight_record(
-    ctx: Context<UpdateNftVoterWeightRecord>,
+pub fn update_voter_weight_record(
+    ctx: Context<UpdateVoterWeightRecord>,
     voter_weight_action: VoterWeightAction
 ) -> Result<()> {
-    let registrar = &ctx.accounts.registrar;
-    let governing_token_owner = &ctx.accounts.voter_weight_record.governing_token_owner;
+    let voter_weight_record = &mut ctx.accounts.voter_weight_record;
+    let payer = &mut ctx.accounts.payer.to_account_info();
 
     match voter_weight_action {
         // voter_weight for CastVote action can't be evaluated using this instruction
@@ -47,23 +49,23 @@ pub fn update_nft_voter_weight_record(
     }
 
     let mut voter_weight = 0u64;
+    let mut unique_nft_vote_tickets = vec![];
 
-    // Ensure all nfts are unique
-    let mut unique_nft_mints = vec![];
+    for nft_vote_ticket in ctx.remaining_accounts.iter() {
+        if unique_nft_vote_tickets.contains(&nft_vote_ticket.key) {
+            return Err(NftVoterError::DuplicatedNftDetected.into());
+        }
 
-    for (nft_info, nft_metadata_info) in ctx.remaining_accounts.iter().tuples() {
-        let (nft_vote_weight, _) = resolve_nft_vote_weight_and_mint(
-            registrar,
-            governing_token_owner,
-            nft_info,
-            nft_metadata_info,
-            &mut unique_nft_mints
-        )?;
+        let data_bytes = nft_vote_ticket.data.clone();
+        let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
+        voter_weight = voter_weight.checked_add(data.weight).unwrap();
 
-        voter_weight = voter_weight.checked_add(nft_vote_weight as u64).unwrap();
+        require!(nft_vote_ticket.data_is_empty() == false, NftVoterError::NftFailedVerification);
+        require!(*nft_vote_ticket.owner == crate::id(), NftVoterError::InvalidPdaOwner);
+
+        close_nft_vote_ticket_account(nft_vote_ticket, payer)?;
+        unique_nft_vote_tickets.push(&nft_vote_ticket.key);
     }
-
-    let voter_weight_record = &mut ctx.accounts.voter_weight_record;
 
     voter_weight_record.voter_weight = voter_weight;
 

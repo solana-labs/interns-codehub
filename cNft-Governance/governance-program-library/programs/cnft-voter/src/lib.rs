@@ -34,12 +34,10 @@ pub mod cnft_voter {
 
     pub fn update_voter_weight_record<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, UpdateVoterWeightRecord<'info>>,
-        voter_weight_action: VoterWeightAction,
-        // cnft_info_len: u32,
-        params: Vec<CompressedNftAsset>
+        voter_weight_action: VoterWeightAction
     ) -> Result<()> {
         log_version();
-        instructions::update_voter_weight_record(ctx, voter_weight_action, params)
+        instructions::update_voter_weight_record(ctx, voter_weight_action)
     }
 
     pub fn configure_collection(
@@ -53,20 +51,18 @@ pub mod cnft_voter {
 
     pub fn cast_compressed_nft_vote<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CastCompressedNftVote<'info>>,
-        proposal: Pubkey,
-        // cnft_info_len: u32,
+        proposal: Pubkey
+    ) -> Result<()> {
+        log_version();
+        instructions::cast_compressed_nft_vote(ctx, proposal)
+    }
+
+    pub fn create_cnft_weight_record<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CreateCnftWeightRecord<'info>>,
         params: Vec<CompressedNftAsset>
     ) -> Result<()> {
         log_version();
-        instructions::cast_compressed_nft_vote(ctx, proposal, params)
-    }
-
-    pub fn verify_cnft_metadata<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, VerifyCompressedNft<'info>>,
-        params: CompressedNftAsset
-    ) -> Result<()> {
-        log_version();
-        instructions::verify_cnft_metadata(ctx, params)
+        instructions::create_cnft_weight_record(ctx, params)
     }
 
     pub fn relinquish_compressed_nft_vote(ctx: Context<RelinquishCompressedNftVote>) -> Result<()> {
