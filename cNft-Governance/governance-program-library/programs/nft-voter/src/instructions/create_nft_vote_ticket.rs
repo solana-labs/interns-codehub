@@ -5,6 +5,7 @@ use anchor_lang::prelude::*;
 use itertools::Itertools;
 
 #[derive(Accounts)]
+#[instruction(voter_weight_action:VoterWeightAction)]
 pub struct CreateNftVoteTicket<'info> {
     pub registrar: Account<'info, Registrar>,
 
@@ -24,13 +25,15 @@ pub struct CreateNftVoteTicket<'info> {
 }
 
 pub fn create_nft_vote_ticket<'info>(
-    ctx: Context<'_, '_, '_, 'info, CreateNftVoteTicket<'info>>
+    ctx: Context<'_, '_, '_, 'info, CreateNftVoteTicket<'info>>,
+    voter_weight_action: VoterWeightAction
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let governing_token_owner = &ctx.accounts.voter_weight_record.governing_token_owner;
     let system_program = &ctx.accounts.system_program.to_account_info();
     let payer = &ctx.accounts.payer.to_account_info();
     let mut unique_nft_mints: Vec<Pubkey> = vec![];
+    let ticket_type = format!("nft-{}-ticket", &voter_weight_action).to_string();
 
     for (nft_info, nft_metadata_info, nft_vote_ticket_info) in ctx.remaining_accounts
         .iter()
@@ -49,6 +52,7 @@ pub fn create_nft_vote_ticket<'info>(
             &nft_vote_ticket_info,
             &registrar.key().clone(),
             &nft_mint,
+            &ticket_type,
             system_program
         )?;
         let serialized_data = NftVoteTicket {

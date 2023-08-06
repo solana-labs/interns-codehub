@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use solana_program::pubkey::PUBKEY_BYTES;
-
 use crate::tools::anchor::DISCRIMINATOR_SIZE;
+use std::fmt;
 
 /// VoterWeightAction enum as defined in spl-governance-addin-api
 /// It's redefined here for Anchor to export it to IDL
@@ -22,6 +22,18 @@ pub enum VoterWeightAction {
     /// Signs off a proposal for a governance. Target: Proposal
     /// Note: SignOffProposal is not supported in the current version
     SignOffProposal,
+}
+
+impl fmt::Display for VoterWeightAction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VoterWeightAction::CastVote => write!(f, "CastVote"),
+            VoterWeightAction::CommentProposal => write!(f, "CommentProposal"),
+            VoterWeightAction::CreateGovernance => write!(f, "CreateGovernance"),
+            VoterWeightAction::CreateProposal => write!(f, "CreateProposal"),
+            VoterWeightAction::SignOffProposal => write!(f, "SignOffProposal"),
+        }
+    }
 }
 
 /// VoterWeightRecord account as defined in spl-governance-addin-api
@@ -92,7 +104,6 @@ impl Default for VoterWeightRecord {
 
 #[cfg(test)]
 mod test {
-
     use super::*;
 
     #[test]

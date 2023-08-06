@@ -1,4 +1,5 @@
 use crate::program_test::{ tools::assert_nft_voter_err, token_metadata_test::CreateNftArgs };
+use gpl_nft_voter::state::VoterWeightAction;
 use gpl_nft_voter::error::NftVoterError;
 use program_test::nft_voter_test::*;
 use solana_program_test::*;
@@ -7,6 +8,7 @@ mod program_test;
 
 #[tokio::test]
 async fn test_create_nft_vote_ticket() -> Result<(), TransportError> {
+    let action = VoterWeightAction::CastVote;
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -41,7 +43,8 @@ async fn test_create_nft_vote_ticket() -> Result<(), TransportError> {
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
-        &[&nft_cookie]
+        &[&nft_cookie],
+        &action
     ).await?;
 
     let nft_vote_ticket = &nft_vote_ticket_cookies[0].address;
@@ -54,6 +57,7 @@ async fn test_create_nft_vote_ticket() -> Result<(), TransportError> {
 
 #[tokio::test]
 async fn test_create_nft_vote_ticket_with_multiple_nfts() -> Result<(), TransportError> {
+    let action = VoterWeightAction::CastVote;
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -96,7 +100,8 @@ async fn test_create_nft_vote_ticket_with_multiple_nfts() -> Result<(), Transpor
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
-        &[&nft_cookie, &nft_cookie2]
+        &[&nft_cookie, &nft_cookie2],
+        &action
     ).await?;
 
     let cnft_vote_ticket = nft_vote_ticket_cookies[0].address;
@@ -115,6 +120,7 @@ async fn test_create_nft_vote_ticket_with_unverified_collection_error() -> Resul
     (),
     TransportError
 > {
+    let action = VoterWeightAction::CastVote;
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -153,7 +159,8 @@ async fn test_create_nft_vote_ticket_with_unverified_collection_error() -> Resul
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,
-            &[&nft_cookie]
+            &[&nft_cookie],
+            &action
         ).await
         .err()
         .unwrap();
@@ -164,6 +171,7 @@ async fn test_create_nft_vote_ticket_with_unverified_collection_error() -> Resul
 
 #[tokio::test]
 async fn test_create_nft_vote_ticket_with_invalid_metadata_error() -> Result<(), TransportError> {
+    let action = VoterWeightAction::CastVote;
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -211,7 +219,8 @@ async fn test_create_nft_vote_ticket_with_invalid_metadata_error() -> Result<(),
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,
-            &[&nft1_cookie]
+            &[&nft1_cookie],
+            &action
         ).await
         .err()
         .unwrap();
@@ -222,6 +231,7 @@ async fn test_create_nft_vote_ticket_with_invalid_metadata_error() -> Result<(),
 
 #[tokio::test]
 async fn test_create_nft_vote_ticket_with_invalid_collection_error() -> Result<(), TransportError> {
+    let action = VoterWeightAction::CastVote;
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -259,7 +269,8 @@ async fn test_create_nft_vote_ticket_with_invalid_collection_error() -> Result<(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,
-            &[&nft_cookie]
+            &[&nft_cookie],
+            &action
         ).await
         .err()
         .unwrap();
@@ -270,6 +281,7 @@ async fn test_create_nft_vote_ticket_with_invalid_collection_error() -> Result<(
 
 #[tokio::test]
 async fn test_create_nft_vote_ticket_with_no_nft_error() -> Result<(), TransportError> {
+    let action = VoterWeightAction::CastVote;
     // Arrange
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
@@ -311,7 +323,8 @@ async fn test_create_nft_vote_ticket_with_no_nft_error() -> Result<(), Transport
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,
-            &[&nft_cookie]
+            &[&nft_cookie],
+            &action
         ).await
         .err()
         .unwrap();

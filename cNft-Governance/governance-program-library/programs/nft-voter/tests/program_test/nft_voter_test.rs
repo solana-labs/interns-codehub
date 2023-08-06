@@ -590,13 +590,15 @@ impl NftVoterTest {
         registrar_cookie: &RegistrarCookie,
         voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_cookie: &WalletCookie,
-        nft_cookies: &[&NftCookie]
+        nft_cookies: &[&NftCookie],
+        action: &VoterWeightAction
     ) -> Result<Vec<NftVoteTicketCookie>, BanksClientError> {
         self.with_create_nft_vote_ticket_using_ix(
             registrar_cookie,
             voter_weight_record_cookie,
             voter_cookie,
             nft_cookies,
+            action,
             NopOverride,
             None
         ).await
@@ -609,6 +611,7 @@ impl NftVoterTest {
         voter_weight_record_cookie: &VoterWeightRecordCookie,
         voter_cookie: &WalletCookie,
         nft_cookies: &[&NftCookie],
+        action: &VoterWeightAction,
         instruction_override: F,
         signers_override: Option<&[&Keypair]>
     ) -> Result<Vec<NftVoteTicketCookie>, BanksClientError> {
@@ -621,7 +624,9 @@ impl NftVoterTest {
         };
 
         let data = anchor_lang::InstructionData::data(
-            &(gpl_nft_voter::instruction::CreateNftVoteTicket {})
+            &(gpl_nft_voter::instruction::CreateNftVoteTicket {
+                voter_weight_action: action.clone(),
+            })
         );
 
         let mut verify_nft_info_ix = Instruction {
@@ -631,9 +636,10 @@ impl NftVoterTest {
         };
 
         let mut nft_vote_ticket_cookies = vec![];
-
+        let ticket_type = format!("nft-{}-ticket", &action).to_string();
         for nft_cookie in nft_cookies {
             let nft_vote_ticket = get_nft_vote_ticket_address(
+                &ticket_type,
                 &registrar_cookie.address,
                 &nft_cookie.mint_cookie.address
             ).0;
@@ -665,7 +671,8 @@ impl NftVoterTest {
         voter_cookie: &WalletCookie,
         leaf_cookies: &[&LeafArgs],
         leaf_verification_cookies: &[&LeafVerificationCookie],
-        proofs: &[&Vec<AccountMeta>]
+        proofs: &[&Vec<AccountMeta>],
+        action: &VoterWeightAction
     ) -> Result<Vec<NftVoteTicketCookie>, BanksClientError> {
         self.with_create_cnft_vote_ticket_using_ix(
             registrar_cookie,
@@ -674,6 +681,7 @@ impl NftVoterTest {
             leaf_cookies,
             leaf_verification_cookies,
             &proofs,
+            &action,
             NopOverride,
             None
         ).await
@@ -688,6 +696,7 @@ impl NftVoterTest {
         leaf_cookies: &[&LeafArgs],
         leaf_verification_cookies: &[&LeafVerificationCookie],
         proofs: &[&Vec<AccountMeta>],
+        action: &VoterWeightAction,
         instruction_override: F,
         signers_override: Option<&[&Keypair]>
     ) -> Result<Vec<NftVoteTicketCookie>, BanksClientError> {
@@ -709,6 +718,7 @@ impl NftVoterTest {
 
         let data = anchor_lang::InstructionData::data(
             &(gpl_nft_voter::instruction::CreateCnftVoteTicket {
+                voter_weight_action: action.clone(),
                 params,
             })
         );
@@ -720,7 +730,7 @@ impl NftVoterTest {
         };
 
         let mut nft_vote_ticket_cookies = vec![];
-
+        let ticket_type = format!("nft-{}-ticket", &action).to_string();
         for i in 0..leaf_verification_cookies.len() {
             let tree_address = leaf_cookies[i].tree_address;
             let tree_account_info = AccountMeta::new_readonly(tree_address, false);
@@ -728,6 +738,7 @@ impl NftVoterTest {
             let asset_id = &leaf_cookies[i].asset_id;
 
             let cnft_vote_ticket = get_nft_vote_ticket_address(
+                &ticket_type,
                 &registrar_cookie.address,
                 asset_id
             ).0;

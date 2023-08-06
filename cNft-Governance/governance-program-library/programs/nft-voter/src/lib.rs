@@ -63,18 +63,20 @@ pub mod nft_voter {
     }
 
     pub fn create_nft_vote_ticket<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, CreateNftVoteTicket<'info>>
+        ctx: Context<'a, 'b, 'c, 'info, CreateNftVoteTicket<'info>>,
+        voter_weight_action: VoterWeightAction
     ) -> Result<()> {
         log_version();
-        instructions::create_nft_vote_ticket(ctx)
+        instructions::create_nft_vote_ticket(ctx, voter_weight_action)
     }
 
     pub fn create_cnft_vote_ticket<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CreateCnftVoteTicket<'info>>,
+        voter_weight_action: VoterWeightAction,
         params: Vec<CompressedNftAsset>
     ) -> Result<()> {
         log_version();
-        instructions::create_cnft_vote_ticket(ctx, params)
+        instructions::create_cnft_vote_ticket(ctx, voter_weight_action, params)
     }
 }
 

@@ -13,10 +13,15 @@ pub fn create_nft_vote_ticket_account<'a>(
     account_info: &AccountInfo<'a>,
     registrar: &Pubkey,
     nft_mint: &Pubkey,
+    ticket_type: &str,
     system_program: &AccountInfo<'a>
 ) -> Result<(), ProgramError> {
-    let account_address_seeds = get_nft_vote_ticket_seeds(registrar, nft_mint);
-    let (account_address, bump_seed) = get_nft_vote_ticket_address(registrar, nft_mint);
+    let account_address_seeds = get_nft_vote_ticket_seeds(ticket_type, registrar, nft_mint);
+    let (account_address, bump_seed) = get_nft_vote_ticket_address(
+        ticket_type,
+        registrar,
+        nft_mint
+    );
 
     if account_address != *account_info.key {
         msg!(

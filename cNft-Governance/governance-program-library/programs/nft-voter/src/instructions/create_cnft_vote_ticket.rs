@@ -5,7 +5,7 @@ use spl_account_compression::program::SplAccountCompression;
 use crate::tools::accounts::create_nft_vote_ticket_account;
 
 #[derive(Accounts)]
-#[instruction(params: Vec<CompressedNftAsset>)]
+#[instruction(voter_weight_action:VoterWeightAction, params: Vec<CompressedNftAsset>)]
 pub struct CreateCnftVoteTicket<'info> {
     pub registrar: Account<'info, Registrar>,
 
@@ -30,6 +30,7 @@ pub struct CreateCnftVoteTicket<'info> {
 
 pub fn create_cnft_vote_ticket<'info>(
     ctx: Context<'_, '_, '_, 'info, CreateCnftVoteTicket<'info>>,
+    voter_weight_action: VoterWeightAction,
     params: Vec<CompressedNftAsset>
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
@@ -50,6 +51,7 @@ pub fn create_cnft_vote_ticket<'info>(
         let tree_account = accounts[0].clone();
         let proofs = accounts[1..(proof_len as usize) + 1].to_vec();
         let cnft_vote_ticket_info = accounts.last().unwrap().clone();
+        let ticket_type = format!("nft-{}-ticket", &voter_weight_action).to_string();
 
         require!(cnft_vote_ticket_info.data_is_empty(), NftVoterError::AccountDataNotEmpty);
 
@@ -69,6 +71,7 @@ pub fn create_cnft_vote_ticket<'info>(
             &cnft_vote_ticket_info,
             &registrar.key().clone(),
             &asset_id,
+            &ticket_type,
             system_program
         )?;
         let serialized_data = NftVoteTicket {

@@ -43,12 +43,23 @@ impl IsInitialized for NftVoteTicket {
     }
 }
 
-pub fn get_nft_vote_ticket_seeds<'a>(registrar: &'a Pubkey, nft_mint: &'a Pubkey) -> [&'a [u8]; 3] {
-    [b"nft-vote-ticket", registrar.as_ref(), nft_mint.as_ref()]
+pub fn get_nft_vote_ticket_seeds<'a>(
+    ticket_type: &'a str,
+    registrar: &'a Pubkey,
+    nft_mint: &'a Pubkey
+) -> [&'a [u8]; 3] {
+    [&ticket_type.as_bytes(), registrar.as_ref(), nft_mint.as_ref()]
 }
 
-pub fn get_nft_vote_ticket_address(registrar: &Pubkey, nft_mint: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&get_nft_vote_ticket_seeds(registrar, nft_mint), &crate::id())
+pub fn get_nft_vote_ticket_address(
+    ticket_type: &str,
+    registrar: &Pubkey,
+    nft_mint: &Pubkey
+) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &get_nft_vote_ticket_seeds(ticket_type, registrar, nft_mint),
+        &crate::id()
+    )
 }
 
 pub fn get_nft_vote_ticket_data(nft_vote_ticket_info: &AccountInfo) -> Result<NftVoteTicket> {
