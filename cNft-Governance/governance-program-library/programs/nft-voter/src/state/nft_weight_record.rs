@@ -43,12 +43,12 @@ impl IsInitialized for NftWeightRecord {
     }
 }
 
-pub fn get_nft_weight_record_seeds(nft_mint: &Pubkey) -> [&[u8]; 2] {
-    [b"nft-weight-record", nft_mint.as_ref()]
+pub fn get_nft_weight_record_seeds<'a>(owner: &'a Pubkey, nft_mint: &'a Pubkey) -> [&'a [u8]; 3] {
+    [b"nft-weight-record", owner.as_ref(), nft_mint.as_ref()]
 }
 
-pub fn get_nft_weight_record_address(nft_mint: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(&get_nft_weight_record_seeds(nft_mint), &crate::id())
+pub fn get_nft_weight_record_address(owner: &Pubkey, nft_mint: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(&get_nft_weight_record_seeds(owner, nft_mint), &crate::id())
 }
 
 pub fn get_nft_weight_record_data(nft_weight_record_info: &AccountInfo) -> Result<NftWeightRecord> {

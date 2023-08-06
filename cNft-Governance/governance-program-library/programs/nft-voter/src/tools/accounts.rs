@@ -11,11 +11,12 @@ use crate::state::*;
 pub fn create_nft_weight_record_account<'a>(
     payer: &AccountInfo<'a>,
     account_info: &AccountInfo<'a>,
+    owner: &Pubkey,
     nft_mint: &Pubkey,
     system_program: &AccountInfo<'a>
 ) -> Result<(), ProgramError> {
-    let account_address_seeds = get_nft_weight_record_seeds(nft_mint);
-    let (account_address, bump_seed) = get_nft_weight_record_address(nft_mint);
+    let account_address_seeds = get_nft_weight_record_seeds(owner, nft_mint);
+    let (account_address, bump_seed) = get_nft_weight_record_address(owner, nft_mint);
 
     if account_address != *account_info.key {
         msg!(
