@@ -50,7 +50,7 @@ async fn test_create_cnft_weight_record() -> Result<(), TransportError> {
             8
         ).await?;
 
-    nft_voter_test.with_create_cnft_weight_record(
+    let cnft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -59,8 +59,7 @@ async fn test_create_cnft_weight_record() -> Result<(), TransportError> {
         &[&proofs]
     ).await?;
 
-    let asset_id = &leaf_cookie.asset_id;
-    let cnft_weight_record = get_nft_weight_record_address(asset_id).0;
+    let cnft_weight_record = &cnft_weight_record_cookies[0].address;
     let cnft_weight_record_info = nft_voter_test.get_nft_weight_record(&cnft_weight_record).await;
 
     assert!(cnft_weight_record_info.weight == 3);
@@ -126,7 +125,7 @@ async fn test_create_cnft_weight_record_with_multiple_nfts() -> Result<(), Trans
             8
         ).await?;
 
-    nft_voter_test.with_create_cnft_weight_record(
+    let cnft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -135,8 +134,7 @@ async fn test_create_cnft_weight_record_with_multiple_nfts() -> Result<(), Trans
         &[&proofs1, &proofs2]
     ).await?;
 
-    let asset_id = &leaf_cookie1.asset_id;
-    let cnft_weight_record = get_nft_weight_record_address(asset_id).0;
+    let cnft_weight_record = &cnft_weight_record_cookies[0].address;
     let cnft_weight_record_info = nft_voter_test.get_nft_weight_record(&cnft_weight_record).await;
 
     assert!(cnft_weight_record_info.weight == 3);

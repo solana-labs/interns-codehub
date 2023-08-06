@@ -2,10 +2,7 @@ use crate::error::NftVoterError;
 use crate::state::*;
 use anchor_lang::prelude::*;
 use spl_account_compression::program::SplAccountCompression;
-use crate::tools::accounts::{
-    create_nft_weight_record_account,
-    serialize_nft_weight_record_account,
-};
+use crate::tools::accounts::create_nft_weight_record_account;
 
 #[derive(Accounts)]
 #[instruction(params: Vec<CompressedNftAsset>)]
@@ -52,7 +49,7 @@ pub fn create_cnft_weight_record<'info>(
 
         let tree_account = accounts[0].clone();
         let proofs = accounts[1..(proof_len as usize) + 1].to_vec();
-        let mut cnft_weight_record_info = accounts.last().unwrap().clone();
+        let cnft_weight_record_info = accounts.last().unwrap().clone();
 
         require!(cnft_weight_record_info.data_is_empty(), NftVoterError::AccountDataNotEmpty);
 
@@ -70,6 +67,7 @@ pub fn create_cnft_weight_record<'info>(
         create_nft_weight_record_account(
             payer,
             &cnft_weight_record_info,
+            governing_token_owner,
             &asset_id,
             system_program
         )?;
@@ -78,10 +76,11 @@ pub fn create_cnft_weight_record<'info>(
             nft_owner: governing_token_owner.clone(),
             weight: cnft_vote_weight,
         };
-        serialize_nft_weight_record_account(
-            &serialized_data.try_to_vec()?,
-            &mut cnft_weight_record_info
-        )?;
+        // serialize_nft_weight_record_account(
+        //     &serialized_data.try_to_vec()?,
+        //     &mut cnft_weight_record_info
+        // )?;
+        cnft_weight_record_info.data.borrow_mut().copy_from_slice(&serialized_data.try_to_vec()?);
 
         start += (proof_len as usize) + 2;
     }

@@ -1,9 +1,6 @@
 use crate::error::NftVoterError;
 use crate::state::*;
-use crate::tools::accounts::{
-    create_nft_weight_record_account,
-    serialize_nft_weight_record_account,
-};
+use crate::tools::accounts::create_nft_weight_record_account;
 use anchor_lang::prelude::*;
 use itertools::Itertools;
 
@@ -50,6 +47,7 @@ pub fn create_nft_weight_record<'info>(
         create_nft_weight_record_account(
             payer,
             &nft_weight_record_info,
+            governing_token_owner,
             &nft_mint,
             system_program
         )?;
@@ -61,10 +59,12 @@ pub fn create_nft_weight_record<'info>(
         // CHECK: if this is this should not be a function, but merge the code into this instruction
         // make this instruction the only method that can serizlize the data
         // so in cast_nft_vote can check if the data is all zero
-        serialize_nft_weight_record_account(
-            &serialized_data.try_to_vec()?,
-            &nft_weight_record_info
-        )?;
+        // serialize_nft_weight_record_account(
+        //     &serialized_data.try_to_vec()?,
+        //     &nft_weight_record_info
+        // )?;
+
+        nft_weight_record_info.data.borrow_mut().copy_from_slice(&serialized_data.try_to_vec()?);
     }
 
     Ok(())

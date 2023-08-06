@@ -634,6 +634,7 @@ impl NftVoterTest {
 
         for nft_cookie in nft_cookies {
             let nft_weight_record = get_nft_weight_record_address(
+                &voter_cookie.address,
                 &nft_cookie.mint_cookie.address
             ).0;
 
@@ -726,7 +727,10 @@ impl NftVoterTest {
             let proof = &mut proofs[i].clone();
             let asset_id = &leaf_cookies[i].asset_id;
 
-            let cnft_weight_record = get_nft_weight_record_address(asset_id).0;
+            let cnft_weight_record = get_nft_weight_record_address(
+                &voter_cookie.address,
+                asset_id
+            ).0;
             let cnft_weight_record_info = AccountMeta::new(cnft_weight_record, false);
 
             verify_cnft_info_ix.accounts.push(tree_account_info);
