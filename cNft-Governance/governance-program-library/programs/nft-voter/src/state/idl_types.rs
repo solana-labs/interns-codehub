@@ -17,7 +17,7 @@ pub struct NftVoteRecord {
 }
 
 #[account]
-pub struct NftWeightRecord {
+pub struct NftVoteTicket {
     nft_owner: Pubkey,
     weight: u64,
 }

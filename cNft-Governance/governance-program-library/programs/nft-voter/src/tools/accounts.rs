@@ -8,15 +8,15 @@ use solana_program::program::invoke_signed;
 use solana_program::msg;
 use crate::state::*;
 
-pub fn create_nft_weight_record_account<'a>(
+pub fn create_nft_vote_ticket_account<'a>(
     payer: &AccountInfo<'a>,
     account_info: &AccountInfo<'a>,
-    owner: &Pubkey,
+    registrar: &Pubkey,
     nft_mint: &Pubkey,
     system_program: &AccountInfo<'a>
 ) -> Result<(), ProgramError> {
-    let account_address_seeds = get_nft_weight_record_seeds(owner, nft_mint);
-    let (account_address, bump_seed) = get_nft_weight_record_address(owner, nft_mint);
+    let account_address_seeds = get_nft_vote_ticket_seeds(registrar, nft_mint);
+    let (account_address, bump_seed) = get_nft_vote_ticket_address(registrar, nft_mint);
 
     if account_address != *account_info.key {
         msg!(
@@ -29,7 +29,7 @@ pub fn create_nft_weight_record_account<'a>(
 
     let rent = Rent::get()?;
 
-    let lamports = rent.minimum_balance(NFT_WEIGHT_RECORD_SIZE);
+    let lamports = rent.minimum_balance(NFT_VOTE_TICKET_SIZE);
     let mut signers_seeds = account_address_seeds.to_vec();
     let bump = &[bump_seed];
     signers_seeds.push(bump);
@@ -38,7 +38,7 @@ pub fn create_nft_weight_record_account<'a>(
         payer.key,
         &account_address,
         lamports,
-        NFT_WEIGHT_RECORD_SIZE as u64,
+        NFT_VOTE_TICKET_SIZE as u64,
         &crate::id()
     );
 
@@ -50,7 +50,7 @@ pub fn create_nft_weight_record_account<'a>(
     Ok(())
 }
 
-pub fn serialize_nft_weight_record_account(
+pub fn serialize_nft_vote_ticket_account(
     serialized_data: &Vec<u8>,
     account_info: &AccountInfo
 ) -> Result<(), ProgramError> {
@@ -58,7 +58,7 @@ pub fn serialize_nft_weight_record_account(
     Ok(())
 }
 
-pub fn close_nft_weight_record_account(
+pub fn close_nft_vote_ticket_account(
     account_info: &AccountInfo,
     beneficiary_info: &AccountInfo
 ) -> Result<(), ProgramError> {

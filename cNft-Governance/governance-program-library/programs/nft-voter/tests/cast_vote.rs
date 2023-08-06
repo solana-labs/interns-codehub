@@ -48,7 +48,7 @@ async fn test_cast_nft_vote_with_nft() -> Result<(), TransportError> {
     nft_voter_test.bench.advance_clock().await;
     let clock = nft_voter_test.bench.get_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -62,7 +62,7 @@ async fn test_cast_nft_vote_with_nft() -> Result<(), TransportError> {
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -81,10 +81,10 @@ async fn test_cast_nft_vote_with_nft() -> Result<(), TransportError> {
     assert_eq!(voter_weight_record.weight_action, Some(VoterWeightAction::CastVote.into()));
     assert_eq!(voter_weight_record.weight_action_target, Some(proposal_cookie.address));
 
-    let nft_weight_record_address = nft_weight_record_cookies[0].address;
-    let nft_weight_record = nft_voter_test.bench.get_account(&nft_weight_record_address).await;
+    let nft_vote_ticket_address = nft_vote_ticket_cookies[0].address;
+    let nft_vote_ticket = nft_voter_test.bench.get_account(&nft_vote_ticket_address).await;
 
-    assert_eq!(None, nft_weight_record);
+    assert_eq!(None, nft_vote_ticket);
 
     Ok(())
 }
@@ -140,7 +140,7 @@ async fn test_cast_nft_vote_with_cnft() -> Result<(), TransportError> {
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -156,7 +156,7 @@ async fn test_cast_nft_vote_with_cnft() -> Result<(), TransportError> {
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -174,10 +174,10 @@ async fn test_cast_nft_vote_with_cnft() -> Result<(), TransportError> {
     assert_eq!(voter_weight_record.weight_action, Some(VoterWeightAction::CastVote.into()));
     assert_eq!(voter_weight_record.weight_action_target, Some(proposal_cookie.address));
 
-    let cnft_weight_record_address = nft_weight_record_cookies[0].address;
-    let cnft_weight_record = nft_voter_test.bench.get_account(&cnft_weight_record_address).await;
+    let cnft_vote_ticket_address = nft_vote_ticket_cookies[0].address;
+    let cnft_vote_ticket = nft_voter_test.bench.get_account(&cnft_vote_ticket_address).await;
 
-    assert_eq!(None, cnft_weight_record);
+    assert_eq!(None, cnft_vote_ticket);
 
     Ok(())
 }
@@ -229,7 +229,7 @@ async fn test_cast_nft_vote_with_nft_and_cnft() -> Result<(), TransportError> {
     nft_voter_test.bench.advance_clock().await;
     let clock = nft_voter_test.bench.get_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -243,7 +243,7 @@ async fn test_cast_nft_vote_with_nft_and_cnft() -> Result<(), TransportError> {
             5,
             8
         ).await?;
-    let cnft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let cnft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -259,7 +259,7 @@ async fn test_cast_nft_vote_with_nft_and_cnft() -> Result<(), TransportError> {
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &[&nft_weight_record_cookies[0], &cnft_weight_record_cookies[0]],
+        &[&nft_vote_ticket_cookies[0], &cnft_vote_ticket_cookies[0]],
         None
     ).await?;
 
@@ -278,13 +278,13 @@ async fn test_cast_nft_vote_with_nft_and_cnft() -> Result<(), TransportError> {
     assert_eq!(voter_weight_record.weight_action, Some(VoterWeightAction::CastVote.into()));
     assert_eq!(voter_weight_record.weight_action_target, Some(proposal_cookie.address));
 
-    let nft_weight_record_address = nft_weight_record_cookies[0].address;
-    let nft_weight_record = nft_voter_test.bench.get_account(&nft_weight_record_address).await;
-    assert_eq!(None, nft_weight_record);
+    let nft_vote_ticket_address = nft_vote_ticket_cookies[0].address;
+    let nft_vote_ticket = nft_voter_test.bench.get_account(&nft_vote_ticket_address).await;
+    assert_eq!(None, nft_vote_ticket);
 
-    let cnft_weight_record_address = cnft_weight_record_cookies[0].address;
-    let cnft_weight_record = nft_voter_test.bench.get_account(&cnft_weight_record_address).await;
-    assert_eq!(None, cnft_weight_record);
+    let cnft_vote_ticket_address = cnft_vote_ticket_cookies[0].address;
+    let cnft_vote_ticket = nft_voter_test.bench.get_account(&cnft_vote_ticket_address).await;
+    assert_eq!(None, cnft_vote_ticket);
 
     Ok(())
 }
@@ -335,7 +335,7 @@ async fn test_cast_nft_vote_with_multiple_nfts() -> Result<(), TransportError> {
     nft_voter_test.bench.advance_clock().await;
     let clock = nft_voter_test.bench.get_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -349,7 +349,7 @@ async fn test_cast_nft_vote_with_multiple_nfts() -> Result<(), TransportError> {
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -368,13 +368,13 @@ async fn test_cast_nft_vote_with_multiple_nfts() -> Result<(), TransportError> {
     assert_eq!(voter_weight_record.weight_action, Some(VoterWeightAction::CastVote.into()));
     assert_eq!(voter_weight_record.weight_action_target, Some(proposal_cookie.address));
 
-    let nft_weight_record_address = nft_weight_record_cookies[0].address;
-    let nft_weight_record = nft_voter_test.bench.get_account(&nft_weight_record_address).await;
-    assert_eq!(None, nft_weight_record);
+    let nft_vote_ticket_address = nft_vote_ticket_cookies[0].address;
+    let nft_vote_ticket = nft_voter_test.bench.get_account(&nft_vote_ticket_address).await;
+    assert_eq!(None, nft_vote_ticket);
 
-    let nft_weight_record_address2 = nft_weight_record_cookies[1].address;
-    let nft_weight_record2 = nft_voter_test.bench.get_account(&nft_weight_record_address2).await;
-    assert_eq!(None, nft_weight_record2);
+    let nft_vote_ticket_address2 = nft_vote_ticket_cookies[1].address;
+    let nft_vote_ticket2 = nft_voter_test.bench.get_account(&nft_vote_ticket_address2).await;
+    assert_eq!(None, nft_vote_ticket2);
 
     Ok(())
 }
@@ -444,7 +444,7 @@ async fn test_cast_nft_vote_with_multiple_cnfts() -> Result<(), TransportError> 
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -460,7 +460,7 @@ async fn test_cast_nft_vote_with_multiple_cnfts() -> Result<(), TransportError> 
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -550,7 +550,7 @@ async fn test_cast_nft_vote_with_multiple_trees() -> Result<(), TransportError> 
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -566,7 +566,7 @@ async fn test_cast_nft_vote_with_multiple_trees() -> Result<(), TransportError> 
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -661,7 +661,7 @@ async fn test_cast_nft_vote_with_multiple_trees_and_different_size() -> Result<(
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -677,7 +677,7 @@ async fn test_cast_nft_vote_with_multiple_trees_and_different_size() -> Result<(
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -741,7 +741,7 @@ async fn test_cast_nft_vote_with_nft_already_voted_error() -> Result<(), Transpo
 
     nft_voter_test.bench.advance_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -755,7 +755,7 @@ async fn test_cast_nft_vote_with_nft_already_voted_error() -> Result<(), Transpo
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -769,7 +769,7 @@ async fn test_cast_nft_vote_with_nft_already_voted_error() -> Result<(), Transpo
             &proposal_cookie,
             &voter_cookie,
             &voter_token_owner_record_cookie,
-            &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+            &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
             None
         ).await
         .err()
@@ -830,7 +830,7 @@ async fn test_cast_nft_vote_with_cnft_already_voted_error() -> Result<(), Transp
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -846,7 +846,7 @@ async fn test_cast_nft_vote_with_cnft_already_voted_error() -> Result<(), Transp
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -860,7 +860,7 @@ async fn test_cast_nft_vote_with_cnft_already_voted_error() -> Result<(), Transp
             &proposal_cookie,
             &voter_cookie,
             &voter_token_owner_record_cookie,
-            &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+            &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
             None
         ).await
         .err()
@@ -910,7 +910,7 @@ async fn test_cast_nft_vote_with_nft_invalid_voter_error() -> Result<(), Transpo
 
     nft_voter_test.bench.advance_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -926,7 +926,7 @@ async fn test_cast_nft_vote_with_nft_invalid_voter_error() -> Result<(), Transpo
             &proposal_cookie,
             &voter_cookie2,
             &voter_token_owner_record_cookie,
-            &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+            &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
             None
         ).await
         .err()
@@ -984,7 +984,7 @@ async fn test_cast_nft_vote_with_cnft_invalid_voter_error() -> Result<(), Transp
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1003,7 +1003,7 @@ async fn test_cast_nft_vote_with_cnft_invalid_voter_error() -> Result<(), Transp
             &proposal_cookie,
             &voter_cookie2,
             &voter_token_owner_record_cookie,
-            &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+            &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
             None
         ).await
         .err()
@@ -1052,7 +1052,7 @@ async fn test_cast_nft_vote_with_same_nft_error() -> Result<(), TransportError> 
 
     nft_voter_test.bench.advance_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1067,7 +1067,7 @@ async fn test_cast_nft_vote_with_same_nft_error() -> Result<(), TransportError> 
             &proposal_cookie,
             &voter_cookie,
             &voter_token_owner_record_cookie,
-            &[&nft_weight_record_cookies[0], &nft_weight_record_cookies[0]],
+            &[&nft_vote_ticket_cookies[0], &nft_vote_ticket_cookies[0]],
             None
         ).await
         .err()
@@ -1119,7 +1119,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_nft_attempted_sandw
 
     nft_voter_test.bench.advance_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1137,7 +1137,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_nft_attempted_sandw
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         Some(args)
     ).await?;
 
@@ -1152,7 +1152,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_nft_attempted_sandw
         &nft_vote_record_cookiess
     ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1166,7 +1166,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_nft_attempted_sandw
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -1231,7 +1231,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_cnft_attempted_sand
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1251,7 +1251,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_cnft_attempted_sand
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         Some(args)
     ).await?;
 
@@ -1266,7 +1266,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_cnft_attempted_sand
         &nft_vote_record_cookiess
     ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1282,7 +1282,7 @@ async fn test_cast_nft_vote_using_multiple_instructions_with_cnft_attempted_sand
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -1334,7 +1334,7 @@ async fn test_cast_nft_vote_using_delegate_with_nft() -> Result<(), TransportErr
 
     nft_voter_test.bench.advance_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1356,7 +1356,7 @@ async fn test_cast_nft_vote_using_delegate_with_nft() -> Result<(), TransportErr
         &proposal_cookie,
         &delegate_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -1417,7 +1417,7 @@ async fn test_cast_nft_vote_using_delegate_with_cnft() -> Result<(), TransportEr
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1441,7 +1441,7 @@ async fn test_cast_nft_vote_using_delegate_with_cnft() -> Result<(), TransportEr
         &proposal_cookie,
         &delegate_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 
@@ -1501,7 +1501,7 @@ async fn test_cast_nft_vote_with_nft_invalid_voter_weight_token_owner_error() ->
 
     nft_voter_test.bench.advance_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1516,7 +1516,7 @@ async fn test_cast_nft_vote_with_nft_invalid_voter_weight_token_owner_error() ->
             &proposal_cookie,
             &voter_cookie,
             &voter_token_owner_record_cookie,
-            &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+            &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
             None
         ).await
         .err()
@@ -1584,7 +1584,7 @@ async fn test_cast_nft_vote_with_cnft_invalid_voter_weight_token_owner_error() -
             8
         ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_cnft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_cnft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1601,7 +1601,7 @@ async fn test_cast_nft_vote_with_cnft_invalid_voter_weight_token_owner_error() -
             &proposal_cookie,
             &voter_cookie,
             &voter_token_owner_record_cookie,
-            &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+            &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
             None
         ).await
         .err()
@@ -1663,7 +1663,7 @@ async fn test_cast_nft_vote_with_max_5_nfts() -> Result<(), TransportError> {
     nft_voter_test.bench.advance_clock().await;
     let clock = nft_voter_test.bench.get_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
@@ -1677,7 +1677,7 @@ async fn test_cast_nft_vote_with_max_5_nfts() -> Result<(), TransportError> {
         &proposal_cookie,
         &voter_cookie,
         &voter_token_owner_record_cookie,
-        &nft_weight_record_cookies.iter().collect::<Vec<_>>(),
+        &nft_vote_ticket_cookies.iter().collect::<Vec<_>>(),
         None
     ).await?;
 

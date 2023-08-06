@@ -6,7 +6,7 @@ use solana_sdk::transport::TransportError;
 mod program_test;
 
 #[tokio::test]
-async fn test_create_nft_weight_record() -> Result<(), TransportError> {
+async fn test_create_nft_vote_ticket() -> Result<(), TransportError> {
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -37,23 +37,23 @@ async fn test_create_nft_weight_record() -> Result<(), TransportError> {
         None
     ).await?;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
         &[&nft_cookie]
     ).await?;
 
-    let nft_weight_record = &nft_weight_record_cookies[0].address;
-    let nft_weight_record_info = nft_voter_test.get_nft_weight_record(&nft_weight_record).await;
+    let nft_vote_ticket = &nft_vote_ticket_cookies[0].address;
+    let nft_vote_ticket_info = nft_voter_test.get_nft_vote_ticket(&nft_vote_ticket).await;
 
-    assert!(nft_weight_record_info.weight == 3);
+    assert!(nft_vote_ticket_info.weight == 3);
 
     Ok(())
 }
 
 #[tokio::test]
-async fn test_create_nft_weight_record_with_multiple_nfts() -> Result<(), TransportError> {
+async fn test_create_nft_vote_ticket_with_multiple_nfts() -> Result<(), TransportError> {
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -92,26 +92,26 @@ async fn test_create_nft_weight_record_with_multiple_nfts() -> Result<(), Transp
 
     nft_voter_test.bench.advance_clock().await;
 
-    let nft_weight_record_cookies = nft_voter_test.with_create_nft_weight_record(
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket(
         &registrar_cookie,
         &voter_weight_record_cookie,
         &voter_cookie,
         &[&nft_cookie, &nft_cookie2]
     ).await?;
 
-    let cnft_weight_record = nft_weight_record_cookies[0].address;
-    let cnft_weight_record_info = nft_voter_test.get_nft_weight_record(&cnft_weight_record).await;
-    assert!(cnft_weight_record_info.weight == 3);
+    let cnft_vote_ticket = nft_vote_ticket_cookies[0].address;
+    let cnft_vote_ticket_info = nft_voter_test.get_nft_vote_ticket(&cnft_vote_ticket).await;
+    assert!(cnft_vote_ticket_info.weight == 3);
 
-    let cnft_weight_record2 = nft_weight_record_cookies[1].address;
-    let cnft_weight_record_info2 = nft_voter_test.get_nft_weight_record(&cnft_weight_record2).await;
-    assert!(cnft_weight_record_info2.weight == 3);
+    let cnft_vote_ticket2 = nft_vote_ticket_cookies[1].address;
+    let cnft_vote_ticket_info2 = nft_voter_test.get_nft_vote_ticket(&cnft_vote_ticket2).await;
+    assert!(cnft_vote_ticket_info2.weight == 3);
 
     Ok(())
 }
 
 #[tokio::test]
-async fn test_create_nft_weight_record_with_unverified_collection_error() -> Result<
+async fn test_create_nft_vote_ticket_with_unverified_collection_error() -> Result<
     (),
     TransportError
 > {
@@ -149,7 +149,7 @@ async fn test_create_nft_weight_record_with_unverified_collection_error() -> Res
     ).await?;
 
     let err = nft_voter_test
-        .with_create_nft_weight_record(
+        .with_create_nft_vote_ticket(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,
@@ -163,7 +163,7 @@ async fn test_create_nft_weight_record_with_unverified_collection_error() -> Res
 }
 
 #[tokio::test]
-async fn test_create_nft_weight_record_with_invalid_metadata_error() -> Result<(), TransportError> {
+async fn test_create_nft_vote_ticket_with_invalid_metadata_error() -> Result<(), TransportError> {
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -207,7 +207,7 @@ async fn test_create_nft_weight_record_with_invalid_metadata_error() -> Result<(
     nft1_cookie.metadata = nft2_cookie.metadata;
 
     let err = nft_voter_test
-        .with_create_nft_weight_record(
+        .with_create_nft_vote_ticket(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,
@@ -221,10 +221,7 @@ async fn test_create_nft_weight_record_with_invalid_metadata_error() -> Result<(
 }
 
 #[tokio::test]
-async fn test_create_nft_weight_record_with_invalid_collection_error() -> Result<
-    (),
-    TransportError
-> {
+async fn test_create_nft_vote_ticket_with_invalid_collection_error() -> Result<(), TransportError> {
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
     let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
@@ -258,7 +255,7 @@ async fn test_create_nft_weight_record_with_invalid_collection_error() -> Result
     ).await?;
 
     let err = nft_voter_test
-        .with_create_nft_weight_record(
+        .with_create_nft_vote_ticket(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,
@@ -272,7 +269,7 @@ async fn test_create_nft_weight_record_with_invalid_collection_error() -> Result
 }
 
 #[tokio::test]
-async fn test_create_nft_weight_record_with_no_nft_error() -> Result<(), TransportError> {
+async fn test_create_nft_vote_ticket_with_no_nft_error() -> Result<(), TransportError> {
     // Arrange
     let mut nft_voter_test = NftVoterTest::start_new().await;
     let realm_cookie = nft_voter_test.governance.with_realm().await?;
@@ -310,7 +307,7 @@ async fn test_create_nft_weight_record_with_no_nft_error() -> Result<(), Transpo
 
     // Act
     let err = nft_voter_test
-        .with_create_nft_weight_record(
+        .with_create_nft_vote_ticket(
             &registrar_cookie,
             &voter_weight_record_cookie,
             &voter_cookie,

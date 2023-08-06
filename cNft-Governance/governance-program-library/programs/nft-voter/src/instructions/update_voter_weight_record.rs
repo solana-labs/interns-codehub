@@ -1,6 +1,6 @@
 use crate::error::NftVoterError;
 use crate::state::*;
-use crate::tools::accounts::close_nft_weight_record_account;
+use crate::tools::accounts::close_nft_vote_ticket_account;
 use anchor_lang::prelude::*;
 
 /// Updates VoterWeightRecord to evaluate governance power for non voting use cases: CreateProposal, CreateGovernance etc...
@@ -49,22 +49,22 @@ pub fn update_voter_weight_record(
     }
 
     let mut voter_weight = 0u64;
-    let mut unique_nft_weight_records = vec![];
+    let mut unique_nft_vote_tickets = vec![];
 
-    for nft_weight_record in ctx.remaining_accounts.iter() {
-        if unique_nft_weight_records.contains(&nft_weight_record.key) {
+    for nft_vote_ticket in ctx.remaining_accounts.iter() {
+        if unique_nft_vote_tickets.contains(&nft_vote_ticket.key) {
             return Err(NftVoterError::DuplicatedNftDetected.into());
         }
 
-        let data_bytes = nft_weight_record.data.clone();
-        let data = NftWeightRecord::try_from_slice(&data_bytes.borrow())?;
+        let data_bytes = nft_vote_ticket.data.clone();
+        let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
         voter_weight = voter_weight.checked_add(data.weight).unwrap();
 
-        require!(nft_weight_record.data_is_empty() == false, NftVoterError::NftFailedVerification);
-        require!(*nft_weight_record.owner == crate::id(), NftVoterError::InvalidPdaOwner);
+        require!(nft_vote_ticket.data_is_empty() == false, NftVoterError::NftFailedVerification);
+        require!(*nft_vote_ticket.owner == crate::id(), NftVoterError::InvalidPdaOwner);
 
-        close_nft_weight_record_account(nft_weight_record, payer)?;
-        unique_nft_weight_records.push(&nft_weight_record.key);
+        close_nft_vote_ticket_account(nft_vote_ticket, payer)?;
+        unique_nft_vote_tickets.push(&nft_vote_ticket.key);
     }
 
     voter_weight_record.voter_weight = voter_weight;

@@ -1,6 +1,6 @@
 use crate::error::NftVoterError;
 use crate::{ id, state::* };
-use crate::tools::accounts::close_nft_weight_record_account;
+use crate::tools::accounts::close_nft_vote_ticket_account;
 use anchor_lang::prelude::*;
 use anchor_lang::Accounts;
 use itertools::Itertools;
@@ -65,12 +65,12 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
     )?;
 
     let mut to_closed_accounts = vec![];
-    let mut unique_nft_weight_records: Vec<Pubkey> = vec![];
+    let mut unique_nft_vote_tickets: Vec<Pubkey> = vec![];
 
-    for (nft_mint_info, nft_weight_record_info, nft_vote_record_info) in ctx.remaining_accounts
+    for (nft_mint_info, nft_vote_ticket_info, nft_vote_record_info) in ctx.remaining_accounts
         .iter()
         .tuples() {
-        if unique_nft_weight_records.contains(&nft_weight_record_info.key) {
+        if unique_nft_vote_tickets.contains(&nft_vote_ticket_info.key) {
             return Err(NftVoterError::DuplicatedNftDetected.into());
         }
         // Create NFT vote record to ensure the same NFT hasn't been already used for voting
@@ -78,13 +78,13 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         // It ensures the NftVoteRecord is for ('nft-vote-record',proposal,nft_mint) seeds
         require!(nft_vote_record_info.data_is_empty(), NftVoterError::NftAlreadyVoted);
         require!(
-            nft_weight_record_info.data_is_empty() == false, //this might be a problem
+            nft_vote_ticket_info.data_is_empty() == false, //this might be a problem
             NftVoterError::NftFailedVerification
         );
-        require!(*nft_weight_record_info.owner == crate::id(), NftVoterError::InvalidPdaOwner);
+        require!(*nft_vote_ticket_info.owner == crate::id(), NftVoterError::InvalidPdaOwner);
 
-        let data_bytes = nft_weight_record_info.data.clone();
-        let data = NftWeightRecord::try_from_slice(&data_bytes.borrow())?;
+        let data_bytes = nft_vote_ticket_info.data.clone();
+        let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
         voter_weight = voter_weight.checked_add(data.weight).unwrap();
 
         require!(data.nft_owner == governing_token_owner, NftVoterError::VoterDoesNotOwnNft);
@@ -119,8 +119,8 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         // adding this is the close the account after cpi transaction
         // https://solana.stackexchange.com/questions/4481/error-processing-instruction-0-sum-of-account-balances-before-and-after-instruc
         // https://solana.stackexchange.com/questions/4519/anchor-error-error-processing-instruction-0-sum-of-account-balances-before-and
-        to_closed_accounts.push(nft_weight_record_info.to_account_info());
-        unique_nft_weight_records.push(nft_weight_record_info.key());
+        to_closed_accounts.push(nft_vote_ticket_info.to_account_info());
+        unique_nft_vote_tickets.push(nft_vote_ticket_info.key());
     }
 
     if
@@ -144,7 +144,7 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
     voter_weight_record.weight_action_target = Some(proposal);
 
     for clased_account in to_closed_accounts.iter() {
-        close_nft_weight_record_account(clased_account, payer)?;
+        close_nft_vote_ticket_account(clased_account, payer)?;
     }
     Ok(())
 }
