@@ -43,6 +43,7 @@ impl IsInitialized for NftVoteTicket {
     }
 }
 
+/// ticket_type = format!("nft-{}-ticket", &voter_weight_action).to_string();
 pub fn get_nft_vote_ticket_seeds<'a>(
     ticket_type: &'a str,
     registrar: &'a Pubkey,

@@ -27,11 +27,11 @@ pub enum VoterWeightAction {
 impl fmt::Display for VoterWeightAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VoterWeightAction::CastVote => write!(f, "CastVote"),
-            VoterWeightAction::CommentProposal => write!(f, "CommentProposal"),
-            VoterWeightAction::CreateGovernance => write!(f, "CreateGovernance"),
-            VoterWeightAction::CreateProposal => write!(f, "CreateProposal"),
-            VoterWeightAction::SignOffProposal => write!(f, "SignOffProposal"),
+            VoterWeightAction::CastVote => write!(f, "castVote"),
+            VoterWeightAction::CommentProposal => write!(f, "commentProposal"),
+            VoterWeightAction::CreateGovernance => write!(f, "createGovernance"),
+            VoterWeightAction::CreateProposal => write!(f, "createProposal"),
+            VoterWeightAction::SignOffProposal => write!(f, "cignOffProposal"),
         }
     }
 }
