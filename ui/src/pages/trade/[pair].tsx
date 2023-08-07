@@ -4,13 +4,9 @@ import { useMemo } from 'react'
 
 import CandlestickChart from '@/components/Chart/CandlestickChart'
 import TradeBox from '@/components/TradeBox'
-import { useAppDispatch } from '@/hooks'
 import { strAsToken } from '@/lib/Token'
-import { fetchAllGlobalpools } from '@/slices/globalpool'
 
 export default function TradePairPage() {
-  const dispatch = useAppDispatch()
-  dispatch(fetchAllGlobalpools())
 
   const router = useRouter()
   const { pair: candidatePair } = router.query
@@ -39,13 +35,13 @@ export default function TradePairPage() {
 
   return (
     <Container maxWidth='lg'>
-      <Stack direction={{ md: 'row' }} alignItems="stretch" justifyContent="space-between" spacing={{ xs: 3, md: 6}}>
+      <Stack direction={{ md: 'row' }} alignItems="stretch" justifyContent="space-between" spacing={{ xs: 3, md: 6 }}>
         <CandlestickChart
           baseToken={baseToken}
           quoteToken={quoteToken}
           sx={{ width: '100%' }}
         />
-        <Stack spacing={2} justifyContent="flex-end" py={3}>
+        <Stack justifyContent="flex-end" spacing={2}>
           <TradeBox baseToken={baseToken} quoteToken={quoteToken} />
           {/* <LeverageTradeBox
             baseToken={baseToken}

@@ -42,9 +42,6 @@ export default function Navbar() {
             <NavbarLink href="/position" icon={<StoragePool />}>
               Positions
             </NavbarLink>
-            <NavbarLink href="/admin" icon={<UserAdmin />}>
-              Admin
-            </NavbarLink>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={1}>
             <p className="text-white">Connect to DEVNET!</p>

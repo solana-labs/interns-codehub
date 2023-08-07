@@ -36,6 +36,17 @@ export const TOKEN_LIST: Record<TokenEKeys, string> = {
   // stSOL: "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj",
 }
 
+export const TOKEN_INFO: Record<TokenE, { name: string, symbol: string, decimals: number }> = {
+  SOL: { name: 'Solana', symbol: 'SOL', decimals: 9 },
+  USDC: { name: 'USD Coin', symbol: 'USDC', decimals: 6 },
+  BONK: { name: 'Bonk', symbol: 'BONK', decimals: 5 },
+  FIDA: { name: 'Bonfida', symbol: 'FIDA', decimals: 6 },
+  HNT: { name: 'Helium', symbol: 'HNT', decimals: 8 },
+  IOT: { name: 'Helium IOT', symbol: 'IOT', decimals: 6 },
+  Test_USDC: { name: 'Test USDC', symbol: 'TEST_USDC', decimals: 6 },
+  Test_BONK: { name: 'Test Bonk', symbol: 'TEST_BONK', decimals: 6 },
+}
+
 type TokenListKeys = TokenEKeys
 type TokenListValues = typeof TOKEN_LIST[TokenListKeys]
 
@@ -154,7 +165,7 @@ export function sortByQuotePriority(mintLeft: PublicKey, mintRight: PublicKey): 
 }
 
 // first-depth key access only
-export function sortObjectByQuotePriority(key: string){
+export function sortObjectByQuotePriority(key: string) {
   return (mintLeft: any & { [key: string]: PublicKey }, mintRight: any & { [key: string]: PublicKey }) => {
     if (!mintLeft[key] || !mintRight[key]) throw new Error('invalid key in sorting object by quote priority')
     return sortByQuotePriority(mintLeft[key]!!, mintRight[key]!!)

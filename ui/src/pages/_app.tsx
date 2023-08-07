@@ -12,6 +12,8 @@ import '@/styles/global.css'
 
 import WalletContextProvider from '@/components/Context/WalletContextProvider'
 import Navbar from "@/components/Navbar";
+import { useAppDispatch } from '@/hooks'
+import { fetchAllGlobalpools } from '@/slices/globalpool'
 import store from '@/store'
 import customTheme from '@/theme'
 
@@ -26,6 +28,9 @@ const inter = Inter({ subsets: ['latin'] })
 // };
 
 function MainLayout({ children }: React.PropsWithChildren) {
+  const dispatch = useAppDispatch()
+  dispatch(fetchAllGlobalpools())
+
   return (
     <Box mt={8} py={8} className={inter.className}>
       {children}

@@ -1,6 +1,7 @@
 import { Program } from '@coral-xyz/anchor'
 import { Jupiter } from '@jup-ag/core'
 import {
+  AccountLayout,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
@@ -15,6 +16,8 @@ import {
   VersionedTransaction,
   TransactionMessage,
   Keypair,
+  TransactionInstruction,
+  Signer,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
@@ -27,12 +30,14 @@ import {
   estimateLiquidityFromTokenAmounts,
   toTokenAmount,
 } from '@/utils'
+import { resolveOrCreateATAs } from '@orca-so/common-sdk'
 
 export type OpenTradePositionParams = {
   tickLowerIndex: number,
   tickUpperIndex: number,
   borrowAmount: number, // token amounts to borrow (either Token A or B; not liquidity amount)
   borrowTokenDecimals: number, // decimal exponent of borrow token
+  loanDurationSlots: number,
   positionAuthority: PublicKey
   globalpoolKey: PublicKey
   globalpool: GlobalpoolData
@@ -47,6 +52,7 @@ export default async function openTradePosition(params: OpenTradePositionParams)
     tickUpperIndex,
     borrowAmount,
     borrowTokenDecimals,
+    loanDurationSlots,
     positionAuthority,
     globalpoolKey,
     globalpool,
@@ -185,7 +191,7 @@ export default async function openTradePosition(params: OpenTradePositionParams)
     throw new Error('Invalid exchange route')
   }
 
-  if (bestRoute.marketInfos[0].amm.label !== 'Orca') {
+  if (!bestRoute.marketInfos[0].amm.label.startsWith('Orca')) {
     throw new Error(
       `Invalid exchange route, ${bestRoute.marketInfos[0].amm.label}`
     )
@@ -251,21 +257,42 @@ export default async function openTradePosition(params: OpenTradePositionParams)
     tickLowerIndex,
     tickUpperIndex,
     borrowA: isBorrowA,
-    loanDurationSlots: new BN(10_000), // 10k slots * 0.4s = 66m 40s
+    loanDurationSlots: new BN(loanDurationSlots),
     swapInstructionData: swapInstruction.data,
   }
 
-  const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+  const openTradePositionPreIxs: TransactionInstruction[] = []
+  const openTradePositionSigners: Signer[] = []
+
+  const resolveAtaIxs = await resolveOrCreateATAs(
+    program.provider.connection,
+    positionAuthority,
+    [{ tokenMint: tokenMintAKey }, { tokenMint: tokenMintBKey }],
+    () => program.provider.connection.getMinimumBalanceForRentExemption(AccountLayout.span),
+  )
+  console.log(resolveAtaIxs)
+
+  const resolveAtaPreIxs = resolveAtaIxs.map((ix) => ix.instructions).flat()
+  console.log('resolveAtaPreIxs', resolveAtaPreIxs)
+  if (resolveAtaPreIxs) openTradePositionPreIxs.push(...resolveAtaPreIxs)
+
+  // const resolveAtaPostIxs = resolveAtaIxs.map((ix) => ix.cleanupInstructions).flat()
+  // console.log('resolveAtaPostIxs', resolveAtaPostIxs)
+  // if (resolveAtaPostIxs) repayTradePostInstructions.push(...resolveAtaPostIxs)
+
+  const resolveAtaSigners = resolveAtaIxs.map((ix) => ix.signers).flat()
+  console.log('resolveAtaSigners', resolveAtaSigners)
+  if (resolveAtaSigners) openTradePositionSigners.push(...resolveAtaSigners)
+
+  openTradePositionPreIxs.push(ComputeBudgetProgram.setComputeUnitLimit({
     units: 1_000_000,
-  })
+  }))
 
   await program.methods
     .openTradePosition(openTradePositionParams)
     .accounts(openTradePositionAccounts)
     .remainingAccounts(swapAccounts)
-    .signers([positionMintKeypair])
-    .preInstructions([
-      modifyComputeUnits
-    ])
+    .signers([positionMintKeypair, ...openTradePositionSigners])
+    .preInstructions(openTradePositionPreIxs)
     .rpc()
 }
