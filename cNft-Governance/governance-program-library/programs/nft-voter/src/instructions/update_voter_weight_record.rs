@@ -64,7 +64,7 @@ pub fn update_voter_weight_record(
         let data_bytes = nft_vote_ticket.data.clone();
         let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
 
-        let ticket_type = format!("nft-{}-ticket", &VoterWeightAction::CastVote).to_string();
+        let ticket_type = format!("nft-{}-ticket", &voter_weight_action).to_string();
         let nft_vote_ticket_address = get_nft_vote_ticket_address(
             &ticket_type,
             &registrar.key(),
