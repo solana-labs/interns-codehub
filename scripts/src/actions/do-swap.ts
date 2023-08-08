@@ -6,14 +6,14 @@ import {
 } from '@solana/spl-token'
 import BN from 'bn.js'
 
-import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
-import { ParsableGlobalpool, ParsableTickArray } from './types/parsing'
-import { getPostPoolInitParams } from './params'
-import { TICK_ARRAY_SIZE } from './constants'
-import { getTickArrayKeysForSwap } from './utils/tick-arrays'
-import { swapQuoteByInputToken } from './utils/swap'
-import { createTransactionChained } from './utils/txix'
-import { createAndMintToManyATAs } from './utils/token'
+import { consoleLogFull, getAccountData, getTokenBalance } from '../utils'
+import { ParsableGlobalpool, ParsableTickArray } from '../types/parsing'
+import { getPostPoolInitParams } from '../params'
+import { TICK_ARRAY_SIZE } from '../constants'
+import { getTickArrayKeysForSwap } from '../utils/tick-arrays'
+import { swapQuoteByInputToken } from '../utils/swap'
+import { createTransactionChained } from '../utils/txix'
+import { createAndMintToManyATAs } from '../utils/token'
 
 async function main() {
   const {

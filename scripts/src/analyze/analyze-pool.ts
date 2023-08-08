@@ -1,9 +1,9 @@
 import * as anchor from '@coral-xyz/anchor'
 import { PublicKey } from '@solana/web3.js'
 
-import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
-import { ParsableGlobalpool } from './types/parsing'
-import { getPostPoolInitParams } from './params'
+import { consoleLogFull, getAccountData, getTokenBalance } from '../utils'
+import { ParsableGlobalpool } from '../types/parsing'
+import { getPostPoolInitParams } from '../params'
 
 async function main() {
   const {

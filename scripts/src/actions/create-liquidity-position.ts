@@ -15,20 +15,20 @@ import {
 } from '@solana/web3.js'
 import Decimal from 'decimal.js'
 
-import { TICK_ARRAY_SIZE } from './constants'
-import { getConstantParams } from './params'
-import { ParsableGlobalpool } from './types/parsing'
+import { TICK_ARRAY_SIZE } from '../constants'
+import { getConstantParams } from '../params'
+import { ParsableGlobalpool } from '../types/parsing'
 import {
   OpenPositionParams,
   OpenLiquidityPositionAccounts,
-} from './types/instructions'
-import { consoleLogFull, getAccountData } from './utils'
-import { increaseLiquidityQuoteByInputToken } from './utils/liquidity-position/quote'
-import { PositionStatus } from './utils/liquidity-position/types'
-import { PositionUtil } from './utils/liquidity-position/utils'
-import { createAndMintToManyATAs } from './utils/token'
-import { createTransactionChained } from './utils/txix'
-import { getTickArrayKeyFromTickIndex, initTickArrayRange } from './utils/tick-arrays'
+} from '../types/instructions'
+import { consoleLogFull, getAccountData } from '../utils'
+import { increaseLiquidityQuoteByInputToken } from '../utils/liquidity-position/quote'
+import { PositionStatus } from '../utils/liquidity-position/types'
+import { PositionUtil } from '../utils/liquidity-position/utils'
+import { createAndMintToManyATAs } from '../utils/token'
+import { createTransactionChained } from '../utils/txix'
+import { getTickArrayKeyFromTickIndex, initTickArrayRange } from '../utils/tick-arrays'
 
 async function main() {
   const {

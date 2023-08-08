@@ -1,26 +1,18 @@
 import { PriceMath } from '@orca-so/whirlpools-sdk'
-import { getMint, Mint, TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import {
-  AccountInfo,
-  Connection,
-  ParsedAccountData,
-  PublicKey,
-} from '@solana/web3.js'
+import { getMint, Mint } from '@solana/spl-token'
 import BN from 'bn.js'
 
-import { getPostPoolInitParams } from './params'
+import { getPostPoolInitParams } from '../params'
 import {
-  consoleLogFull,
   getAccountData,
-  getTokenBalance,
   truncatedAddress,
-} from './utils'
-import { ParsableGlobalpool, ParsableTradePosition } from './types/parsing'
-import { GlobalpoolData, TradePositionData } from './types/accounts'
-import { PositionStatus } from './utils/liquidity-position/types'
-import { PositionUtil } from './utils/liquidity-position/utils'
-import { getUserTradePositions } from './utils/position'
-import { getTokenAmountsFromLiquidity } from './utils/token-math'
+} from '../utils'
+import { ParsableGlobalpool } from '../types/parsing'
+import { GlobalpoolData } from '../types/accounts'
+import { PositionStatus } from '../utils/liquidity-position/types'
+import { PositionUtil } from '../utils/liquidity-position/utils'
+import { getUserTradePositions } from '../utils/position'
+import { getTokenAmountsFromLiquidity } from '../utils/token-math'
 
 function paddedConsoleLogBlock(str: string[]) {
   str.forEach((s) => console.log(' '.repeat(10), s))

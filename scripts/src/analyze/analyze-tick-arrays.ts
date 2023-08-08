@@ -1,3 +1,4 @@
+import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import { getMint } from '@solana/spl-token'
 import { PublicKey } from '@solana/web3.js'
 import Decimal from 'decimal.js'
@@ -7,12 +8,11 @@ import {
   getAccountData,
   getTokenBalance,
   truncatedAddress,
-} from './utils'
-import { ParsableGlobalpool, ParsableTickArray } from './types/parsing'
-import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
-import { getPostPoolInitParams } from './params'
-import { TickArrayData } from './types/accounts'
-import { TICK_ARRAY_SIZE } from './constants'
+} from '../utils'
+import { ParsableGlobalpool, ParsableTickArray } from '../types/parsing'
+import { getPostPoolInitParams } from '../params'
+import { TickArrayData } from '../types/accounts'
+import { TICK_ARRAY_SIZE } from '../constants'
 
 type TickArrayInfo = {
   tickArrayKey: PublicKey

@@ -12,8 +12,8 @@ import {
   SystemProgram,
 } from '@solana/web3.js'
 
-import { getConstantParams } from './params'
-import { createTransactionChained } from './utils/txix'
+import { getConstantParams } from '../params'
+import { createTransactionChained } from '../utils/txix'
 
 async function main() {
   const {

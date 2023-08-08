@@ -7,17 +7,17 @@ import {
   PublicKey,
 } from '@solana/web3.js'
 
-import { getPostPoolInitParams } from './params'
+import { getPostPoolInitParams } from '../params'
 import {
   consoleLogFull,
   getAccountData,
   getTokenBalance,
   truncatedAddress,
-} from './utils'
-import { ParsableGlobalpool, ParsableLiquidityPosition } from './types/parsing'
-import { GlobalpoolData, LiquidityPositionData } from './types/accounts'
-import { PositionStatus } from './utils/liquidity-position/types'
-import { PositionUtil } from './utils/liquidity-position/utils'
+} from '../utils'
+import { ParsableGlobalpool, ParsableLiquidityPosition } from '../types/parsing'
+import { GlobalpoolData, LiquidityPositionData } from '../types/accounts'
+import { PositionStatus } from '../utils/liquidity-position/types'
+import { PositionUtil } from '../utils/liquidity-position/utils'
 
 type UserPosition = {
   key: PublicKey

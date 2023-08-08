@@ -1,5 +1,6 @@
 import { Jupiter } from '@jup-ag/core'
 import { Percentage } from '@orca-so/common-sdk'
+import { PoolUtil, toTokenAmount } from '@orca-so/whirlpools-sdk'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -18,15 +19,14 @@ import {
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
-import envVars from './constants/env-vars'
-import { getPostPoolInitParams } from './params'
-import { ParsableGlobalpool } from './types/parsing'
-import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
-import { getRoutesFromJupiter } from './utils/jupiter'
-import { getTickArrayKeyFromTickIndex } from './utils/tick-arrays'
-import { createTransactionChained } from './utils/txix'
-import { createAndMintToManyATAs } from './utils/token'
-import { PoolUtil, toTokenAmount } from '@orca-so/whirlpools-sdk'
+import envVars from '../constants/env-vars'
+import { getPostPoolInitParams } from '../params'
+import { ParsableGlobalpool } from '../types/parsing'
+import { consoleLogFull, getAccountData, getTokenBalance } from '../utils'
+import { getRoutesFromJupiter } from '../utils/jupiter'
+import { getTickArrayKeyFromTickIndex } from '../utils/tick-arrays'
+import { createTransactionChained } from '../utils/txix'
+import { createAndMintToManyATAs } from '../utils/token'
 
 async function main() {
   const {

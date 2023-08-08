@@ -1,5 +1,6 @@
 import { Jupiter, SwapMode } from '@jup-ag/core'
 import { Percentage } from '@orca-so/common-sdk'
+import { PoolUtil, toTokenAmount } from '@orca-so/whirlpools-sdk'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -8,27 +9,27 @@ import {
 import {
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
+  Keypair,
   PublicKey,
   Connection,
   ComputeBudgetProgram,
   AccountMeta,
   VersionedTransaction,
   TransactionMessage,
-  Keypair,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
-import envVars from './constants/env-vars'
-import { getPostPoolInitParams } from './params'
-import { ParsableGlobalpool } from './types/parsing'
-import { consoleLogFull, getAccountData, getTokenBalance } from './utils'
-import { getRoutesFromJupiter } from './utils/jupiter'
-import { getTickArrayKeyFromTickIndex } from './utils/tick-arrays'
-import { createTransactionChained } from './utils/txix'
-import { createAndMintToManyATAs } from './utils/token'
-import { getUserTradePositions } from './utils/position'
-import { getTokenAmountsFromLiquidity } from './utils/token-math'
-import { ZERO_BN, testJupiterAmmsToExclude } from './constants'
+import envVars from '../constants/env-vars'
+import { getPostPoolInitParams } from '../params'
+import { ParsableGlobalpool } from '../types/parsing'
+import { consoleLogFull, getAccountData } from '../utils'
+import { getRoutesFromJupiter } from '../utils/jupiter'
+import { getUserTradePositions } from '../utils/position'
+import { createTransactionChained } from '../utils/txix'
+import { createAndMintToManyATAs } from '../utils/token'
+import { getTickArrayKeyFromTickIndex } from '../utils/tick-arrays'
+import { getTokenAmountsFromLiquidity } from '../utils/token-math'
+import { ZERO_BN, testJupiterAmmsToExclude } from '../constants'
 
 async function main() {
   const {
@@ -40,8 +41,6 @@ async function main() {
     tickSpacing,
     tokenMintA: mintA,
     tokenMintB: mintB,
-    tokenOracleA,
-    tokenOracleB,
     cladKey,
     globalpoolKey,
   } = await getPostPoolInitParams()
@@ -169,7 +168,7 @@ async function main() {
     throw Error('Invalid repayment amount, both token A & B needed')
   }
 
-  let isSwapTradeA2B = false // true in else-if below
+  let isSwapTradeA2B = false
   let swapInTokenVault: PublicKey | undefined = undefined
   let swapOutTokenVault: PublicKey | undefined = undefined
   let swapOutNeeded: BN = ZERO_BN
@@ -283,15 +282,19 @@ async function main() {
     swapInstructionData = swapInstruction.data
   }
 
-  const repayTradePositionAccounts = {
-    owner: positionAuthority,
+  const liquidateTradePositionAccounts = {
+    liquidator: positionAuthority,
+    positionAuthority,
     globalpool: globalpoolKey,
 
     position: positionKey,
+    positionMint: positionMintPubkey,
     positionTokenAccount,
 
-    tokenOwnerAccountA,
-    tokenOwnerAccountB,
+    tokenAuthorityAccountA: tokenOwnerAccountA,
+    tokenAuthorityAccountB: tokenOwnerAccountB,
+    tokenLiquidatorAccountA: tokenOwnerAccountA,
+    tokenLiquidatorAccountB: tokenOwnerAccountB,
     tokenVaultA,
     tokenVaultB,
     tokenMintA: tokenMintAKey,
@@ -304,35 +307,11 @@ async function main() {
     rent: SYSVAR_RENT_PUBKEY,
   }
 
-  const repayTradePositionParams = {
-    swapInstructionData,
-    // lower & upper tick index are retrieved from the position
+  const liquidateTradePositionParams = {
+    swapInstructionData: swapInstructionData,
   }
 
-  const closeLoanPositionAccounts = {
-    owner: positionAuthority,
-    receiver: positionAuthority,
-    globalpool: globalpoolKey,
-
-    position: positionKey,
-    positionMint: positionMintPubkey,
-    positionTokenAccount,
-
-    tokenOwnerAccountA,
-    tokenOwnerAccountB,
-    tokenVaultA,
-    tokenVaultB,
-    tokenMintA: tokenMintAKey,
-    tokenMintB: tokenMintBKey,
-
-    tickArrayLower: tickArrayLowerKey,
-    tickArrayUpper: tickArrayUpperKey,
-
-    tokenProgram: TOKEN_PROGRAM_ID,
-    // associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    // systemProgram: SystemProgram.programId,
-    // rent: SYSVAR_RENT_PUBKEY,
-  }
+  console.log(liquidateTradePositionAccounts)
 
   const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
     units: 1_000_000,
@@ -343,24 +322,13 @@ async function main() {
     provider.wallet,
     [
       modifyComputeUnits,
-      program.instruction.repayTradePosition(repayTradePositionParams, {
-        accounts: repayTradePositionAccounts,
+      program.instruction.liquidateTradePosition(liquidateTradePositionParams, {
+        accounts: liquidateTradePositionAccounts,
         remainingAccounts: swapAccounts,
       }),
     ],
     []
   ).buildAndExecute()
-
-//   await createTransactionChained(
-//     provider.connection,
-//     provider.wallet,
-//     [
-//       program.instruction.closeLoanPosition({
-//         accounts: closeLoanPositionAccounts,
-//       }),
-//     ],
-//     [] // positionMintKeypair
-//   ).buildAndExecute()
 }
 
 main().catch((err) => {

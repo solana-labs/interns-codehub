@@ -2,10 +2,10 @@ import { PublicKey } from '@solana/web3.js'
 import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import BN from 'bn.js'
 
-import { TICK_ARRAY_SIZE } from './constants'
-import { getPostPoolInitParams } from './params'
-import { ParsableGlobalpool, ParsableTickArray } from './types/parsing'
-import { getAccountData } from './utils'
+import { TICK_ARRAY_SIZE } from '../constants'
+import { getPostPoolInitParams } from '../params'
+import { ParsableGlobalpool, ParsableTickArray } from '../types/parsing'
+import { getAccountData } from '../utils'
 
 async function main() {
   const {
