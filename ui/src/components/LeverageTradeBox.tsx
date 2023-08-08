@@ -60,7 +60,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
   const [estInterest, setEstInterest] = useState<number | undefined>(undefined)
   // const [estInterestRate, setEstInterestRate] = useState<number | undefined>(undefined)
 
-  const loanDurationSlots = 10_000 // TODO: make this dynamic
+  const loanDuration = 3600 // TODO: make this dynamic
 
   const [isOpeningPosition, setIsOpeningPosition] = useState<boolean>(false)
 
@@ -83,7 +83,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
       tickUpperIndex: upperPriceTick,
       borrowAmount: tradeAmount,
       borrowTokenDecimals: isBorrowA ? baseDecimals : quoteDecimals,
-      loanDurationSlots,
+      loanDuration,
       positionAuthority: wallet.publicKey,
       globalpoolKey: new PublicKey(globalpool._pubkey),
       globalpool,
@@ -232,7 +232,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
           </Typography>
         </Box>
       </Stack>
-      <Stack direction={{ md: 'row' }} alignItems="center" justifyContent="space-between" pt={2} spacing={1}>
+      <Stack direction={{ md: 'row' }} alignItems="center" justifyContent="space-between" spacing={1}>
         <Box textAlign="right">
           <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Interest</Typography>
           <Typography variant="body1" fontWeight="bold">

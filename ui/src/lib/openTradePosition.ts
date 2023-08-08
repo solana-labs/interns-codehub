@@ -37,7 +37,7 @@ export type OpenTradePositionParams = {
   tickUpperIndex: number,
   borrowAmount: number, // token amounts to borrow (either Token A or B; not liquidity amount)
   borrowTokenDecimals: number, // decimal exponent of borrow token
-  loanDurationSlots: number,
+  loanDuration: number, // loan duration in seconds
   positionAuthority: PublicKey
   globalpoolKey: PublicKey
   globalpool: GlobalpoolData
@@ -52,7 +52,7 @@ export default async function openTradePosition(params: OpenTradePositionParams)
     tickUpperIndex,
     borrowAmount,
     borrowTokenDecimals,
-    loanDurationSlots,
+    loanDuration,
     positionAuthority,
     globalpoolKey,
     globalpool,
@@ -257,7 +257,7 @@ export default async function openTradePosition(params: OpenTradePositionParams)
     tickLowerIndex,
     tickUpperIndex,
     borrowA: isBorrowA,
-    loanDurationSlots: new BN(loanDurationSlots),
+    loanDuration: new BN(loanDuration),
     swapInstructionData: swapInstruction.data,
   }
 
