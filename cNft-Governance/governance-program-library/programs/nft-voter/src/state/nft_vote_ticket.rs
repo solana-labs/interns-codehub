@@ -6,6 +6,12 @@ use spl_governance_tools::account::{ get_account_data, AccountMaxSize };
 
 pub const NFT_VOTE_TICKET_SIZE: usize = DISCRIMINATOR_SIZE + 32 + 8;
 
+// maybe should moce the nft_owner as part of the seeds
+// so that if the owner transfer the nft to new owner, otherwise
+// require!(data.nft_owner == governing_token_owner, NftVoterError::VoterDoesNotOwnNft); will fail
+// and instead to store nft_owner or weight, perhaps should store to-be-verified data?
+// or maybe not? cuz the no-matter the sybil attack exist that nft-owner keep transfer and vot
+// nft_vote_record.data_is_empty() will still block the second vote with the same nft
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct NftVoteTicket {
     pub account_discriminator: [u8; 8],
