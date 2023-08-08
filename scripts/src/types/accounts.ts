@@ -60,7 +60,7 @@ export type TradePositionData = {
   collateralAmount: BN // u64
   tokenMintLoan: PublicKey
   tokenMintCollateral: PublicKey
-  openSlot: BN // u64
+  openTime: BN // u64
   duration: BN // u64
   interestRate: number // u32
 }

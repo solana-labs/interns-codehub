@@ -28,12 +28,14 @@ async function main() {
     cladKey,
     initPrice,
     initSqrtPrice,
+    initTickIndex,
   } = await getConstantParams()
 
   const tokenMintAKey = tokenMintA.address
   const tokenMintBKey = tokenMintB.address
 
   console.log('Init USDC/HNT Price: ', initPrice.toString())
+  console.log('Init USDC/HNT Tick: ', initTickIndex)
 
   //
   // Create Clad account

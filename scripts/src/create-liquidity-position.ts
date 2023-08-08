@@ -105,9 +105,9 @@ async function main() {
   const startTickIndex =
     currentTickArrayStartIndex +
     (aToB ? 1 : -1) *
-      Math.floor(initArrayCount / 2) *
-      tickSpacing *
-      TICK_ARRAY_SIZE
+    Math.floor(initArrayCount / 2) *
+    tickSpacing *
+    TICK_ARRAY_SIZE
 
   await initTickArrayRange(
     globalpoolKey,
@@ -123,12 +123,19 @@ async function main() {
   // Create Liquidity Position
   //
 
-  // positions to create
+  const lower = 1.8 // B/A (USDC/HNT)
+  const upper = 2
+
+  const decimalDiff = tokenMintB.decimals - tokenMintA.decimals
+  const lowerTickIndex = Math.round((Math.log(lower * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing
+  const upperTickIndex = Math.round((Math.log(upper * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing
+
+  // Liquidity POositions to create
+  // Deposit both Token A and B (X & USDC)
   const preparedLiquiditiyPositions: OpenPositionParams[] = [
-    // Deposit both Token A and B (X & USDC)
     {
       tickLowerIndex: tickCurrentIndex,
-      tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE/2) * tickSpacing,
+      tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE / 2) * tickSpacing,
       liquidityAmount: new anchor.BN(1000), // 1000 X
     },
     {
@@ -146,16 +153,11 @@ async function main() {
       tickUpperIndex: tickCurrentIndex + tickSpacing,
       liquidityAmount: new anchor.BN(1000), // 1000 X worth
     },
-    // {
-    //   tickLowerIndex: -39104,
-    //   tickUpperIndex: -37696,
-    //   liquidityAmount: new anchor.BN(10_000), // 10k USDC worth
-    // }
-    // {
-    //   tickLowerIndex: -39104,
-    //   tickUpperIndex: -37696,
-    //   liquidityAmount: new anchor.BN(10_000), // 10k USDC worth
-    // }
+    {
+      tickLowerIndex: lowerTickIndex,
+      tickUpperIndex: upperTickIndex,
+      liquidityAmount: new anchor.BN(1000), // 1000 X worth
+    }
   ]
 
   const defaultOpenLiquidityPositionAccounts: Omit<

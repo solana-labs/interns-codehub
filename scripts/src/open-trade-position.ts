@@ -383,7 +383,7 @@ async function main() {
     tickLowerIndex,
     tickUpperIndex,
     borrowA,
-    loanDurationSlots: new BN(10_000), // 10k slots * 0.4s = 66m 40s
+    loanDuration: new BN(3600), // min is 1 hour
     swapInstructionData: swapInstruction.data,
   }
 
