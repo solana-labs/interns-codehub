@@ -70,13 +70,16 @@ pub fn create_cnft_vote_ticket<'info>(
             payer,
             &cnft_vote_ticket_info,
             &registrar.key().clone(),
+            &governing_token_owner,
             &asset_id,
             &ticket_type,
             system_program
         )?;
         let serialized_data = NftVoteTicket {
             account_discriminator: NftVoteTicket::ACCOUNT_DISCRIMINATOR,
-            nft_owner: governing_token_owner.clone(),
+            registrar: registrar.key().clone(),
+            governing_token_owner: governing_token_owner.clone(),
+            nft_mint: asset_id.clone(),
             weight: cnft_vote_weight,
         };
         // serialize_nft_vote_ticket_account(

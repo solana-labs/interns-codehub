@@ -332,3 +332,70 @@ async fn test_create_nft_vote_ticket_with_no_nft_error() -> Result<(), Transport
     assert_nft_voter_err(err, NftVoterError::InvalidNftAmount);
     Ok(())
 }
+
+#[tokio::test]
+async fn test_create_nft_vote_ticket_using_delegate() -> Result<(), TransportError> {
+    let action = VoterWeightAction::CastVote;
+    let mut nft_voter_test = NftVoterTest::start_new().await;
+    let realm_cookie = nft_voter_test.governance.with_realm().await?;
+    let registrar_cookie = nft_voter_test.with_registrar(&realm_cookie).await?;
+    let max_voter_weight_record_cookie = nft_voter_test.with_max_voter_weight_record(
+        &registrar_cookie
+    ).await?;
+    let nft_collection_cookie = nft_voter_test.token_metadata.with_nft_collection(Some(10)).await?;
+
+    nft_voter_test.with_collection(
+        &registrar_cookie,
+        &nft_collection_cookie,
+        &max_voter_weight_record_cookie,
+        Some(ConfigureCollectionArgs {
+            weight: 3,
+            size: 11,
+        })
+    ).await?;
+
+    let voter_cookie = nft_voter_test.bench.with_wallet().await;
+    let voter_token_owner_record_cookie = nft_voter_test.governance.with_token_owner_record(
+        &realm_cookie,
+        &voter_cookie
+    ).await?;
+    let voter_weight_record_cookie = nft_voter_test.with_voter_weight_record(
+        &registrar_cookie,
+        &voter_cookie
+    ).await?;
+
+    let nft_cookie = nft_voter_test.token_metadata.with_nft_v2(
+        &nft_collection_cookie,
+        &voter_cookie,
+        None
+    ).await?;
+
+    let delegate_cookie = nft_voter_test.bench.with_wallet().await;
+    nft_voter_test.governance.set_governance_delegate(
+        &realm_cookie,
+        &voter_token_owner_record_cookie,
+        &voter_cookie,
+        &Some(delegate_cookie.address)
+    ).await;
+
+    let delegate_signers = &[&delegate_cookie.signer];
+
+    let nft_vote_ticket_cookies = nft_voter_test.with_create_nft_vote_ticket_using_ix(
+        &registrar_cookie,
+        &voter_weight_record_cookie,
+        &voter_cookie,
+        &[&nft_cookie],
+        &action,
+        |i| {
+            i.accounts[2].pubkey = delegate_cookie.address;
+        },
+        Some(delegate_signers)
+    ).await?;
+
+    let nft_vote_ticket = &nft_vote_ticket_cookies[0].address;
+    let nft_vote_ticket_info = nft_voter_test.get_nft_vote_ticket(&nft_vote_ticket).await;
+
+    assert!(nft_vote_ticket_info.weight == 3);
+
+    Ok(())
+}
