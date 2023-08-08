@@ -1,6 +1,13 @@
 {
   "name": "scripts",
   "version": "1.0.0",
+  "scripts": {
+    "analyze:pools": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-pool.ts",
+    "analyze:trades": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-trade-positions.ts",
+    "analyze:ticks": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-ticks.ts",
+    "analyze:liquidity": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-liquidity-positions.ts",
+    "analyze:distribution": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-liquidity-distribution.ts"
+  },
   "dependencies": {
     "@coral-xyz/anchor": "^0.28.1-beta.1",
     "@jup-ag/core": "^4.0.0-beta.18",

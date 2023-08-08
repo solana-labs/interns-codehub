@@ -16,12 +16,12 @@ wallet = "~/.config/solana/id.json"
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 programs/clad/tests/anchor/*.ts"
 
 # TODO: use tsconfig.json in `scripts` directory to use `@/` alias for `scripts/src` directory files
-1-create-pool = "ts-node -p scripts/src/create-pool.ts"
-2-create-lp = "ts-node -p scripts/src/create-liquidity-position.ts"
-3-do-swap = "ts-node -p scripts/src/do-swap.ts"
-4-open-trade = "ts-node -p scripts/src/open-trade-position.ts"
-5-close-trade = "ts-node -p scripts/src/close-trade-position.ts"
-6-liquidate-trade = "ts-node -p scripts/src/liquidate-trade-position.ts"
+1-create-pool = "ts-node -p scripts/src/actions/create-pool.ts"
+2-create-lp = "ts-node -p scripts/src/actions/create-liquidity-position.ts"
+3-do-swap = "ts-node -p scripts/src/actions/do-swap.ts"
+4-open-trade = "ts-node -p scripts/src/actions/open-trade-position.ts"
+5-close-trade = "ts-node -p scripts/src/actions/close-trade-position.ts"
+6-liquidate-trade = "ts-node -p scripts/src/actions/liquidate-trade-position.ts"
 
 # For cloning addresses
 [test.validator]
