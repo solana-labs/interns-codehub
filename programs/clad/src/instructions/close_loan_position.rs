@@ -96,7 +96,7 @@ pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
         &mut ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
-        update,
+        &update,
     )?;
 
     let is_borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);

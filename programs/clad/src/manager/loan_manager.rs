@@ -5,24 +5,12 @@ use {
     },
     crate::{errors::ErrorCode, math::*, state::*},
     anchor_lang::prelude::{AccountLoader, *},
-    anchor_spl::token::Mint,
-    solana_program::clock::UnixTimestamp,
 };
-
-#[derive(Debug, Default)]
-pub struct PostBorrowUpdate {
-    pub amount_a: u64,
-    pub amount_b: u64,
-    pub next_liquidity: u128,
-    pub next_tick_index: i32,
-    pub next_sqrt_price: u128,
-    pub next_fee_growth_global: u128,
-    pub next_protocol_fee: u64,
-}
 
 #[derive(Debug)]
 pub struct ModifyLoanUpdate {
     pub globalpool_liquidity: u128,
+    pub loan_interest_annual_bps: u16, // 2^16 = 65,536 bps = 655.36% annual, which should be enough
     pub tick_lower_update: TickUpdate,
     pub tick_upper_update: TickUpdate,
     pub position_update: TradePositionUpdate,
@@ -45,19 +33,18 @@ pub fn calculate_modify_loan<'info>(
         return Err(ErrorCode::LiquidityZero.into());
     }
 
-    let tick_lower_index = position.tick_lower_index;
-    let tick_upper_index = position.tick_upper_index;
-
     let tick_array_lower = tick_array_lower.load()?;
-    let tick_lower = tick_array_lower.get_tick(tick_lower_index, globalpool.tick_spacing)?;
+    let tick_lower =
+        tick_array_lower.get_tick(position.tick_lower_index, globalpool.tick_spacing)?;
 
     let tick_array_upper = tick_array_upper.load()?;
-    let tick_upper = tick_array_upper.get_tick(tick_upper_index, globalpool.tick_spacing)?;
+    let tick_upper =
+        tick_array_upper.get_tick(position.tick_upper_index, globalpool.tick_spacing)?;
 
     let next_global_liquidity = next_globalpool_liquidity(
         globalpool,
-        tick_upper_index,
-        tick_lower_index,
+        position.tick_upper_index,
+        position.tick_lower_index,
         liquidity_delta,
     )?;
 
@@ -65,11 +52,7 @@ pub fn calculate_modify_loan<'info>(
     // Verify that enough liquidity exists in Ticks, if liquidity is to-be-borrowed (ie. positive)
     // Note: Must check both the lower & upper tick's `liquidity_gross`.
     //
-    msg!("liquidity_delta_u128: {:?}", liquidity_delta.abs() as u128);
-    let lower_gross = tick_lower.liquidity_gross;
-    let upper_gross = tick_upper.liquidity_gross;
-    msg!("tick lower liquidity gross: {:?}", lower_gross);
-    msg!("tick upper liquidity gross: {:?}", upper_gross);
+
     if liquidity_delta > 0 {
         let liquidity_delta_u128 = liquidity_delta.abs() as u128;
         if liquidity_delta_u128 > tick_lower.liquidity_gross
@@ -84,7 +67,7 @@ pub fn calculate_modify_loan<'info>(
     //
     let tick_lower_update = next_tick_modify_liquidity_update_from_loan(
         tick_lower,
-        tick_lower_index,
+        position.tick_lower_index,
         globalpool.tick_current_index,
         globalpool.fee_growth_global_a,
         globalpool.fee_growth_global_b,
@@ -94,7 +77,7 @@ pub fn calculate_modify_loan<'info>(
 
     let tick_upper_update = next_tick_modify_liquidity_update_from_loan(
         tick_upper,
-        tick_upper_index,
+        position.tick_upper_index,
         globalpool.tick_current_index,
         globalpool.fee_growth_global_a,
         globalpool.fee_growth_global_b,
@@ -102,14 +85,18 @@ pub fn calculate_modify_loan<'info>(
         true,
     )?;
 
+    let loan_interest_annual_bps = _calculate_loan_interest_rate_annual(
+        tick_lower_update.liquidity_gross,
+        tick_upper_update.liquidity_gross,
+        liquidity_delta as u128,
+        liquidity_delta > 0, // ref `liquidity_manager.rs#L170`
+    )?;
+
     //
     // Build TradePositionUpdate
     // Note: Add the absolute value of `liquidty_delta` as it's negative when borrowing (used to subtract liquidity from
     //       the pool) but the position itself needs to represent the borrowed liquidity that's now available (positive).
     //
-
-    msg!("loan_token_available: {:?}", position.loan_token_available);
-    msg!("borrowed_amount: {:?}", borrowed_amount);
     let loan_token_available = if borrowed_amount > 0 {
         position
             .loan_token_available
@@ -127,16 +114,67 @@ pub fn calculate_modify_loan<'info>(
         loan_token_swapped: position.loan_token_swapped,
         trade_token_amount: position.trade_token_amount,
     };
-    // msg!("position_update: {:?}", position_update);
-    // msg!("tick_lower_update: {:?}", tick_lower_update);
-    // msg!("tick_upper_update: {:?}", tick_upper_update);
 
     Ok(ModifyLoanUpdate {
         globalpool_liquidity: next_global_liquidity,
+        loan_interest_annual_bps,
         position_update,
         tick_lower_update,
         tick_upper_update,
     })
+}
+
+//
+// Simple linear interest rate based on utilization of tick liquidity gross.
+//
+// TODO: More complex utilization-based interest rate model, like Aave's.
+//
+pub fn _calculate_loan_interest_rate_annual(
+    tick_lower_liquidity_gross: u128,
+    tick_upper_liquidity_gross: u128,
+    liquidity_borrowed: u128,
+    round_up: bool,
+) -> Result<u16> {
+    let min_bps = 50_u128; // min annual: 0.5% => 50bps
+
+    let multiplier = U256Muldiv::new(0, 100_u128); // 1% => 100 bps
+    let tick_lower_denom = U256Muldiv::new(0, tick_lower_liquidity_gross);
+    let tick_upper_denom = U256Muldiv::new(0, tick_upper_liquidity_gross);
+
+    let (quotient_l, remainder_l) = U256Muldiv::new(0, liquidity_borrowed)
+        .mul(multiplier)
+        .div(tick_lower_denom, round_up);
+
+    let (quotient_u, remainder_u) = U256Muldiv::new(0, liquidity_borrowed)
+        .mul(multiplier)
+        .div(tick_upper_denom, round_up);
+
+    let tick_lower_utilization = if round_up && !remainder_l.is_zero() {
+        quotient_l.add(U256Muldiv::new(0, 1)).try_into_u128()?
+    } else {
+        quotient_l.try_into_u128()?
+    };
+
+    let tick_upper_utilization = if round_up && !remainder_u.is_zero() {
+        quotient_u.add(U256Muldiv::new(0, 1)).try_into_u128()?
+    } else {
+        quotient_u.try_into_u128()?
+    };
+
+    // Max of min_bps, tick_lower_utilization, tick_upper_utilization
+    let utilization = std::cmp::max(
+        min_bps,
+        std::cmp::max(tick_lower_utilization, tick_upper_utilization),
+    );
+
+    // Downcast u128 to u16 (2^16 = 65,536 bps = 655.36% annual, which should be enough for interest rate)
+    let utilization = if utilization > std::u16::MAX as u128 {
+        std::u16::MAX
+    } else {
+        utilization as u16
+    };
+
+    Ok(utilization)
 }
 
 pub fn calculate_loan_liquidity_token_delta(
@@ -144,7 +182,7 @@ pub fn calculate_loan_liquidity_token_delta(
     tick_lower_index: i32,
     tick_upper_index: i32,
     liquidity_delta: i128,
-) -> Result<(u64, bool, bool, u128, u128)> {
+) -> Result<(u64, bool)> {
     if liquidity_delta == 0 {
         return Err(ErrorCode::LiquidityZero.into());
     }
@@ -164,8 +202,6 @@ pub fn calculate_loan_liquidity_token_delta(
 
     let lower_sqrt_price = sqrt_price_from_tick_index(tick_lower_index);
     let upper_sqrt_price = sqrt_price_from_tick_index(tick_upper_index);
-    // msg!("lower_price_sqrt: {:?}", lower_sqrt_price);
-    // msg!("upper_price_sqrt: {:?}", upper_sqrt_price);
 
     // Always only in one token
     let delta = if is_borrow_token_a {
@@ -178,128 +214,38 @@ pub fn calculate_loan_liquidity_token_delta(
         get_amount_delta_b(lower_sqrt_price, upper_sqrt_price, liquidity, round_up)?
     };
 
-    Ok((
-        delta,
-        is_borrow_token_a,
-        !is_borrow_token_a, // is_collateral_token_a
-        lower_sqrt_price,
-        upper_sqrt_price,
-    ))
+    Ok((delta, is_borrow_token_a))
 }
 
 pub fn calculate_collateral(
-    token_borrow_amount: u64,
     liquidity_amount: u128,
-    is_borrow_token_a: bool,
     tick_lower_index: i32,
     tick_upper_index: i32,
-    token_mint_a: &Account<'_, Mint>,
-    token_mint_b: &Account<'_, Mint>,
-    token_price_feed_a: &Account<'_, PriceFeed>,
-    token_price_feed_b: &Account<'_, PriceFeed>,
-    current_timestamp: UnixTimestamp,
+    swapped_amount_out: u64, // swap out amount from Jupiter
+    is_borrow_token_a: bool,
 ) -> Result<u64> {
-    let token_oracle_a_b = token_price_feed_a.read_price_in_quote_custom_expo(
-        token_price_feed_b,
-        current_timestamp,
-        -(token_mint_b.decimals as i32),
-    )?;
-    let token_oracle_b_a = token_price_feed_b.read_price_in_quote_custom_expo(
-        token_price_feed_a,
-        current_timestamp,
-        -(token_mint_a.decimals as i32),
-    )?;
-
-    // Prices scaled to exponent (e.g. 10^9 for SOL, 10^6 for USDC)
-    // let token_price_a = token_oracle_a.price_with_expo;
-    // let token_price_b = token_oracle_b.price_with_expo;
-
-    // token_price_a_b = A/B (Token A quoted in Token B, e.g. SOL/USDC)
-    let token_price_a_b = token_oracle_a_b.price_with_expo;
-    let token_price_b_a = token_oracle_b_a.price_with_expo;
-
     let sqrt_price_lower = sqrt_price_from_tick_index(tick_lower_index);
     let sqrt_price_upper = sqrt_price_from_tick_index(tick_upper_index);
 
     let worst_case_value = if is_borrow_token_a {
         // Collateral is in Token B, worst case is full payment in Token B (swap back from A + collateral)
-        get_amount_delta_b(sqrt_price_lower, sqrt_price_upper, liquidity_amount, true)
+        get_amount_delta_b(
+            sqrt_price_lower,
+            sqrt_price_upper,
+            liquidity_amount,
+            !is_borrow_token_a,
+        )
     } else {
         // Collateral is in Token A, worst case is full payment in Token A (swap back from B + collateral)
-        get_amount_delta_a(sqrt_price_lower, sqrt_price_upper, liquidity_amount, true)
+        get_amount_delta_a(
+            sqrt_price_lower,
+            sqrt_price_upper,
+            liquidity_amount,
+            !is_borrow_token_a,
+        )
     }?;
 
-    //
-    // Currently, we use oracle price for calculating the current-price-swap of loaned token to long token.
-    // This prevents JIT tick index manipulation (right before the loan).
-    //
+    let collateral_amount = worst_case_value.checked_sub(swapped_amount_out).unwrap();
 
-    // msg!("token_amount: {:?}", token_borrow_amount);
-    // msg!("token_price_a: {:?}", token_price_a);
-    // msg!("token_price_b: {:?}", token_price_b);
-    // msg!("token_price_a_b: {:?}", token_price_a_b);
-    // msg!("token_price_b_a: {:?}", token_price_b_a);
-
-    let loan_value_quoted_in_collateral_token = if is_borrow_token_a {
-        token_borrow_amount
-            .checked_mul(token_price_a_b)
-            .ok_or(ErrorCode::MultiplicationOverflow)?
-    } else {
-        token_borrow_amount
-            .checked_mul(token_price_b_a)
-            .ok_or(ErrorCode::MultiplicationOverflow)?
-    };
-
-    let collateral_token_oracle_expo = if is_borrow_token_a {
-        token_oracle_b_a.exponent
-    } else {
-        token_oracle_a_b.exponent
-    };
-
-    // Since oracle prices are quoted with scaled to exponent (more precisely, `.exponent`).
-    // Divide the output by 1e8.
-    let loan_value_quoted_in_collateral_token: u64 = if collateral_token_oracle_expo < 0 {
-        loan_value_quoted_in_collateral_token
-            .checked_div(10u64.pow(collateral_token_oracle_expo.abs() as u32))
-    } else {
-        loan_value_quoted_in_collateral_token
-            .checked_mul(10u64.pow(collateral_token_oracle_expo as u32))
-    }
-    .ok_or(ErrorCode::DivisionUnderflow)?;
-
-    // msg!("worst_case_value: {:?}", worst_case_value);
-    // msg!(
-    //     "loan_value_quoted_in_collateral_token: {:?}",
-    //     loan_value_quoted_in_collateral_token
-    // );
-
-    if worst_case_value < loan_value_quoted_in_collateral_token {
-        return Err(ErrorCode::CollateralCalculationError.into());
-    }
-
-    let collateral_amount = worst_case_value - loan_value_quoted_in_collateral_token;
-
-    // Buffer of 5% for
-    // 1. Mismatch between price quoted by Pyth Oracle and execution price via Jupiter
-    // 2. Liquidation fee/penalty (paid to crank)
-    // 3. Jupiter swap fee & slippage (price impact)
-    let collateral_amount_with_buffer = collateral_amount
-        .checked_mul(10_500)
-        .ok_or(ErrorCode::MultiplicationOverflow)?
-        .checked_div(10_000)
-        .unwrap();
-
-    // let collateral_amount = borrowed_value_in_collateral_token
-    //     .checked_div(3)
-    //     .ok_or(ErrorCode::DivisionUnderflow)?;
-    // msg!(
-    //     "borrowed_value_in_collateral_token: {:?}",
-    //     borrowed_value_in_collateral_token
-    // );
-    // msg!(
-    //     "collateral_amount_with_buffer: {:?}",
-    //     collateral_amount_with_buffer
-    // );
-
-    Ok(collateral_amount_with_buffer)
+    Ok(collateral_amount)
 }

@@ -26,8 +26,8 @@ pub struct TradePosition {
     pub token_mint_loan: Pubkey, // Mint of the loaned token (can borrow only one token of a CL position)
     pub token_mint_collateral: Pubkey, // Mint of the collateral token (can put only one token as collateral)
 
-    pub open_slot: u64,     // Slot at which the loan was opened
-    pub duration: u64,      // The duration of the loan, in slots
+    pub open_time: u64,     // UNIX time at which the loan was opened (in seconds)
+    pub duration: u64,      // The duration of the loan, in seconds
     pub interest_rate: u32, // Interest rate paid upfront, for accounting purposes
 }
 
@@ -52,7 +52,7 @@ impl TradePosition {
     }
 
     pub fn has_matured(&self) -> Result<bool> {
-        Ok(Clock::get()?.slot > self.open_slot + self.duration)
+        Ok(Clock::get()?.unix_timestamp as u64 > self.open_time + self.duration)
     }
 
     // Long:  borrowing Token B (quote) & swapping to Token A (base)
@@ -76,7 +76,7 @@ impl TradePosition {
         liquidity_borrowed: u128,
         tick_lower_index: i32,
         tick_upper_index: i32,
-        loan_duration_slots: u64,
+        loan_duration: u64,
         interest_rate: u32,
     ) -> Result<()> {
         if !Tick::check_is_usable_tick(tick_lower_index, globalpool.tick_spacing)
@@ -93,8 +93,8 @@ impl TradePosition {
         self.tick_upper_index = tick_upper_index;
         self.tick_open_index = globalpool.tick_current_index;
 
-        self.open_slot = Clock::get()?.slot;
-        self.duration = loan_duration_slots;
+        self.open_time = Clock::get()?.unix_timestamp as u64;
+        self.duration = loan_duration;
         self.interest_rate = interest_rate;
 
         self.liquidity_borrowed = liquidity_borrowed;
@@ -106,19 +106,21 @@ impl TradePosition {
         &mut self,
         token_mint_loan: Pubkey,
         token_mint_collateral: Pubkey,
-    ) -> Result<()> {
+    ) {
         if self.token_mint_loan == Pubkey::default() {
             self.token_mint_loan = token_mint_loan;
         }
         if self.token_mint_collateral == Pubkey::default() {
             self.token_mint_collateral = token_mint_collateral;
         }
-        Ok(())
     }
 
-    pub fn update_collateral_amount(&mut self, collateral_amount: u64) -> Result<()> {
+    pub fn update_collateral_amount(&mut self, collateral_amount: u64) {
         self.collateral_amount = collateral_amount;
-        Ok(())
+    }
+
+    pub fn update_interest_rate(&mut self, interest_rate: u32) {
+        self.interest_rate = interest_rate;
     }
 
     pub fn update_liquidity_swapped(

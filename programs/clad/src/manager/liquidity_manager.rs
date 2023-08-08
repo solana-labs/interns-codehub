@@ -187,6 +187,7 @@ pub fn calculate_liquidity_token_deltas(
     Ok((delta_a, delta_b))
 }
 
+// Liquidity Position sync liquidity values
 pub fn sync_modify_liquidity_values<'info>(
     globalpool: &mut Globalpool,
     position: &mut LiquidityPosition,
@@ -213,12 +214,13 @@ pub fn sync_modify_liquidity_values<'info>(
     Ok(())
 }
 
+// Trade Position sync liquidity values
 pub fn sync_modify_liquidity_values_for_loan<'info>(
     globalpool: &mut Globalpool,
     position: &mut TradePosition,
     tick_array_lower: &AccountLoader<'info, TickArray>,
     tick_array_upper: &AccountLoader<'info, TickArray>,
-    modify_loan_update: ModifyLoanUpdate,
+    modify_loan_update: &ModifyLoanUpdate,
 ) -> Result<()> {
     position.update(&modify_loan_update.position_update);
 
@@ -233,6 +235,8 @@ pub fn sync_modify_liquidity_values_for_loan<'info>(
         globalpool.tick_spacing,
         &modify_loan_update.tick_upper_update,
     )?;
+
+    globalpool.update_liquidity(modify_loan_update.globalpool_liquidity);
 
     Ok(())
 }

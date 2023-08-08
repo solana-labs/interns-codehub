@@ -97,8 +97,8 @@ pub struct OpenTradePositionParams {
     pub tick_lower_index: i32,
     pub tick_upper_index: i32,
 
-    // Number of slots to represent the length of loan (current slot + duration length = maturity slot)
-    pub loan_duration_slots: u64,
+    // Lifetime of loan, in seconds
+    pub loan_duration: u64,
 
     // true: borrow token A | false: borrow token B
     pub borrow_a: bool,
@@ -106,19 +106,21 @@ pub struct OpenTradePositionParams {
     pub swap_instruction_data: Vec<u8>, // Jupiter router data
 }
 
-pub fn open_trade_position(
+pub fn open_trade_position<'info>(
     ctx: Context<OpenTradePosition>,
     params: &OpenTradePositionParams,
 ) -> Result<()> {
-    // let globalpool = &ctx.accounts.globalpool;
     let position_mint = &ctx.accounts.position_mint;
-    // let token_vault_a = &ctx.accounts.token_vault_a;
-    // let token_vault_b = &ctx.accounts.token_vault_b;
 
     let current_tick_index = ctx.accounts.globalpool.tick_current_index;
 
     if params.liquidity_amount == 0 {
         return Err(ErrorCode::LiquidityZero.into());
+    }
+
+    // Loan must be at least 1 hour long and at most 10 days
+    if params.loan_duration < 3600 || params.loan_duration > 864_000 {
+        return Err(ErrorCode::InvalidLoanDuration.into());
     }
 
     if ctx.accounts.position_token_account.amount > 0 {
@@ -149,6 +151,8 @@ pub fn open_trade_position(
 
     let liquidity_delta = convert_to_liquidity_delta(u128::from(params.liquidity_amount), true)?;
 
+    msg!("Requesting loan");
+
     //
     // 1. Initialize & mint the trade position
     //
@@ -159,8 +163,8 @@ pub fn open_trade_position(
         u128::from(params.liquidity_amount),
         params.tick_lower_index,
         params.tick_upper_index,
-        params.loan_duration_slots,
-        0,
+        params.loan_duration,
+        0, // to be updated later
     )?;
 
     mint_position_token_and_remove_authority(
@@ -176,13 +180,14 @@ pub fn open_trade_position(
     // WARNING: Must come after `position.init_position()` because it uses the position data.
     //
 
-    let (token_borrow_amount, is_borrow_token_a, is_collateral_token_a, _, _) =
+    let (token_borrow_amount, is_borrow_token_a) =
         loan_manager::calculate_loan_liquidity_token_delta(
             current_tick_index,
             params.tick_lower_index,
             params.tick_upper_index,
             liquidity_delta,
         )?;
+    let is_collateral_token_a = !is_borrow_token_a;
 
     require!(
         is_borrow_token_a == params.borrow_a,
@@ -203,36 +208,22 @@ pub fn open_trade_position(
     // Note: Borrowing Token B in A/B pool (e.g. SOL/USDC) means depositing Token A as collateral.
     //
 
-    let (
-        collateral_token_owner_account,
-        // collateral_token_vault,
-        collateral_token_mint,
-        _borrowed_token_owner_account,
-        _borrowed_token_vault,
-        borrowed_token_mint,
-    ) = if is_collateral_token_a {
-        (
-            &ctx.accounts.token_owner_account_a,
-            // &ctx.accounts.token_vault_a,
-            &ctx.accounts.token_mint_a,
-            &ctx.accounts.token_owner_account_b,
-            &ctx.accounts.token_vault_b,
-            &ctx.accounts.token_mint_b,
-        )
+    let collateral_token_owner_account;
+    let collateral_token_mint;
+    let borrowed_token_mint;
+    if is_collateral_token_a {
+        collateral_token_owner_account = &ctx.accounts.token_owner_account_a;
+        collateral_token_mint = &ctx.accounts.token_mint_a;
+        borrowed_token_mint = &ctx.accounts.token_mint_b;
     } else {
-        (
-            &ctx.accounts.token_owner_account_b,
-            // &ctx.accounts.token_vault_b,
-            &ctx.accounts.token_mint_b,
-            &ctx.accounts.token_owner_account_a,
-            &ctx.accounts.token_vault_a,
-            &ctx.accounts.token_mint_a,
-        )
+        collateral_token_owner_account = &ctx.accounts.token_owner_account_b;
+        collateral_token_mint = &ctx.accounts.token_mint_b;
+        borrowed_token_mint = &ctx.accounts.token_mint_a;
     };
 
     ctx.accounts
         .position
-        .update_position_mints(borrowed_token_mint.key(), collateral_token_mint.key())?;
+        .update_position_mints(borrowed_token_mint.key(), collateral_token_mint.key());
 
     //
     // 4. Increase the position's loan liquidity
@@ -257,7 +248,7 @@ pub fn open_trade_position(
         &mut ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
-        update,
+        &update,
     )?;
 
     //
@@ -266,12 +257,12 @@ pub fn open_trade_position(
     // =========================
     //
 
-    let is_borrow_a = ctx.accounts.position.is_borrow_a(&ctx.accounts.globalpool);
+    msg!("Opening trade position from loan");
 
     let (initial_loan_vault_balance, initial_swapped_vault_balance) = sort_token_amount_for_loan(
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_vault_b,
-        is_borrow_a,
+        is_borrow_token_a,
     );
 
     //
@@ -295,19 +286,12 @@ pub fn open_trade_position(
     let (post_loan_vault_balance, post_swapped_vault_balance) = sort_token_amount_for_loan(
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_vault_b,
-        is_borrow_a,
+        is_borrow_token_a,
     );
 
     // 1. Require that Loan (Borrowed) Token was the swapped to Swapped Token.
     // => Loan Token balance should decrease
     // => Swapped Token balance should increase
-    msg!("initial_loan_vault_balance: {}", initial_loan_vault_balance);
-    msg!("post_loan_vault_balance: {}", post_loan_vault_balance);
-    msg!(
-        "initial_swapped_vault_balance: {}",
-        initial_swapped_vault_balance
-    );
-    msg!("post_swapped_vault_balance: {}", post_swapped_vault_balance);
     require!(
         initial_loan_vault_balance > post_loan_vault_balance,
         ErrorCode::InvalidLoanTradeSwapDirection
@@ -328,16 +312,6 @@ pub fn open_trade_position(
     let swapped_amount_out = post_swapped_vault_balance
         .checked_sub(initial_swapped_vault_balance)
         .unwrap();
-    msg!("swapped_amount_in: {}", swapped_amount_in);
-    msg!("swapped_amount_out: {}", swapped_amount_out);
-    msg!(
-        "position.loan_token_available: {}",
-        ctx.accounts.position.loan_token_available
-    );
-    msg!(
-        "position.collateral_amount: {}",
-        ctx.accounts.position.collateral_amount
-    );
 
     require!(
         swapped_amount_in <= ctx.accounts.position.loan_token_available,
@@ -357,9 +331,6 @@ pub fn open_trade_position(
     //     post_swapped_token_balance,
     //     ErrorCode::InvalidLoanTradeSwapResult
     // );
-
-    msg!("diff loan_token_balance: {}", swapped_amount_in);
-    msg!("diff swapped_token_balance: {}", swapped_amount_out);
 
     //
     // Post-swap Update
@@ -382,28 +353,13 @@ pub fn open_trade_position(
 
     // Collateral = Worst case value (loss) - swapped out token amount
 
-    let sqrt_price_lower = sqrt_price_from_tick_index(params.tick_lower_index);
-    let sqrt_price_upper = sqrt_price_from_tick_index(params.tick_upper_index);
-
-    let worst_case_value = if is_borrow_token_a {
-        // Collateral is in Token B, worst case is full payment in Token B (swap back from A + collateral)
-        get_amount_delta_b(
-            sqrt_price_lower,
-            sqrt_price_upper,
-            params.liquidity_amount,
-            true,
-        )
-    } else {
-        // Collateral is in Token A, worst case is full payment in Token A (swap back from B + collateral)
-        get_amount_delta_a(
-            sqrt_price_lower,
-            sqrt_price_upper,
-            params.liquidity_amount,
-            true,
-        )
-    }?;
-
-    let collateral_amount = worst_case_value.checked_sub(swapped_amount_out).unwrap();
+    let collateral_amount = loan_manager::calculate_collateral(
+        params.liquidity_amount,
+        params.tick_lower_index,
+        params.tick_upper_index,
+        swapped_amount_out,
+        is_borrow_token_a,
+    )?;
 
     let collateral_token_vault = if is_collateral_token_a {
         &ctx.accounts.token_vault_a
@@ -422,12 +378,44 @@ pub fn open_trade_position(
 
     ctx.accounts
         .position
-        .update_collateral_amount(collateral_amount)?;
+        .update_collateral_amount(collateral_amount);
 
-    // Update globalpool's swapped token amount
+    // TODO: Update globalpool's swapped token amount
     // ctx.accounts
     //     .globalpool
     //     .update_liquidity_trade_locked(ctx.accounts.position.liquidity_borrowed as i128)?;
+
+    //
+    // Finally, Transfer prorated interest from trader to vault (in collateral token).
+    //
+    // NOTE: This must come after the collateral calculation because it uses the collateral amount
+    // TODO: Allow payment of interest in borrowed token as well.
+    //
+    let annual_interest_amount = collateral_amount
+        .checked_mul(update.loan_interest_annual_bps as u64)
+        .unwrap();
+
+    let prorated_interest_amount = annual_interest_amount
+        .checked_mul(params.loan_duration as u64)
+        .unwrap()
+        .checked_div(3_153_600_000) // 31,536,000 sec per yr * 100 bps per 1% (ignore leap years)
+        .unwrap();
+
+    msg!("collateral_amount: {}", collateral_amount);
+    msg!(
+        "loan_interst_annual_bps, {}",
+        update.loan_interest_annual_bps
+    );
+    msg!("annual_interest_amount: {}", annual_interest_amount);
+    msg!("prorated_interest_amount: {}", prorated_interest_amount);
+
+    transfer_from_owner_to_vault(
+        &ctx.accounts.owner,
+        &collateral_token_owner_account,
+        &collateral_token_vault,
+        &ctx.accounts.token_program,
+        prorated_interest_amount,
+    )?;
 
     Ok(())
 }
