@@ -12,8 +12,9 @@ In order to fetch NFT information, it is advised to utilize an RPC that supports
    - RPC_URL: add rpc that support ReadApi (e.g. https://rpc-devnet.helius.xyz/?api-key=<api_key>)
    - PRIVATE_KEY: your private key (should be array)
 2. create collection.json
-3. create .local_key directory in the root and add keys.json file.
-4. config your own steps in main.ts
+3. create an "assets" folder that contains your nft images in src directory
+4. create .local_key directory in the root and add keys.json file.
+5. config your own steps in main.ts
 
 ```cmd
 # install dependencies

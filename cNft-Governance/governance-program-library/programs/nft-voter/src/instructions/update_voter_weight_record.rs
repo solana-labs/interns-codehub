@@ -34,7 +34,9 @@ pub fn update_voter_weight_record(
     ctx: Context<UpdateVoterWeightRecord>,
     voter_weight_action: VoterWeightAction
 ) -> Result<()> {
+    let registrar = &ctx.accounts.registrar;
     let voter_weight_record = &mut ctx.accounts.voter_weight_record;
+    let governing_token_owner = &voter_weight_record.governing_token_owner;
     let payer = &mut ctx.accounts.payer.to_account_info();
 
     match voter_weight_action {
@@ -56,15 +58,29 @@ pub fn update_voter_weight_record(
             return Err(NftVoterError::DuplicatedNftDetected.into());
         }
 
-        let data_bytes = nft_vote_ticket.data.clone();
-        let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
-        voter_weight = voter_weight.checked_add(data.weight).unwrap();
-
         require!(nft_vote_ticket.data_is_empty() == false, NftVoterError::NftFailedVerification);
         require!(*nft_vote_ticket.owner == crate::id(), NftVoterError::InvalidPdaOwner);
 
+        let data_bytes = nft_vote_ticket.data.clone();
+        let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
+
+        let ticket_type = format!("nft-{}-ticket", &voter_weight_action).to_string();
+        let nft_vote_ticket_address = get_nft_vote_ticket_address(
+            &ticket_type,
+            &registrar.key(),
+            governing_token_owner,
+            &data.nft_mint
+        ).0;
+
+        require!(
+            data.governing_token_owner == *governing_token_owner &&
+                nft_vote_ticket_address == *nft_vote_ticket.key,
+            NftVoterError::VoterDoesNotOwnNft
+        );
+
         close_nft_vote_ticket_account(nft_vote_ticket, payer)?;
         unique_nft_vote_tickets.push(&nft_vote_ticket.key);
+        voter_weight = voter_weight.checked_add(data.weight).unwrap();
     }
 
     voter_weight_record.voter_weight = voter_weight;

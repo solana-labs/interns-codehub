@@ -51,13 +51,16 @@ pub fn create_nft_vote_ticket<'info>(
             payer,
             &nft_vote_ticket_info,
             &registrar.key().clone(),
+            &governing_token_owner.key().clone(),
             &nft_mint,
             &ticket_type,
             system_program
         )?;
         let serialized_data = NftVoteTicket {
             account_discriminator: NftVoteTicket::ACCOUNT_DISCRIMINATOR,
-            nft_owner: governing_token_owner.clone(),
+            registrar: registrar.key().clone(),
+            governing_token_owner: governing_token_owner.clone(),
+            nft_mint: nft_mint.clone(),
             weight: nft_vote_weight,
         };
         // CHECK: if this is this should not be a function, but merge the code into this instruction
