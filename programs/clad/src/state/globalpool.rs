@@ -2,8 +2,8 @@ use {
     crate::{
         errors::ErrorCode,
         math::{
-            tick_index_from_sqrt_price, MAX_FEE_RATE, MAX_PROTOCOL_FEE_RATE, MAX_SQRT_PRICE_X64,
-            MIN_SQRT_PRICE_X64,
+            add_liquidity_delta, tick_index_from_sqrt_price, MAX_FEE_RATE, MAX_PROTOCOL_FEE_RATE,
+            MAX_SQRT_PRICE_X64, MIN_SQRT_PRICE_X64, Q64_RESOLUTION,
         },
         util::to_timestamp_u64,
     },
@@ -31,9 +31,6 @@ pub struct Globalpool {
 
     // Borrowed L
     pub liquidity_borrowed: u128,
-
-    // Borrowed L that got swapped to the opposite token
-    pub liquidity_trade_locked: u128,
 
     // MAX/MIN at Q32.64, but using Q64.64 for rounder bytes
     // Q64.64
@@ -121,7 +118,6 @@ impl Globalpool {
 
         self.liquidity_available = 0;
         self.liquidity_borrowed = 0;
-        self.liquidity_trade_locked = 0;
 
         self.sqrt_price = sqrt_price;
         self.tick_current_index = tick_index_from_sqrt_price(&sqrt_price);
@@ -172,19 +168,47 @@ impl Globalpool {
         }
     }
 
-    pub fn update_liquidity_trade_locked(&mut self, liquidity_swapped_out: i128) -> Result<()> {
-        if liquidity_swapped_out > 0 {
-            self.liquidity_trade_locked = self
-                .liquidity_trade_locked
-                .checked_add(liquidity_swapped_out as u128)
-                .unwrap();
-        } else {
-            self.liquidity_trade_locked = self
-                .liquidity_trade_locked
-                .checked_sub(liquidity_swapped_out.abs() as u128)
-                .unwrap();
+    // NOTE: Follows the calculation from https://github.com/orca-so/whirlpools/blob/main/programs/whirlpool/src/manager/swap_manager.rs#L217-L219
+    // ```rust
+    //  if curr_liquidity > 0 {
+    //      next_fee_growth_global_input = next_fee_growth_global_input
+    //          .wrapping_add(((global_fee as u128) << Q64_RESOLUTION) / curr_liquidity);
+    //  }
+    // ```
+    //
+    // QUESTION: Can we use `ctx.accounts.globalpool.liquidity_available` directly - is the value what we expect it to be (ie. total liquidity)?
+    //
+    pub fn update_after_loan(
+        &mut self,
+        liquidity_delta: i128,
+        interest_amount: u64,
+        is_token_fee_in_a: bool,
+    ) {
+        msg!("update_after_loan liquidity_delta: {}", liquidity_delta);
+        msg!("update_after_loan interest_amount: {}", interest_amount);
+        if interest_amount > 0 {
+            let accrued_interest_fee =
+                ((interest_amount as u128) << Q64_RESOLUTION) / self.liquidity_available;
+
+            if is_token_fee_in_a {
+                self.fee_growth_global_a = self
+                    .fee_growth_global_a
+                    .checked_add(accrued_interest_fee)
+                    .unwrap();
+            } else {
+                self.fee_growth_global_b = self
+                    .fee_growth_global_b
+                    .checked_add(accrued_interest_fee)
+                    .unwrap();
+            }
         }
-        Ok(())
+
+        // Update the amount AFTER interest amount modification (above)
+        // liquidity_delta = borrowed (positive) or repaid (negative) amount of liquidity_u128
+        self.liquidity_available =
+            add_liquidity_delta(self.liquidity_available, -liquidity_delta).unwrap();
+        self.liquidity_borrowed =
+            add_liquidity_delta(self.liquidity_borrowed, liquidity_delta).unwrap();
     }
 
     pub fn reset_protocol_fees_owed(&mut self) {

@@ -321,6 +321,12 @@ pub fn repay_trade_position(
         .position
         .update_liquidity_swapped(-(loan_token_swapped as i64), -(trade_token_amount as i64))?;
 
+    ctx.accounts.globalpool.update_after_loan(
+        -(liquidity_borrowed as i128),
+        0,
+        false, // doesn't matter since interest_amount = 0 (repaying, not borrowing)
+    );
+
     // NOTE: how should we update collateral amount left
     // if is_borrow_a {
     //     ctx.accounts
@@ -331,12 +337,6 @@ pub fn repay_trade_position(
     //         .position
     //         .update_collateral_amount(leftover_token_a)?;
     // }
-
-    // Update globalpool's swapped token amount.
-    // Assumes that all loaned token was swapped to trade token in `open_trade_position`
-    // ctx.accounts
-    //     .globalpool
-    //     .update_liquidity_trade_locked(-(liquidity_borrowed as i128))?;
 
     Ok(())
 }

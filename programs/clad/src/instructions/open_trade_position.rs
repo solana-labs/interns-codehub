@@ -380,18 +380,32 @@ pub fn open_trade_position<'info>(
         .position
         .update_collateral_amount(collateral_amount);
 
-    // TODO: Update globalpool's swapped token amount
-    // ctx.accounts
-    //     .globalpool
-    //     .update_liquidity_trade_locked(ctx.accounts.position.liquidity_borrowed as i128)?;
+    //
+    // Interest payment on opening the trade position (ie. on loan)
+    //
 
     //
-    // Finally, Transfer prorated interest from trader to vault (in collateral token).
-    //
+    // Calculate & transfer prorated interest from trader to vault (in collateral token).
     // NOTE: This must come after the collateral calculation because it uses the collateral amount
     // TODO: Allow payment of interest in borrowed token as well.
     //
-    let annual_interest_amount = collateral_amount
+
+    let is_interest_fee_in_a = is_collateral_token_a;
+
+    let interest_fee_token_owner_account;
+    let interest_fee_token_vault;
+    let interest_fee_multiplier_amount = collateral_amount; // x% of this amount = interest rate fee
+
+    // follows the collateral_token_vault pattern, but modifiable later
+    if is_interest_fee_in_a {
+        interest_fee_token_owner_account = &ctx.accounts.token_owner_account_a;
+        interest_fee_token_vault = &ctx.accounts.token_vault_a;
+    } else {
+        interest_fee_token_owner_account = &ctx.accounts.token_owner_account_b;
+        interest_fee_token_vault = &ctx.accounts.token_vault_b;
+    }
+
+    let annual_interest_amount = interest_fee_multiplier_amount
         .checked_mul(update.loan_interest_annual_bps as u64)
         .unwrap();
 
@@ -411,11 +425,21 @@ pub fn open_trade_position<'info>(
 
     transfer_from_owner_to_vault(
         &ctx.accounts.owner,
-        &collateral_token_owner_account,
-        &collateral_token_vault,
+        interest_fee_token_owner_account,
+        interest_fee_token_vault,
         &ctx.accounts.token_program,
         prorated_interest_amount,
     )?;
+
+    //
+    // Add the interest fee to the pool fee growth (for LP payout)
+    //
+
+    ctx.accounts.globalpool.update_after_loan(
+        liquidity_delta,
+        prorated_interest_amount, 
+        is_interest_fee_in_a
+    );
 
     Ok(())
 }
