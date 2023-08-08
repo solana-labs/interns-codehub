@@ -61,7 +61,7 @@ export async function getConstantParams() {
   const tokenOracleA = pythOracleSOL
   const tokenOracleB = pythOracleUSDC
 
-  const desiredStartPrice = 2.06 // B/A (USDC/HNT)
+  const desiredStartPrice = 2.149 // B/A (USDC/HNT)
 
   const decimalDiff = tokenMintB.decimals - tokenMintA.decimals
   const initTickIndex = Math.round((Math.log(desiredStartPrice * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing

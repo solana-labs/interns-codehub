@@ -179,6 +179,11 @@ async function main() {
 
   const res: { [key: string]: OpenLiquidityPositionAccounts } = {}
   for (const openLiquidityPositionParams of preparedLiquiditiyPositions) {
+    const { tickLowerIndex, tickUpperIndex, liquidityAmount } =
+      openLiquidityPositionParams
+
+    console.log(`tick range: [${tickLowerIndex}, ${tickUpperIndex})`)
+
     const positionMintKeypair = Keypair.generate()
     const [positionKey] = PublicKey.findProgramAddressSync(
       [
@@ -198,10 +203,6 @@ async function main() {
       positionTokenAccount,
       ...defaultOpenLiquidityPositionAccounts,
     }
-    // console.log(openLiquidityPositionAccounts)
-
-    const { tickLowerIndex, tickUpperIndex, liquidityAmount } =
-      openLiquidityPositionParams
 
     const positionStatus = PositionUtil.getPositionStatus(
       tickCurrentIndex,
@@ -217,7 +218,7 @@ async function main() {
       new Decimal(liquidityAmount.toString()),
       tickLowerIndex,
       tickUpperIndex,
-      Percentage.fromFraction(5, 100) // 0.05% slippage
+      Percentage.fromFraction(10, 100) // (10/100)% slippage
     )
 
     console.log(quote)

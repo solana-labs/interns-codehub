@@ -51,7 +51,7 @@ async function main() {
   const borrowAmount = 25 // 100 USDC
   const borrowAmountExpo = borrowAmount * Math.pow(10, mintB.decimals) // above scaled to decimal exponent
 
-  const maxSlippage = Percentage.fromFraction(1, 100)
+  const maxSlippage = Percentage.fromFraction(50, 100) // (50/100)% slippage
   const maxJupiterPlatformSlippage = 0
 
   const globalpoolInfo = await getAccountData(
@@ -106,8 +106,8 @@ async function main() {
 
   // RUN: ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze-ticks.ts
   // and find the ticks with enough liquidity_gross
-  const tickLowerIndex = -41280 // 1.61 USDC/HNT
-  const tickUpperIndex = -40000 // 1.83 USDC/HNT
+  const tickLowerIndex = -39616 // 1.90 USDC/HNT
+  const tickUpperIndex = -39104 // 2.00 USDC/HNT
 
   // NOTE: At the top end of the price range, tick calcuation is off therefore the results can be off
   const borrowAmountLiquidity = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -220,7 +220,7 @@ async function main() {
       tokenB: tokenMintBKey,
       // amount: 1 * Math.pow(10, isTradeA2B ? mintA.decimals : mintB.decimals), // 1 usdc or 1 sol
       amount: borrowAmountExpo, // input token amount scaled to decimal exponent (& NOT in liquidity amount)
-      slippageBps: 30, // 0.3%
+      slippageBps: parseFloat(maxSlippage.toString()),
       feeBps: 0.0,
     },
     jupiter
@@ -279,29 +279,29 @@ async function main() {
     console.log('whirlpoolsConfig', whirlpoolData.whirlpoolsConfig.toBase58())
     console.log('tokenVaultA', whirlpoolData.tokenVaultA.toBase58())
     console.log('tokenVaultB', whirlpoolData.tokenVaultB.toBase58())
-    // console.log('config', orcaAmm.whirlpoolsConfig.toBase58())
-    // console.log('tokenMintA', orcaAmm.tokenMintA.toBase58())
-    // console.log('tokenMintB', orcaAmm.tokenMintB.toBase58())
-    // console.log('tokenVaultA', orcaAmm.tokenVaultA.toBase58())
-    // console.log('tokenVaultB', orcaAmm.tokenVaultB.toBase58())
-    // consoleLogFull(orcaAmm.rewardInfos)
-    // consoleLogFull(orcaAmm.tickArrays)
-    ;(
-      bestRoute.marketInfos[0].amm as unknown as {
-        whirlpoolData: { tickArrays: any }
+      // console.log('config', orcaAmm.whirlpoolsConfig.toBase58())
+      // console.log('tokenMintA', orcaAmm.tokenMintA.toBase58())
+      // console.log('tokenMintB', orcaAmm.tokenMintB.toBase58())
+      // console.log('tokenVaultA', orcaAmm.tokenVaultA.toBase58())
+      // console.log('tokenVaultB', orcaAmm.tokenVaultB.toBase58())
+      // consoleLogFull(orcaAmm.rewardInfos)
+      // consoleLogFull(orcaAmm.tickArrays)
+      ; (
+        bestRoute.marketInfos[0].amm as unknown as {
+          whirlpoolData: { tickArrays: any }
+        }
+      ).whirlpoolData.tickArrays = {
+        aToB: [
+          new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
+          new PublicKey('8LGqqS5P6kFy6LGYSVr5byaqVXcaqWh2PAUjmGzut4zM'),
+          new PublicKey('C6ZMoA93UfQMsJm2khN2gQr6vyTpujXFiLLxG3VeLEp6'),
+        ],
+        bToA: [
+          new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
+          new PublicKey('FUifo3d4gzAyE4k9ZZjKWmBhfHskCiVF4S9QgsGyjJVD'),
+          new PublicKey('HamuvLZt4pM1DBikuiF1hpnmK1EX9yLv9BUotHUJMBvp'),
+        ],
       }
-    ).whirlpoolData.tickArrays = {
-      aToB: [
-        new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
-        new PublicKey('8LGqqS5P6kFy6LGYSVr5byaqVXcaqWh2PAUjmGzut4zM'),
-        new PublicKey('C6ZMoA93UfQMsJm2khN2gQr6vyTpujXFiLLxG3VeLEp6'),
-      ],
-      bToA: [
-        new PublicKey('4QcvZfw9oLWTBZbLUM6fZ4LZm2E398QEKmyKBsqfBPSQ'),
-        new PublicKey('FUifo3d4gzAyE4k9ZZjKWmBhfHskCiVF4S9QgsGyjJVD'),
-        new PublicKey('HamuvLZt4pM1DBikuiF1hpnmK1EX9yLv9BUotHUJMBvp'),
-      ],
-    }
   } else if (bestRoute.marketInfos[0].amm.label !== 'Orca') {
     throw new Error(
       `Invalid exchange route, ${bestRoute.marketInfos[0].amm.label}`

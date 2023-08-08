@@ -18,20 +18,19 @@ export type GlobalpoolData = {
   feeRate: number
   feeRateSeed: number
   protocolFeeRate: number
-  liquidityAvailable: bigint
-  liquidityBorrowed: bigint
-  liquidityTradeLocked: bigint
-  sqrtPrice: bigint
+  liquidityAvailable: BN
+  liquidityBorrowed: BN
+  sqrtPrice: BN
   tickCurrentIndex: number
-  protocolFeeOwedA: bigint
-  protocolFeeOwedB: bigint
+  protocolFeeOwedA: BN
+  protocolFeeOwedB: BN
   tokenMintA: PublicKey
   tokenVaultA: PublicKey
-  feeGrowthGlobalA: bigint
+  feeGrowthGlobalA: BN
   tokenMintB: PublicKey
   tokenVaultB: PublicKey
-  feeGrowthGlobalB: bigint
-  inceptionTime: bigint
+  feeGrowthGlobalB: BN
+  inceptionTime: BN
   feeAuthority: PublicKey
 }
 
