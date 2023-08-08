@@ -1,4 +1,10 @@
-import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import {
   Metaplex,
   UploadMetadataInput,
@@ -27,6 +33,7 @@ const EXTENSION = process.env.EXTENSION;
 
 export async function mintCompressedNft(
   payer: Keypair,
+  recipient: PublicKey,
   connection: Connection,
   treeAddress: PublicKey,
   treeAuthority: PublicKey,
@@ -36,7 +43,7 @@ export async function mintCompressedNft(
   nonce: number
 ) {
   if (!EXTENSION) {
-    return console.warn("Please set EXTENSION in .env file")
+    return console.warn("Please set EXTENSION in .env file");
   }
   const metaplex = Metaplex.make(connection)
     .use(keypairIdentity(payer))
@@ -94,7 +101,6 @@ export async function mintCompressedNft(
     tokenStandard: TokenStandard.NonFungible,
   };
 
-  const receiverAddress = payer.publicKey;
   // derive PDA (owned bt Bubblegum) to act as the signer of the compressed minting
   const [bubblegumSigner, _bump] = PublicKey.findProgramAddressSync(
     [Buffer.from("collection_cpi", "utf8")],
@@ -114,7 +120,7 @@ export async function mintCompressedNft(
       collectionAuthorityRecordPda: BUBBLEGUM_PROGRAM_ID,
       editionAccount: collectionMasterEditionAccount,
 
-      leafOwner: receiverAddress,
+      leafOwner: recipient,
       leafDelegate: payer.publicKey,
 
       // other accounts
@@ -134,20 +140,14 @@ export async function mintCompressedNft(
     const tx = new Transaction();
     tx.add(mintToCollectionIx);
 
-    const txSig = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [payer],
-      {
-        commitment: "confirmed",
-        skipPreflight: false,
-      }
-    )
-    console.log(`Nonce ${nonce} Compressed NFT minted`)
+    const txSig = await sendAndConfirmTransaction(connection, tx, [payer], {
+      commitment: "confirmed",
+      skipPreflight: false,
+    });
+    console.log(`Nonce ${nonce} Compressed NFT minted`);
     return txSig;
   } catch (e) {
     console.error(e);
     throw e;
   }
-
 }

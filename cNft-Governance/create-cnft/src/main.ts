@@ -65,10 +65,12 @@ dotenv.config();
   const collectionMasterEditionAccount: PublicKey =
     keys.collectionMasterEditionAccount;
 
-  await mintNft(payer, metaplex, collectionMint, 6);
-  await mintNft(payer, metaplex, collectionMint, 7);
+  const receipient = new PublicKey(process.env.RECIPIENT ?? "");
+  await mintNft(payer, receipient, metaplex, collectionMint, 6);
+  await mintNft(payer, receipient, metaplex, collectionMint, 7);
   await mintCompressedNft(
     payer,
+    receipient,
     connection,
     treeAddress1,
     treeAuthority1,
@@ -79,6 +81,7 @@ dotenv.config();
   );
   await mintCompressedNft(
     payer,
+    receipient,
     connection,
     treeAddress1,
     treeAuthority1,
@@ -89,6 +92,7 @@ dotenv.config();
   );
   await mintCompressedNft(
     payer,
+    receipient,
     connection,
     treeAddress2,
     treeAuthority2,
