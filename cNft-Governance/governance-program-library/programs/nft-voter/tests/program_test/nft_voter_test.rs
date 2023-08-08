@@ -518,7 +518,6 @@ impl NftVoterTest {
 
         for nft_vote_ticket_cookie in nft_vote_ticket_cookies {
             let nft_mint = &nft_vote_ticket_cookie.nft_mint;
-            // let nft_mint_info = AccountMeta::new_readonly(*nft_mint, false);
 
             let nft_vote_ticket = nft_vote_ticket_cookie.address;
             let nft_vote_ticket_info = AccountMeta::new(nft_vote_ticket, false);
@@ -526,7 +525,6 @@ impl NftVoterTest {
             let nft_vote_record = get_nft_vote_record_address(&proposal_cookie.address, &nft_mint);
             let nft_vote_record_info = AccountMeta::new(nft_vote_record, false);
 
-            // account_metas.push(nft_mint_info);
             account_metas.push(nft_vote_ticket_info);
             account_metas.push(nft_vote_record_info);
 
