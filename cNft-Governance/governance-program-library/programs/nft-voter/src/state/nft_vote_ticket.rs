@@ -4,7 +4,7 @@ use borsh::{ BorshDeserialize, BorshSchema, BorshSerialize };
 use solana_program::program_pack::IsInitialized;
 use spl_governance_tools::account::{ get_account_data, AccountMaxSize };
 
-pub const NFT_VOTE_TICKET_SIZE: usize = DISCRIMINATOR_SIZE + 32 + 8;
+pub const NFT_VOTE_TICKET_SIZE: usize = DISCRIMINATOR_SIZE + 32 + 32 + 32 + 8;
 
 // maybe should moce the nft_owner as part of the seeds
 // so that if the owner transfer the nft to new owner, otherwise
@@ -15,15 +15,19 @@ pub const NFT_VOTE_TICKET_SIZE: usize = DISCRIMINATOR_SIZE + 32 + 8;
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct NftVoteTicket {
     pub account_discriminator: [u8; 8],
-    pub nft_owner: Pubkey,
+    pub registrar: Pubkey,
+    pub governing_token_owner: Pubkey,
+    pub nft_mint: Pubkey,
     pub weight: u64,
 }
 
 impl NftVoteTicket {
-    pub fn new(nft_owner: Pubkey, weight: u64) -> Self {
+    pub fn new(registrar: Pubkey, owner: Pubkey, nft_mint: Pubkey, weight: u64) -> Self {
         Self {
             account_discriminator: NftVoteTicket::ACCOUNT_DISCRIMINATOR,
-            nft_owner: nft_owner,
+            registrar: registrar,
+            governing_token_owner: owner,
+            nft_mint: nft_mint,
             weight,
         }
     }
@@ -53,18 +57,20 @@ impl IsInitialized for NftVoteTicket {
 pub fn get_nft_vote_ticket_seeds<'a>(
     ticket_type: &'a str,
     registrar: &'a Pubkey,
+    owner: &'a Pubkey,
     nft_mint: &'a Pubkey
-) -> [&'a [u8]; 3] {
-    [&ticket_type.as_bytes(), registrar.as_ref(), nft_mint.as_ref()]
+) -> [&'a [u8]; 4] {
+    [&ticket_type.as_bytes(), registrar.as_ref(), owner.as_ref(), nft_mint.as_ref()]
 }
 
 pub fn get_nft_vote_ticket_address(
     ticket_type: &str,
     registrar: &Pubkey,
+    owner: &Pubkey,
     nft_mint: &Pubkey
 ) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &get_nft_vote_ticket_seeds(ticket_type, registrar, nft_mint),
+        &get_nft_vote_ticket_seeds(ticket_type, registrar, owner, nft_mint),
         &crate::id()
     )
 }

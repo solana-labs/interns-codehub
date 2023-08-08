@@ -18,6 +18,8 @@ pub struct NftVoteRecord {
 
 #[account]
 pub struct NftVoteTicket {
-    nft_owner: Pubkey,
-    weight: u64,
+    pub registrar: Pubkey,
+    pub governing_token_owner: Pubkey,
+    pub nft_mint: Pubkey,
+    pub weight: u64,
 }

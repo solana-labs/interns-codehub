@@ -518,7 +518,6 @@ impl NftVoterTest {
 
         for nft_vote_ticket_cookie in nft_vote_ticket_cookies {
             let nft_mint = &nft_vote_ticket_cookie.nft_mint;
-            let nft_mint_info = AccountMeta::new_readonly(*nft_mint, false);
 
             let nft_vote_ticket = nft_vote_ticket_cookie.address;
             let nft_vote_ticket_info = AccountMeta::new(nft_vote_ticket, false);
@@ -526,7 +525,6 @@ impl NftVoterTest {
             let nft_vote_record = get_nft_vote_record_address(&proposal_cookie.address, &nft_mint);
             let nft_vote_record_info = AccountMeta::new(nft_vote_record, false);
 
-            account_metas.push(nft_mint_info);
             account_metas.push(nft_vote_ticket_info);
             account_metas.push(nft_vote_record_info);
 
@@ -641,6 +639,7 @@ impl NftVoterTest {
             let nft_vote_ticket = get_nft_vote_ticket_address(
                 &ticket_type,
                 &registrar_cookie.address,
+                &voter_cookie.address,
                 &nft_cookie.mint_cookie.address
             ).0;
 
@@ -709,8 +708,8 @@ impl NftVoterTest {
         let accounts = gpl_nft_voter::accounts::CreateCnftVoteTicket {
             registrar: registrar_cookie.address,
             voter_weight_record: voter_weight_record_cookie.address,
-            voter_authority: voter_cookie.address,
             leaf_owner: leaf_cookies[0].owner.pubkey(),
+            voter_authority: voter_cookie.address,
             payer: self.bench.payer.pubkey(),
             compression_program: spl_account_compression::id(),
             system_program: solana_sdk::system_program::id(),
@@ -740,6 +739,7 @@ impl NftVoterTest {
             let cnft_vote_ticket = get_nft_vote_ticket_address(
                 &ticket_type,
                 &registrar_cookie.address,
+                &voter_cookie.address,
                 asset_id
             ).0;
             let cnft_vote_ticket_info = AccountMeta::new(cnft_vote_ticket, false);
@@ -755,11 +755,7 @@ impl NftVoterTest {
         }
 
         instruction_override(&mut verify_cnft_info_ix);
-        let default_signers = &[
-            &leaf_cookies[0].owner,
-            &leaf_cookies[0].delegate,
-            &voter_cookie.signer,
-        ];
+        let default_signers = &[&voter_cookie.signer];
         let signers = signers_override.unwrap_or(default_signers);
 
         self.bench.process_transaction(&[verify_cnft_info_ix], Some(signers)).await?;
