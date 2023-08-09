@@ -12,6 +12,8 @@ export const LOCALNET_CONNECTION = new Connection('http://127.0.0.1:8899')
 
 export const JUPITER_PROGRAM_ID = 'JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB' // v4
 
+export const GLOBALPOOL_STRUCT_SIZE = 672 // Size of Globalpool struct, std::mem::size_of::<Globalpool>()
+
 export const ZERO_BN = new BN(0)
 
 export const MAX_SWAP_TICK_ARRAYS = 3

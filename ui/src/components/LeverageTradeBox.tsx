@@ -7,13 +7,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { LOCALNET_CONNECTION } from '@/constants'
 import { useCladProgram } from '@/hooks'
+import { calculateProratedInterestRate } from '@/lib/interest'
 import { TokenE, TOKEN_INFO } from '@/lib/Token'
 import openTradePosition from '@/lib/openTradePosition'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 import {
-  TokenAmounts,
   estimateLiquidityFromTokenAmounts,
   formatNumber,
+  formatSecondsToDurationString,
   getTokenAmountsFromLiquidity,
   priceToNearestTick,
   tickToPrice,
@@ -57,10 +58,10 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
   const [errorTickRange, setErrorTickRange] = useState<string | undefined>(undefined) // undefined => no error
   const [estMaxLoss, setEstMaxLoss] = useState<Decimal | undefined>(undefined)
   const [estLeverage, setEstLeverage] = useState<string | undefined>(undefined)
-  const [estInterest, setEstInterest] = useState<number | undefined>(undefined)
-  // const [estInterestRate, setEstInterestRate] = useState<number | undefined>(undefined)
+  // const [estInterest, setEstInterest] = useState<number | undefined>(undefined)
+  const [estInterestRate, setEstInterestRate] = useState<Decimal | undefined>(undefined)
 
-  const loanDuration = 3600 // TODO: make this dynamic
+  const loanDuration = 604_800 // (= 1 week) TODO: make this dynamic
 
   const [isOpeningPosition, setIsOpeningPosition] = useState<boolean>(false)
 
@@ -91,11 +92,11 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
     })
 
     setIsOpeningPosition(false)
-  }, [globalpool, wallet, program])
+  }, [globalpool, tradeLowerPrice, tradeUpperPrice, wallet, program])
 
   useEffect(() => {
     // console.log(globalpool, getTokenAddress(props.baseToken), getTokenAddress(props.quoteToken))
-    if (!globalpool || !globalpool.tickCurrentIndex) return
+    if (!globalpool || !globalpool.tickCurrentIndex || !connection) return
 
     const lowerPriceTick = priceToNearestTick(tradeLowerPrice, globalpool.tickSpacing, baseDecimals, quoteDecimals)
     const upperPriceTick = priceToNearestTick(tradeUpperPrice, globalpool.tickSpacing, baseDecimals, quoteDecimals)
@@ -171,7 +172,16 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
     const _estLeverage = new Decimal(tradeAmountInBaseToken).div(_estMaxLoss).toFixed(1)
     setEstMaxLoss(_estMaxLoss)
     setEstLeverage(_estLeverage.slice(-2) === '.0' ? _estLeverage.slice(0, -2) : _estLeverage)
-  }, [globalpool, poolPrice, tradeLowerPrice, tradeUpperPrice, tradeAmount])
+
+    calculateProratedInterestRate({
+      liquidityBorrowed: new Decimal(liquidityBorrow.toString()),
+      loanDuration,
+      globalpool,
+      tickLowerIndex: lowerPriceTick,
+      tickUpperIndex: upperPriceTick,
+      connection,
+    }).then(setEstInterestRate)
+  }, [globalpool, connection, poolPrice, tradeLowerPrice, tradeUpperPrice, tradeAmount])
 
   return (
     <>
@@ -182,7 +192,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={e => setTradeLowerPrice(parseFloat(e.target.value))}
+          onChange={(e: any) => setTradeLowerPrice(parseFloat(e.target.value))}
           value={tradeLowerPrice}
           required
           fullWidth
@@ -195,7 +205,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={e => setTradeUpperPrice(parseFloat(e.target.value))}
+          onChange={(e: any) => setTradeUpperPrice(parseFloat(e.target.value))}
           value={tradeUpperPrice}
           required
           fullWidth
@@ -208,7 +218,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={e => setTradeAmount(parseFloat(e.target.value))}
+          onChange={(e: any) => setTradeAmount(parseFloat(e.target.value))}
           value={tradeAmount}
           required
           fullWidth
@@ -233,15 +243,15 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
         </Box>
       </Stack>
       <Stack direction={{ md: 'row' }} alignItems="center" justifyContent="space-between" spacing={1}>
-        <Box textAlign="right">
+        <Box>
           <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Interest</Typography>
           <Typography variant="body1" fontWeight="bold">
-            {estInterest ? `${estInterest} ${isTradeLong ? quoteToken : baseToken}` : '-'}
+            {estInterestRate ? `${formatNumber(estInterestRate)} ${isTradeLong ? baseToken : quoteToken}` : '-'}
           </Typography>
         </Box>
-        <Box>
+        <Box textAlign="right">
           <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Duration</Typography>
-          <Typography variant="body1" fontWeight="bold">7 days</Typography>
+          <Typography variant="body1" fontWeight="bold">{formatSecondsToDurationString(loanDuration)}</Typography>
         </Box>
       </Stack>
       <Box pt={3}>

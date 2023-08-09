@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { Connection, PublicKey } from '@solana/web3.js'
 
+import { GLOBALPOOL_STRUCT_SIZE } from '@/constants'
 import getGlobalpool from '@/lib/getGlobalpool'
 import type { RootState } from '@/store'
 import { GlobalpoolData } from '@/types/accounts'
@@ -55,15 +56,13 @@ export const fetchAllGlobalpools = createAsyncThunk<
 
     const connection = new Connection(state.generic.rpc)
 
-    const GLOBALPOOL_SIZE = 688
-
     // Candidate Globalpool PDAs
     const globalpoolCandidates = await connection.getParsedProgramAccounts(
       CLAD_PROGRAM_ID,
       {
         filters: [
           {
-            dataSize: GLOBALPOOL_SIZE
+            dataSize: GLOBALPOOL_STRUCT_SIZE
           },
         ],
       }

@@ -135,7 +135,7 @@ pub fn _calculate_loan_interest_rate_annual(
     liquidity_borrowed: u128,
     round_up: bool,
 ) -> Result<u16> {
-    let min_bps = 50_u128; // min annual: 0.5% => 50bps
+    let min_bps = 100_u128; // min annual: 1% => 100bps
 
     let multiplier = U256Muldiv::new(0, 100_u128); // 1% => 100 bps
     let tick_lower_denom = U256Muldiv::new(0, tick_lower_liquidity_gross);

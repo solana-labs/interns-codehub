@@ -79,3 +79,11 @@ export function getTickArrayKeysForSwap(
 
   return tickArrayKeys
 }
+
+export function getTickArrayOffsetFromTickIndex(tickIndex: number, startTickIndex: number, tickSpacing: number) {
+  const lhs = tickIndex - startTickIndex
+  const div = lhs / tickSpacing
+  const rmn = lhs % tickSpacing
+  const offset = (rmn > 0 && tickSpacing < 0) || (rmn < 0 && tickSpacing > 0) ? div - 1 : div
+  return offset
+}
