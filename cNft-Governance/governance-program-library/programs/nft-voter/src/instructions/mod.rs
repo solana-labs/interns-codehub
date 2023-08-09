@@ -19,8 +19,8 @@ mod relinquish_nft_vote;
 pub use cast_nft_vote::*;
 mod cast_nft_vote;
 
-pub use create_cnft_vote_ticket::*;
-mod create_cnft_vote_ticket;
+pub use create_cnft_action_ticket::*;
+mod create_cnft_action_ticket;
 
-pub use create_nft_vote_ticket::*;
-mod create_nft_vote_ticket;
+pub use create_nft_action_ticket::*;
+mod create_nft_action_ticket;
