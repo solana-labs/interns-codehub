@@ -1,6 +1,6 @@
 use crate::error::NftVoterError;
 use crate::{ id, state::* };
-use crate::tools::accounts::close_nft_vote_ticket_account;
+use crate::tools::accounts::close_nft_action_ticket_account;
 use anchor_lang::prelude::*;
 use anchor_lang::Accounts;
 use itertools::Itertools;
@@ -65,10 +65,10 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
     )?;
 
     let mut to_closed_accounts = vec![];
-    let mut unique_nft_vote_tickets: Vec<Pubkey> = vec![];
+    let mut unique_nft_action_tickets: Vec<Pubkey> = vec![];
 
-    for (nft_vote_ticket_info, nft_vote_record_info) in ctx.remaining_accounts.iter().tuples() {
-        if unique_nft_vote_tickets.contains(&nft_vote_ticket_info.key) {
+    for (nft_action_ticket_info, nft_vote_record_info) in ctx.remaining_accounts.iter().tuples() {
+        if unique_nft_action_tickets.contains(&nft_action_ticket_info.key) {
             return Err(NftVoterError::DuplicatedNftDetected.into());
         }
         // Create NFT vote record to ensure the same NFT hasn't been already used for voting
@@ -76,17 +76,17 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         // It ensures the NftVoteRecord is for ('nft-vote-record',proposal,nft_mint) seeds
         require!(nft_vote_record_info.data_is_empty(), NftVoterError::NftAlreadyVoted);
         require!(
-            !nft_vote_ticket_info.data_is_empty(), //this might be a problem
+            !nft_action_ticket_info.data_is_empty(), //this might be a problem
             NftVoterError::NftFailedVerification
         );
-        require!(*nft_vote_ticket_info.owner == crate::id(), NftVoterError::InvalidPdaOwner);
+        require!(*nft_action_ticket_info.owner == crate::id(), NftVoterError::InvalidAccountOwner);
 
-        // Note: deserializa NftVoteTicket to ownership checking and get nft voting weight
-        // It ensure the NftVoteTicket is for (nft-{action}-ticket,registrar,governing_token_owner,nft_mint) seeds
-        let data_bytes = nft_vote_ticket_info.data.clone();
-        let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
+        // Note: deserializa NftActionTicket to ownership checking and get nft voting weight
+        // It ensure the NftActionTicket is for (nft-{action}-ticket,registrar,governing_token_owner,nft_mint) seeds
+        let data_bytes = nft_action_ticket_info.data.clone();
+        let data = NftActionTicket::try_from_slice(&data_bytes.borrow())?;
         let ticket_type = format!("nft-{}-ticket", &VoterWeightAction::CastVote).to_string();
-        let nft_vote_ticket_address = get_nft_vote_ticket_address(
+        let nft_action_ticket_address = get_nft_action_ticket_address(
             &ticket_type,
             &registrar.key(),
             &governing_token_owner,
@@ -95,9 +95,11 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
 
         require!(
             data.governing_token_owner == governing_token_owner &&
-                nft_vote_ticket_address == *nft_vote_ticket_info.key,
-            NftVoterError::VoterDoesNotOwnNft
+                nft_action_ticket_address == *nft_action_ticket_info.key,
+            NftVoterError::InvalidNftTicket
         );
+
+        require!(data.expiry.unwrap() >= Clock::get()?.slot, NftVoterError::NftTicketExpired);
 
         // Note: proposal.governing_token_mint must match voter_weight_record.governing_token_mint
         // We don't verify it here because spl-gov does the check in cast_vote
@@ -129,8 +131,8 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         // adding this is the close the account after cpi transaction
         // https://solana.stackexchange.com/questions/4481/error-processing-instruction-0-sum-of-account-balances-before-and-after-instruc
         // https://solana.stackexchange.com/questions/4519/anchor-error-error-processing-instruction-0-sum-of-account-balances-before-and
-        to_closed_accounts.push(nft_vote_ticket_info.to_account_info());
-        unique_nft_vote_tickets.push(nft_vote_ticket_info.key());
+        to_closed_accounts.push(nft_action_ticket_info.to_account_info());
+        unique_nft_action_tickets.push(nft_action_ticket_info.key());
         voter_weight = voter_weight.checked_add(data.weight).unwrap();
     }
 
@@ -155,7 +157,7 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
     voter_weight_record.weight_action_target = Some(proposal);
 
     for clased_account in to_closed_accounts.iter() {
-        close_nft_vote_ticket_account(clased_account, payer)?;
+        close_nft_action_ticket_account(clased_account, payer)?;
     }
     Ok(())
 }

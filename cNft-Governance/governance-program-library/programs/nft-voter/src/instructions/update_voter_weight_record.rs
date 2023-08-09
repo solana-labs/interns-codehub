@@ -1,6 +1,6 @@
 use crate::error::NftVoterError;
 use crate::state::*;
-use crate::tools::accounts::close_nft_vote_ticket_account;
+use crate::tools::accounts::close_nft_action_ticket_account;
 use anchor_lang::prelude::*;
 
 /// Updates VoterWeightRecord to evaluate governance power for non voting use cases: CreateProposal, CreateGovernance etc...
@@ -51,21 +51,21 @@ pub fn update_voter_weight_record(
     }
 
     let mut voter_weight = 0u64;
-    let mut unique_nft_vote_tickets = vec![];
+    let mut unique_nft_action_tickets = vec![];
 
-    for nft_vote_ticket in ctx.remaining_accounts.iter() {
-        if unique_nft_vote_tickets.contains(&nft_vote_ticket.key) {
+    for nft_action_ticket in ctx.remaining_accounts.iter() {
+        if unique_nft_action_tickets.contains(&nft_action_ticket.key) {
             return Err(NftVoterError::DuplicatedNftDetected.into());
         }
 
-        require!(nft_vote_ticket.data_is_empty() == false, NftVoterError::NftFailedVerification);
-        require!(*nft_vote_ticket.owner == crate::id(), NftVoterError::InvalidPdaOwner);
+        require!(nft_action_ticket.data_is_empty() == false, NftVoterError::NftFailedVerification);
+        require!(*nft_action_ticket.owner == crate::id(), NftVoterError::InvalidAccountOwner);
 
-        let data_bytes = nft_vote_ticket.data.clone();
-        let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
+        let data_bytes = nft_action_ticket.data.clone();
+        let data = NftActionTicket::try_from_slice(&data_bytes.borrow())?;
 
         let ticket_type = format!("nft-{}-ticket", &voter_weight_action).to_string();
-        let nft_vote_ticket_address = get_nft_vote_ticket_address(
+        let nft_action_ticket_address = get_nft_action_ticket_address(
             &ticket_type,
             &registrar.key(),
             governing_token_owner,
@@ -74,12 +74,13 @@ pub fn update_voter_weight_record(
 
         require!(
             data.governing_token_owner == *governing_token_owner &&
-                nft_vote_ticket_address == *nft_vote_ticket.key,
-            NftVoterError::VoterDoesNotOwnNft
+                nft_action_ticket_address == *nft_action_ticket.key,
+            NftVoterError::InvalidNftTicket
         );
+        require!(data.expiry.unwrap() >= Clock::get()?.slot, NftVoterError::NftTicketExpired);
 
-        close_nft_vote_ticket_account(nft_vote_ticket, payer)?;
-        unique_nft_vote_tickets.push(&nft_vote_ticket.key);
+        close_nft_action_ticket_account(nft_action_ticket, payer)?;
+        unique_nft_action_tickets.push(&nft_action_ticket.key);
         voter_weight = voter_weight.checked_add(data.weight).unwrap();
     }
 

@@ -2,7 +2,7 @@ use crate::error::NftVoterError;
 use crate::state::*;
 use anchor_lang::prelude::*;
 use spl_account_compression::program::SplAccountCompression;
-use crate::tools::accounts::create_nft_vote_ticket_account;
+use crate::tools::accounts::create_nft_action_ticket_account;
 
 /// Create NFT action ticket. Everytime a voter want to do some voting with NFT, they need to get a ticket first.
 /// This instruction will check the validation of the NFT and create a ticket for the voter.
@@ -15,7 +15,7 @@ use crate::tools::accounts::create_nft_vote_ticket_account;
 /// This is the instruction for verifying compressed NFT.
 #[derive(Accounts)]
 #[instruction(voter_weight_action:VoterWeightAction, params: Vec<CompressedNftAsset>)]
-pub struct CreateCnftVoteTicket<'info> {
+pub struct CreateCnftActionTicket<'info> {
     pub registrar: Account<'info, Registrar>,
 
     #[account(
@@ -37,8 +37,8 @@ pub struct CreateCnftVoteTicket<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn create_cnft_vote_ticket<'info>(
-    ctx: Context<'_, '_, '_, 'info, CreateCnftVoteTicket<'info>>,
+pub fn create_cnft_action_ticket<'info>(
+    ctx: Context<'_, '_, '_, 'info, CreateCnftActionTicket<'info>>,
     voter_weight_action: VoterWeightAction,
     params: Vec<CompressedNftAsset>
 ) -> Result<()> {
@@ -59,10 +59,8 @@ pub fn create_cnft_vote_ticket<'info>(
 
         let tree_account = accounts[0].clone();
         let proofs = accounts[1..(proof_len as usize) + 1].to_vec();
-        let cnft_vote_ticket_info = accounts.last().unwrap().clone();
+        let cnft_action_ticket_info = accounts.last().unwrap().clone();
         let ticket_type = format!("nft-{}-ticket", &voter_weight_action).to_string();
-
-        require!(cnft_vote_ticket_info.data_is_empty(), NftVoterError::AccountDataNotEmpty);
 
         let (cnft_vote_weight, asset_id) = resolve_cnft_vote_weight(
             &registrar,
@@ -75,27 +73,28 @@ pub fn create_cnft_vote_ticket<'info>(
             compression_program
         )?;
 
-        create_nft_vote_ticket_account(
+        create_nft_action_ticket_account(
             payer,
-            &cnft_vote_ticket_info,
+            &cnft_action_ticket_info,
             &registrar.key().clone(),
             &governing_token_owner,
             &asset_id,
             &ticket_type,
             system_program
         )?;
-        let serialized_data = NftVoteTicket {
-            account_discriminator: NftVoteTicket::ACCOUNT_DISCRIMINATOR,
+        let serialized_data = NftActionTicket {
+            account_discriminator: NftActionTicket::ACCOUNT_DISCRIMINATOR,
             registrar: registrar.key().clone(),
             governing_token_owner: governing_token_owner.clone(),
             nft_mint: asset_id.clone(),
             weight: cnft_vote_weight,
+            expiry: Some(Clock::get()?.slot + 10),
         };
-        // serialize_nft_vote_ticket_account(
+        // serialize_nft_action_ticket_account(
         //     &serialized_data.try_to_vec()?,
-        //     &mut cnft_vote_ticket_info
+        //     &mut cnft_action_ticket_info
         // )?;
-        cnft_vote_ticket_info.data.borrow_mut().copy_from_slice(&serialized_data.try_to_vec()?);
+        cnft_action_ticket_info.data.borrow_mut().copy_from_slice(&serialized_data.try_to_vec()?);
 
         start += (proof_len as usize) + 2;
     }

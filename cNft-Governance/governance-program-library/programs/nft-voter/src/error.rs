@@ -80,33 +80,15 @@ pub enum NftVoterError {
     #[msg("Invalid Vote Record Account")]
     InvalidVoteRecordAccount,
 
-    #[msg("Leaf Owner Must Be Payer")]
-    LeafOwnerMustBePayer,
-
-    #[msg("Leaf Owner Must Be Token Owner")]
-    LeafOwnerMustBeTokenOwner,
-
-    #[msg("Invalid Metadata")]
-    InvalidMetadata,
-
-    #[msg("Invalid AssetId")]
-    InvalidAssetId,
-
-    #[msg("Invalid NFT Collection")]
-    InvalidCollectionMint,
-
     #[msg("Governance Token Owner Or Delegate Must Sign")]
     GoverningTokenOwnerOrDelegateMustSign,
-
-    #[msg("Leaf Owner Must Be Voter Authority")]
-    LeafOwnerMustBeVoterAuthority,
-
-    #[msg("Account Data Not Empty")]
-    AccountDataNotEmpty,
 
     #[msg("NFT Failed Verification")]
     NftFailedVerification,
 
-    #[msg("Invalid PDA Owner")]
-    InvalidPdaOwner,
+    #[msg("Nft Ticket Expired")]
+    NftTicketExpired,
+
+    #[msg("Voter With Invalid Ticket")]
+    InvalidNftTicket,
 }
