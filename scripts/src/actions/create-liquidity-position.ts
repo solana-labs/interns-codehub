@@ -124,7 +124,7 @@ async function main() {
   //
 
   const lower = 1.8 // B/A (USDC/HNT)
-  const upper = 2
+  const upper = 1.9
 
   const decimalDiff = tokenMintB.decimals - tokenMintA.decimals
   const lowerTickIndex = Math.round((Math.log(lower * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing

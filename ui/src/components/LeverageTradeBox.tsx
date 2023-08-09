@@ -1,15 +1,13 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { PriceMath } from '@orca-so/whirlpools-sdk'
-import { useAnchorWallet } from '@solana/wallet-adapter-react'
+import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
 import Decimal from 'decimal.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { LOCALNET_CONNECTION } from '@/constants'
 import { useCladProgram } from '@/hooks'
-import { calculateProratedInterestRate } from '@/lib/interest'
-import { TokenE, TOKEN_INFO } from '@/lib/Token'
-import openTradePosition from '@/lib/openTradePosition'
+import { TokenE, TOKEN_INFO, openTradePosition, calculateProratedInterestRate } from '@/lib'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 import {
   estimateLiquidityFromTokenAmounts,
@@ -45,8 +43,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
 
   // react-wallet doesn't connect to localnet despite changing the browser wallet RPC,
   // so we manually set it to localnet here (and other places where we use connection)
-  // const { connection } = useConnection()
-  const connection = LOCALNET_CONNECTION
+  const { connection } = process.env.NEXT_PUBLIC_SOLANA_TARGET === 'localnet' ? { connection: LOCALNET_CONNECTION } : useConnection()
 
   const wallet = useAnchorWallet()
   const program = useCladProgram(connection)
@@ -86,7 +83,6 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
       borrowTokenDecimals: isBorrowA ? baseDecimals : quoteDecimals,
       loanDuration,
       positionAuthority: wallet.publicKey,
-      globalpoolKey: new PublicKey(globalpool._pubkey),
       globalpool,
       program,
     })

@@ -2,7 +2,7 @@ import { Connection, PublicKey } from '@solana/web3.js'
 import Decimal from 'decimal.js'
 
 import { CLAD_PROGRAM_ID } from '@/constants'
-import getAccountData from '@/lib/getAccountData'
+import { getAccountData } from '@/lib'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 import { getTickArrayKeyFromTickIndex, getTickArrayOffsetFromTickIndex } from '@/utils'
 import { ParsableTickArray } from '@/types/parsing'
@@ -75,8 +75,8 @@ export async function calculateProratedInterestRate(params: CalculateInterestPar
   const tickLowerLiq = new Decimal(tickLower.liquidityGross.toString())
   const tickUpperLiq = new Decimal(tickUpper.liquidityGross.toString())
 
-  const tickLowerUtil = liquidityBorrowed.div(tickLowerLiq)
-  const tickUpperUtil = liquidityBorrowed.div(tickUpperLiq)
+  const tickLowerUtil = tickLowerLiq.gt(0) ? liquidityBorrowed.div(tickLowerLiq) : new Decimal(1)
+  const tickUpperUtil = tickUpperLiq.gt(0) ? liquidityBorrowed.div(tickUpperLiq) : new Decimal(1)
 
   let annual = tickLowerUtil.gt(tickUpperUtil) ? tickLowerUtil : tickUpperUtil
   annual = (minBps.gt(annual) ? minBps : annual).mul(100) // scale to percentage

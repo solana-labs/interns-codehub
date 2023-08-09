@@ -23,7 +23,6 @@ import BN from 'bn.js'
 
 import { CLAD_PROGRAM_ID, testJupiterAmmsToExclude } from '@/constants'
 import { Clad } from '@/target/types/clad'
-import { GlobalpoolData } from '@/types/accounts'
 import {
   getTickArrayKeyFromTickIndex,
   getRoutesFromJupiter,
@@ -31,6 +30,7 @@ import {
   toTokenAmount,
 } from '@/utils'
 import { resolveOrCreateATAs } from '@orca-so/common-sdk'
+import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 
 export type OpenTradePositionParams = {
   tickLowerIndex: number,
@@ -39,14 +39,13 @@ export type OpenTradePositionParams = {
   borrowTokenDecimals: number, // decimal exponent of borrow token
   loanDuration: number, // loan duration in seconds
   positionAuthority: PublicKey
-  globalpoolKey: PublicKey
-  globalpool: GlobalpoolData
+  globalpool: ExpirableGlobalpoolData
   program: Program<Clad>
 }
 
 const jupiterConnection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET as string)
 
-export default async function openTradePosition(params: OpenTradePositionParams) {
+export async function openTradePosition(params: OpenTradePositionParams) {
   const {
     tickLowerIndex,
     tickUpperIndex,
@@ -54,10 +53,11 @@ export default async function openTradePosition(params: OpenTradePositionParams)
     borrowTokenDecimals,
     loanDuration,
     positionAuthority,
-    globalpoolKey,
     globalpool,
     program,
   } = params
+
+  const globalpoolKey = new PublicKey(globalpool._pubkey)
 
   if (tickLowerIndex >= tickUpperIndex) {
     throw new Error('Invalid lower tick index')

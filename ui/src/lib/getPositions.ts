@@ -3,7 +3,7 @@
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { AccountInfo, Connection, ParsedAccountData, PublicKey } from "@solana/web3.js"
 
-import getAccountData from "@/lib/getAccountData"
+import { getAccountData } from "@/lib"
 import { UserLiquidityPosition, UserTradePosition } from "@/types/user"
 import { ParsableLiquidityPosition, ParsableTradePosition } from "@/types/parsing"
 

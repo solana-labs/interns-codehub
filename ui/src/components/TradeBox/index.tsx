@@ -1,12 +1,11 @@
-import { Box, Container, Stack, TextField, Typography } from '@mui/material'
-import { PriceMath } from '@orca-so/whirlpools-sdk'
-import { useEffect, useState } from 'react'
+import { Box } from '@mui/material'
+import { useState } from 'react'
 
 import ShadowedBox from '@/components/ShadowedBox'
+import SwapPoolBox from '@/components/SwapPoolBox'
 import { StyledTab, StyledTabs } from '@/components/StyledTab'
 import { useAppSelector } from '@/hooks'
 import { TokenE, getTokenAddress } from '@/lib/Token'
-import { TokenAmounts, estimateLiquidityFromTokenAmounts, getTokenAmountsFromLiquidity, priceToNearestTick, toTokenAmount } from '@/utils'
 import { selectGlobalpoolByMints } from '@/slices/globalpool'
 import LeverageTradeBox from '../LeverageTradeBox'
 
@@ -71,7 +70,7 @@ export default function TradeBox(props: TradeBoxProps) {
         <LeverageTradeBox isTradeLong={false} globalpool={globalpool} baseToken={baseToken} quoteToken={quoteToken} />
       </CustomTabPanel>
       <CustomTabPanel value={tabValue} index={2}>
-        Item Three
+        <SwapPoolBox globalpool={globalpool} baseToken={baseToken} quoteToken={quoteToken} />
       </CustomTabPanel>
     </ShadowedBox>
   )

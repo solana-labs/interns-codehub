@@ -2,11 +2,10 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { Connection, PublicKey } from '@solana/web3.js'
 
 import { GLOBALPOOL_STRUCT_SIZE } from '@/constants'
-import getGlobalpool from '@/lib/getGlobalpool'
+import { getAccountData, getGlobalpool } from '@/lib'
 import type { RootState } from '@/store'
 import { GlobalpoolData } from '@/types/accounts'
 import { CLAD_PROGRAM_ID } from '@/constants'
-import getAccountData from '@/lib/getAccountData'
 import { ParsableGlobalpool } from '@/types/parsing'
 
 export type ExpirableGlobalpoolData = GlobalpoolData & { _lastFetchTimestamp: number, _pubkey: string }

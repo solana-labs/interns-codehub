@@ -14,7 +14,19 @@ export const JUPITER_PROGRAM_ID = 'JUP4Fb2cqiRUcaTHdrPC8h2gNsA2ETXiPDD33WcGuJB' 
 
 export const GLOBALPOOL_STRUCT_SIZE = 672 // Size of Globalpool struct, std::mem::size_of::<Globalpool>()
 
+export const TICK_ARRAY_SIZE = 88 // 88 ticks in tick array
+
 export const ZERO_BN = new BN(0)
+
+/**
+ * The denominator which the protocol fee rate is divided on.
+ */
+export const PROTOCOL_FEE_RATE_MUL_VALUE = new BN(10_000)
+
+/**
+ * The denominator which the fee rate is divided on.
+ */
+export const FEE_RATE_MUL_VALUE = new BN(1_000_000)
 
 export const MAX_SWAP_TICK_ARRAYS = 3
 

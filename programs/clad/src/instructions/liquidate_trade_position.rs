@@ -25,6 +25,7 @@ pub struct LiquidateTradePosition<'info> {
     #[account(mut)]
     pub position_authority: Signer<'info>,
 
+    #[account(mut)]
     pub globalpool: Box<Account<'info, Globalpool>>,
 
     #[account(mut, has_one = globalpool)]

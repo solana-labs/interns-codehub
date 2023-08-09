@@ -41,7 +41,7 @@ export default function TradePairPage() {
           quoteToken={quoteToken}
           sx={{ width: '100%' }}
         />
-        <Stack justifyContent="flex-end" spacing={2}>
+        <Stack justifyContent="flex-start" spacing={2}>
           <TradeBox baseToken={baseToken} quoteToken={quoteToken} />
           {/* <LeverageTradeBox
             baseToken={baseToken}

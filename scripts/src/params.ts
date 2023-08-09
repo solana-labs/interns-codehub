@@ -5,8 +5,6 @@ import { Keypair, PublicKey } from '@solana/web3.js'
 
 import { Clad } from '@/target/types/clad'
 import {
-  pythOracleSOL,
-  pythOracleUSDC,
   tokenMintBONK,
   tokenMintHNT,
   tokenMintSOL,
@@ -58,10 +56,7 @@ export async function getConstantParams() {
   const tokenMintA = await getMint(connection, tokenMintAKey)
   const tokenMintB = await getMint(connection, tokenMintBKey)
 
-  const tokenOracleA = pythOracleSOL
-  const tokenOracleB = pythOracleUSDC
-
-  const desiredStartPrice = 2.149 // B/A (USDC/HNT)
+  const desiredStartPrice = 2.02 // B/A (USDC/HNT)
 
   const decimalDiff = tokenMintB.decimals - tokenMintA.decimals
   const initTickIndex = Math.round((Math.log(desiredStartPrice * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing
@@ -88,8 +83,6 @@ export async function getConstantParams() {
     tickSpacing,
     tokenMintA,
     tokenMintB,
-    // tokenOracleA,
-    // tokenOracleB,
     cladKey,
     initTickIndex,
     initPrice,

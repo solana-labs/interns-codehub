@@ -24,6 +24,7 @@ pub struct OpenTradePosition<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    #[account(mut)]
     pub globalpool: Box<Account<'info, Globalpool>>,
 
     #[account(

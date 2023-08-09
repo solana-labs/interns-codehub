@@ -24,8 +24,7 @@ export default function LiquidityPosition() {
 
   // react-wallet doesn't connect to localnet despite changing the browser wallet RPC,
   // so we manually set it to localnet here (and other places where we use connection)
-  // const { connection } = useConnection()
-  const connection = LOCALNET_CONNECTION
+  const { connection } = process.env.NEXT_PUBLIC_SOLANA_TARGET === 'localnet' ? { connection: LOCALNET_CONNECTION } : useConnection()
 
   const wallet = useAnchorWallet()
   const program = useCladProgram(connection)

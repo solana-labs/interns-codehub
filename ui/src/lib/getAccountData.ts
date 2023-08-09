@@ -1,7 +1,7 @@
 import { ParsableEntity } from '@orca-so/common-sdk'
 import { Connection, PublicKey } from '@solana/web3.js'
 
-export default async function getAccountData<T>(
+export async function getAccountData<T>(
   publicKey: PublicKey,
   parser: ParsableEntity<T>,
   connection: Connection
