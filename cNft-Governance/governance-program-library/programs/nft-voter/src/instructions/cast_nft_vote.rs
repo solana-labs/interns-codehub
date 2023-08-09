@@ -81,6 +81,8 @@ pub fn cast_nft_vote<'a, 'b, 'c, 'info>(
         );
         require!(*nft_vote_ticket_info.owner == crate::id(), NftVoterError::InvalidPdaOwner);
 
+        // Note: deserializa NftVoteTicket to ownership checking and get nft voting weight
+        // It ensure the NftVoteTicket is for (nft-{action}-ticket,registrar,governing_token_owner,nft_mint) seeds
         let data_bytes = nft_vote_ticket_info.data.clone();
         let data = NftVoteTicket::try_from_slice(&data_bytes.borrow())?;
         let ticket_type = format!("nft-{}-ticket", &VoterWeightAction::CastVote).to_string();

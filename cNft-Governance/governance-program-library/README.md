@@ -7,9 +7,8 @@ Following the retrieval of the metadata, of type MetadataArgs, this data is repr
 The cnft-voter plugin thus ensures a robust and efficient mechanism for cNFT verification, optimizing the governance process within this project.
 
 There are two programs in this project:
-
-1. ~/programs/cnft-voter: This is a seperate program that only support cNFT voting.
-2. ~/programs/nft-voter: This is a fork of nft-voter that support both NFT and cNFT voting.
+1. ~/programs/nft-voter: This is a fork of nft-voter that support both NFT and cNFT voting.
+2. ~/programs/parallel-tree: This is a project that support minting a parallel tree that can store additional data of cNFT, such as governing voting weight.(required to talk with Helius team for customized DAS API)
 
 **CLI version**
 
@@ -24,21 +23,16 @@ There are two programs in this project:
 cd /programs/{program}
 cargo build-sbf
 
-# generate idl
-anchor build --arch sbf
-
 # test
 cd /programs/{program}
 cargo test-sbf
+
+# generate idl (json, ts)
+anchor build --arch sbf
+
+# deploy contract
+cargo program deploy <program file path> --program-id <keypair of program id file path>
 ```
-
-### File to explore in this project
-
-1. ./instructions/cast_cnft_vote.rs
-2. ./instructions/update_voter_weight_record.rs
-3. ./instructions/verify_compressed_nft.rs
-4. ./state/cnft_verification.rs
-5. ./state/registrar.rs
 
 ### Reference:
 

@@ -4,6 +4,15 @@ use crate::tools::accounts::create_nft_vote_ticket_account;
 use anchor_lang::prelude::*;
 use itertools::Itertools;
 
+/// Create NFT action ticket. Everytime a voter want to do some voting with NFT, they need to get a ticket first.
+/// This instruction will check the validation of the NFT and create a ticket for the voter.
+/// For each action, they get the specific tickets for it. For example, cast vote get nft-castVote-ticket.
+///
+/// These tickets will be used in the corresponding instructions, ex: cast_nft_vote and update_voter_weight_record.
+/// If the action instruction succeed, the ticket will be closed.
+/// Otherwise, the ticket will be kept and can be used in the next action.
+///
+/// This is the instruction for verifying NFT.
 #[derive(Accounts)]
 #[instruction(voter_weight_action:VoterWeightAction)]
 pub struct CreateNftVoteTicket<'info> {
