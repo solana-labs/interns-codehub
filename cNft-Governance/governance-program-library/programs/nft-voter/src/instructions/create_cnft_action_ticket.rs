@@ -26,9 +26,6 @@ pub struct CreateCnftActionTicket<'info> {
         @ NftVoterError::InvalidVoterWeightRecordMint,
     )]
     pub voter_weight_record: Account<'info, VoterWeightRecord>,
-
-    /// CHECK: This account is checked in the instruction
-    pub leaf_owner: UncheckedAccount<'info>,
     pub voter_authority: Signer<'info>,
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -44,7 +41,6 @@ pub fn create_cnft_action_ticket<'info>(
 ) -> Result<()> {
     let registrar = &ctx.accounts.registrar;
     let governing_token_owner = &ctx.accounts.voter_weight_record.governing_token_owner;
-    let leaf_owner = &ctx.accounts.leaf_owner.to_account_info();
     let remaining_accounts = &mut ctx.remaining_accounts.to_vec();
     let compression_program = &ctx.accounts.compression_program.to_account_info();
     let system_program = &ctx.accounts.system_program.to_account_info();
@@ -67,7 +63,6 @@ pub fn create_cnft_action_ticket<'info>(
             &governing_token_owner,
             &tree_account,
             &mut unique_asset_ids,
-            &leaf_owner,
             &param,
             proofs,
             compression_program

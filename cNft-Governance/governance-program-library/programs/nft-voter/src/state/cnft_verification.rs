@@ -88,6 +88,7 @@ pub struct CompressedNftAsset {
     pub edition_nonce: Option<u8>,
     pub creators: Vec<Creator>,
     pub root: [u8; 32],
+    pub leaf_owner: Pubkey,
     pub leaf_delegate: Pubkey,
     pub index: u32,
     pub nonce: u64,
@@ -120,12 +121,12 @@ impl CompressedNftAsset {
 pub fn verify_compressed_nft<'info>(
     tree_account: &AccountInfo<'info>,
     asset_id: &Pubkey,
-    leaf_owner: &Pubkey,
     params: &CompressedNftAsset,
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>
 ) -> Result<()> {
     let root = &params.root;
+    let leaf_owner = &params.leaf_owner;
     let leaf_delegate = &params.leaf_delegate;
     let nonce = params.nonce;
     let index = params.index;
@@ -151,13 +152,6 @@ pub fn verify_compressed_nft<'info>(
     let cpi_ctx = CpiContext::new(compression_program.clone(), VerifyLeaf {
         merkle_tree: tree_account.clone(),
     }).with_remaining_accounts(proofs);
-
-    // require!(
-    //     spl_account_compression::cpi
-    //         ::verify_leaf(cpi_ctx, params.root, leaf.to_node(), params.index)
-    //         .is_ok(),
-    //     AccountCompressionError::ConcurrentMerkleTreeError
-    // );
     spl_account_compression::cpi::verify_leaf(cpi_ctx, *root, leaf.to_node(), index)?;
 
     Ok(())

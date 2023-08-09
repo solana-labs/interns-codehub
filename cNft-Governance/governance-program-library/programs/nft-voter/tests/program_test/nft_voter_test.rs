@@ -708,7 +708,6 @@ impl NftVoterTest {
         let accounts = gpl_nft_voter::accounts::CreateCnftActionTicket {
             registrar: registrar_cookie.address,
             voter_weight_record: voter_weight_record_cookie.address,
-            leaf_owner: leaf_cookies[0].owner.pubkey(),
             voter_authority: voter_cookie.address,
             payer: self.bench.payer.pubkey(),
             compression_program: spl_account_compression::id(),

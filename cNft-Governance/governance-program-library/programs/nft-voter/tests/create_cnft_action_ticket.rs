@@ -433,7 +433,7 @@ async fn test_create_cnft_action_ticket_using_delegate() -> Result<(), Transport
         &[&proofs],
         &action,
         |i| {
-            i.accounts[3].pubkey = delegate_cookie.address;
+            i.accounts[2].pubkey = delegate_cookie.address;
         },
         Some(delegate_signers)
     ).await?;

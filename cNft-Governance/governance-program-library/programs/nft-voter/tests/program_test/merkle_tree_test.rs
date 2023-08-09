@@ -282,6 +282,7 @@ impl MerkleTreeTest {
                 edition_nonce: args.metadata.edition_nonce,
                 creators,
                 root,
+                leaf_owner: args.owner.pubkey(),
                 leaf_delegate: args.delegate.pubkey(),
                 nonce: args.nonce,
                 index: args.index,

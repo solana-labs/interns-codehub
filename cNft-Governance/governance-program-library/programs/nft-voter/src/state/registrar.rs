@@ -141,27 +141,19 @@ pub fn resolve_cnft_vote_weight<'info>(
     governing_token_owner: &Pubkey,
     tree_account: &AccountInfo<'info>,
     unique_asset_ids: &mut Vec<Pubkey>,
-    leaf_owner: &AccountInfo<'info>,
     params: &CompressedNftAsset,
     proofs: Vec<AccountInfo<'info>>,
     compression_program: &AccountInfo<'info>
 ) -> Result<(u64, Pubkey)> {
     let asset_id = get_asset_id(&tree_account.key(), params.nonce);
 
-    require_eq!(*governing_token_owner, leaf_owner.key(), NftVoterError::VoterDoesNotOwnNft);
+    require_eq!(*governing_token_owner, params.leaf_owner, NftVoterError::VoterDoesNotOwnNft);
 
     let collection = params.collection.as_ref().ok_or(NftVoterError::MissingMetadataCollection)?;
 
     require!(collection.verified, NftVoterError::CollectionMustBeVerified);
 
-    verify_compressed_nft(
-        tree_account,
-        &asset_id,
-        &leaf_owner.key(),
-        params,
-        proofs,
-        compression_program
-    )?;
+    verify_compressed_nft(tree_account, &asset_id, params, proofs, compression_program)?;
 
     if unique_asset_ids.contains(&asset_id) {
         return Err(NftVoterError::DuplicatedNftDetected.into());
