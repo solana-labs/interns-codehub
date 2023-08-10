@@ -1,6 +1,15 @@
 # nft-voter: create a NFT powered govereance in spl-governance
 `nft-voter` is a plugin designed to empower DAOs by leveraging NFTs and cNFTs within the spl-governance framework. This integration allows DAOs to manage and control their realms with an alternative way, providing both secure and a customizable governance model based on NFT ownership.
 
+Note: This program is still under development and is not yet ready for production use.
+Only support where the below configuration in MetadataArgs since Helius DAS API doesn't provide the three fields, so we fixed it now
+```
+uses: None,
+token_program_version: TokenProgramVersion::Original,
+token_standard: Some(TokenStandard::NonFungible),
+```
+
+
 [slide](https://docs.google.com/presentation/d/1VWgNDAyS3RxijzVQWLZHpuxXdZ8YBMuZLIOCxHFEePU/edit?usp=sharing)
 
 ## Features 🌟
