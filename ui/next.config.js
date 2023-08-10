@@ -18,6 +18,17 @@ const nextConfig = {
     return config
   },
 
+	images: {
+		remotePatterns: [
+			{
+				protocol: 'https',
+				hostname: 'assets.coingecko.com',
+				port: '',
+				pathname:'/coins/images/**',
+			}
+		]
+	}
+
 	// publicRuntimeConfig: {
 	// 	NEXT_PUBLIC_SOLANA_RPC_MAINNET: process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET,
 	// }

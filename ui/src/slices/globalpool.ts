@@ -105,7 +105,7 @@ export const globalpoolSlice = createSlice({
 
     builder.addCase(fetchAllGlobalpools.fulfilled, (state, action) => {
       console.log('fetchAllGlobalpools.fulfilled', action.payload)
-      state.globalpools = action.payload
+      state.globalpools = { ...state.globalpools, ...action.payload }
     })
 
     builder.addCase(fetchAllGlobalpools.pending, (state, action) => {

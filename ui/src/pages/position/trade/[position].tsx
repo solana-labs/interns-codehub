@@ -8,7 +8,7 @@ import { toast } from 'react-toastify'
 import { useRouter } from 'next/router'
 
 import PositionRenderCard, { PositionRenderCardSize } from '@/components/PositionRenderCard'
-import ShadowedBox from '@/components/ShadowedBox'
+import { ShadowedBox } from '@/components/ShadowedBox'
 import { LOCALNET_CONNECTION } from '@/constants'
 import { useAppDispatch, useAppSelector, useCladProgram, useTokens } from '@/hooks'
 import { closeTradePosition, sortTokenByQuotePriority } from '@/lib'
@@ -116,7 +116,7 @@ export default function TradePosition() {
   }
 
   //
-  // Todo: memoize
+  // Todo: memoize using useMemo
   //
   const poolPrice = tickToPrice(globalpool?.tickCurrentIndex || 0, baseToken?.decimals || 9, quoteToken?.decimals || 9)
   const positionLoanValue = new Decimal(numScaledFromDecimals(position.data.loanTokenSwapped, tokenLoan?.decimals || 9))

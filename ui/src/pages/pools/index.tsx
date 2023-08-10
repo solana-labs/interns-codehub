@@ -1,7 +1,7 @@
 import { Box, Container, Typography } from '@mui/material'
 import { useEffect, useMemo } from 'react'
 
-import ShadowedBox from '@/components/ShadowedBox'
+import { ShadowedBox } from '@/components/ShadowedBox'
 import { useAppSelector } from '@/hooks'
 import { ExpirableGlobalpoolData, selectGlobalpools } from '@/slices/globalpool'
 import { formatNumber, tickToPrice, truncatedAddress } from '@/utils'

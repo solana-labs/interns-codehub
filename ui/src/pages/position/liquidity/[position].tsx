@@ -2,23 +2,26 @@
 
 import { Box, Button, Container, Stack, Typography } from '@mui/material'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
-import BN from 'bn.js'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'react-toastify'
+import { Token } from '@solflare-wallet/utl-sdk'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 
 import PositionRenderCard, { PositionRenderCardSize } from '@/components/PositionRenderCard'
-import ShadowedBox from '@/components/ShadowedBox'
+import { ShadowedBox } from '@/components/ShadowedBox'
 import { LOCALNET_CONNECTION } from '@/constants'
 import { useAppDispatch, useAppSelector, useCladProgram } from '@/hooks'
-// import closeLiquidityPosition from '@/lib/closeLiquidityPosition'
-import { sortObjectByQuotePriority, tokenAddressToToken } from '@/lib/Token'
 import { fetchGlobalpool, selectGlobalpool } from '@/slices/globalpool'
 import { selectLiquidityPosition } from '@/slices/liquidityPosition'
-import { isBase58, tickToPrice } from '@/utils'
-import { PublicKey } from '@solana/web3.js'
+import { formatNumber, isBase58, tickToPrice } from '@/utils'
 
-export default function LiquidityPosition() {
+interface LiquidityPositionProps {
+  baseToken: Token
+  quoteToken: Token
+}
+
+export function LiquidityPosition(props: LiquidityPositionProps) {
+  const { baseToken, quoteToken } = props
+
   const dispatch = useAppDispatch()
   const router = useRouter()
 
@@ -36,28 +39,6 @@ export default function LiquidityPosition() {
 
   const [tickSpacing, setTickSpacing] = useState<number>(64)
   const [currentPoolTick, setCurrentPoolTick] = useState<number>(0)
-
-  // Order doesn't matter because we sort (with priority for some quote tokens)
-
-  const [baseToken, quoteToken] = useMemo(() => {
-    if (!position) return [undefined, undefined]
-
-    const tokenA = {
-      pubkey: globalpool?.tokenMintA || new PublicKey(''),
-      symbol: tokenAddressToToken(globalpool?.tokenMintA || '') || '',
-      decimals: 8, // HNT (hard-coded for now)
-      fixedTo: 6,
-    }
-
-    const tokenB = {
-      pubkey: globalpool?.tokenMintB || new PublicKey(''),
-      symbol: tokenAddressToToken(globalpool?.tokenMintB || '') || '',
-      decimals: 6, // USDC (hard-coded for now)
-      fixedTo: 2,
-    }
-
-    return [tokenA, tokenB].sort(sortObjectByQuotePriority('pubkey'))
-  }, [position])
 
   const closePositionHandler = useCallback(async () => {
     if (!connection || !position || !globalpool || !wallet || !program) return
@@ -128,7 +109,7 @@ export default function LiquidityPosition() {
               <Box>
                 <Typography variant="caption">Current Price</Typography>
                 <Typography variant="body1" fontWeight="bold">
-                  {tickToPrice(globalpool?.tickCurrentIndex || 0, baseToken?.decimals, quoteToken?.decimals).toFixed(quoteToken?.fixedTo)}
+                  {formatNumber(tickToPrice(globalpool?.tickCurrentIndex || 0, baseToken.decimals || 9, quoteToken.decimals || 9))}
                 </Typography>
               </Box>
             </Stack>
@@ -141,13 +122,13 @@ export default function LiquidityPosition() {
                 <Box>
                   <Typography variant="caption">Lower Price</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {tickToPrice(position.data.tickLowerIndex, baseToken?.decimals, quoteToken?.decimals).toFixed(quoteToken?.fixedTo)}
+                    {formatNumber(tickToPrice(position.data.tickLowerIndex, baseToken.decimals || 9, quoteToken.decimals || 9))}
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="caption">Upper Price</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {tickToPrice(position.data.tickUpperIndex, baseToken?.decimals, quoteToken?.decimals).toFixed(quoteToken?.fixedTo)}
+                    {formatNumber(tickToPrice(position.data.tickUpperIndex, baseToken.decimals || 9, quoteToken.decimals || 9))}
                   </Typography>
                 </Box>
               </Stack>

@@ -1,78 +1,89 @@
-import { twMerge } from 'tailwind-merge'
 import CloseIcon from '@carbon/icons-react/lib/Close'
-import { cloneElement } from 'react'
-import { TokenE, getTokenLabel, getTokenIcon } from '@/lib/Token'
+import { Box, Stack, Typography } from '@mui/material'
+import { styled } from '@mui/material/styles'
+import { Token } from '@solflare-wallet/utl-sdk'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+
+import { TransitionsModal } from '@/components/TransitionsModal'
+
+const TokenSelectorContent = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.background.paper,
+  border: '1px solid #171719',
+  borderRadius: 6,
+  boxShadow: '0 0 20px 1px rgba(130, 130, 130, 0.13)',
+  padding: theme.spacing(3, 4),
+  width: '100%',
+  maxWidth: 400,
+  maxHeight: 500,
+  overflow: 'hidden',
+}))
+
+const TokenClickStack = styled(Stack)(({ theme }) => ({
+  cursor: 'pointer',
+  padding: theme.spacing(1, 2),
+  transition: 'background-color 0.2s ease-in-out',
+  borderRadius: 6,
+  '&:hover': {
+    backgroundColor: '#eee',
+  }
+}))
 
 interface TokenSelectorListProps {
-  className?: string
-  onClose?(): void
-  onSelectToken?(baseToken: TokenE, quoteToken: TokenE): void
-  tokenList?: { base: TokenE, quote: TokenE }[]
+  isSelectorOpen: boolean
+  setIsSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>
+  tokenList: { base: Token, quote: Token }[]
 }
 
 export default function TokenSelectorList(props: TokenSelectorListProps) {
-  const { tokenList } = props
-  // const stats = useGlobalStore((state) => state.priceStats)
+  const { isSelectorOpen, setIsSelectorOpen, tokenList } = props
 
-  if (!tokenList) return (<></>)
+  const router = useRouter()
+
+  if (!tokenList || !tokenList.length) return (<></>)
 
   return (
-    <div
-      className='fixed top-0 left-0 right-0 bottom-0 z-20 bg-black/40'
-      onClick={props.onClose}
-    >
-      <div
-        className='absolute top-0 bottom-0 left-0 w-[424px] bg-zinc-900 p-4'
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className='flex items-center justify-between'>
-          <div className='text-sm font-medium text-white'>You Pay</div>
-          <button onClick={props.onClose}>
-            <CloseIcon className='h-6 w-6 fill-white' />
-          </button>
-        </header>
-        <div className='mt-6'>
-          {tokenList.map((tokenPair) => {
-            const icon = getTokenIcon(tokenPair.base)
+    <TransitionsModal isSelectorOpen={isSelectorOpen} setIsSelectorOpen={setIsSelectorOpen}>
+      <TokenSelectorContent id="token-selector-content">
+        <Box width="100%" overflow={{ y: 'scroll' }}>
+          <Typography variant="h6" fontWeight="bold" textAlign="center">Select Tokens</Typography>
+          <Stack spacing={1} pt={2}>
+            {tokenList.map((tokenPair) => {
+              const { base: baseToken, quote: quoteToken } = tokenPair
+              return (
+                <TokenClickStack
+                  key={baseToken.symbol + quoteToken.symbol}
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  onClick={() => {
+                    setIsSelectorOpen(false)
+                    const newUrl = `/trade/${baseToken.symbol}-${quoteToken.symbol}`
+                    if (router.pathname !== newUrl) router.push(newUrl) // push if not already on the page
+                  }}
+                >
+                  <Image src={baseToken.logoURI || '/'} alt={baseToken.symbol} width={40} height={40} />
+                  <Typography variant="h6" fontWeight="bold">{baseToken.symbol}/{quoteToken.symbol}</Typography>
+                </TokenClickStack>
+              )
+            })}
+          </Stack>
+        </Box>
+      </TokenSelectorContent>
+    </TransitionsModal>
+    // <Box // this is overlay
+    //   position="fixed"
+    //   top={0}
+    //   right={0}
+    //   bottom={0}
+    //   left={0}
+    //   zIndex={9999}
+    //   bgcolor="#333"
+    //   color="#fff"
+    //   hidden={isHidden}
+    //   onClick={props.onClose}
+    // >
 
-            return (
-              <button
-                key={tokenPair.base}
-                className={twMerge(
-                  'bg-zinc-900',
-                  'gap-x-3',
-                  'grid-cols-[40px,1fr,max-content]',
-                  'grid',
-                  'items-center',
-                  'p-2.5',
-                  'rounded',
-                  'w-full',
-                  'hover:bg-zinc-800'
-                )}
-                onClick={() => {
-                  props.onSelectToken?.(tokenPair.base, tokenPair.quote)
-                  props.onClose?.()
-                }}
-              >
-                {cloneElement(icon, {
-                  className: 'h-10 w-10',
-                })}
-                <div className='text-left'>
-                  <div className='font-semibold text-white'>{tokenPair.base}</div>
-                  <div className='text-sm text-zinc-500'>
-                    {getTokenLabel(tokenPair.base)}
-                  </div>
-                </div>
-                {/* {!!stats[token]?.currentPrice && (
-                  <div className='text-sm text-white'>
-                    ${formatNumber(stats[token].currentPrice)}
-                  </div>
-                )} */}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    </div>
+    // </Box>
   )
 }

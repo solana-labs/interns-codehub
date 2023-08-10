@@ -1,13 +1,13 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { PriceMath } from '@orca-so/whirlpools-sdk'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
-import { PublicKey } from '@solana/web3.js'
+import { Token } from '@solflare-wallet/utl-sdk'
 import Decimal from 'decimal.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { LOCALNET_CONNECTION } from '@/constants'
 import { useCladProgram } from '@/hooks'
-import { TokenE, TOKEN_INFO, openTradePosition, calculateProratedInterestRate } from '@/lib'
+import { openTradePosition, calculateProratedInterestRate } from '@/lib'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 import {
   estimateLiquidityFromTokenAmounts,
@@ -24,15 +24,15 @@ import {
 interface LeverageTradeBoxProps {
   globalpool: ExpirableGlobalpoolData | undefined
   isTradeLong: boolean
-  baseToken: TokenE
-  quoteToken: TokenE
+  baseToken: Token
+  quoteToken: Token
 }
 
 function invertAmount(amount: number, poolPrice: number, isTradeLong: boolean) {
   return amount * (isTradeLong ? 1 / poolPrice : poolPrice)
 }
 
-export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
+export function LeverageTradeBox(props: LeverageTradeBoxProps) {
   const {
     globalpool,
     isTradeLong,
@@ -40,8 +40,8 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
     quoteToken
   } = props
 
-  const baseDecimals = TOKEN_INFO[baseToken].decimals
-  const quoteDecimals = TOKEN_INFO[quoteToken].decimals
+  const baseDecimals = baseToken.decimals || 9
+  const quoteDecimals = quoteToken.decimals || 9
 
   // react-wallet doesn't connect to localnet despite changing the browser wallet RPC,
   // so we manually set it to localnet here (and other places where we use connection)
@@ -157,11 +157,13 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
     if (isBorrowA) {
       repayAmount = new Decimal(numScaledFromDecimals(tokenAmountsToRepayExpo.tokenB, quoteDecimals))
     } else {
-      repayAmount = new Decimal(numScaledFromDecimals(tokenAmountsToRepayExpo.tokenA, quoteDecimals))
+      repayAmount = new Decimal(numScaledFromDecimals(tokenAmountsToRepayExpo.tokenA, baseDecimals))
     }
 
-    console.log('repayAmount', repayAmount.toString())
+    console.log('repayAmount', repayAmount.toString(), baseDecimals, quoteDecimals, isBorrowA)
     console.log('tradeAmountInBaseToken', tradeAmountInBaseToken.toString())
+    console.log('tokenAmountsToRepayExpo.A', tokenAmountsToRepayExpo.tokenA.toString())
+    console.log('tokenAmountsToRepayExpo.B', tokenAmountsToRepayExpo.tokenB.toString())
 
     const _estMaxLoss = repayAmount.sub(tradeAmountInBaseToken)
     const _estLeverage = new Decimal(tradeAmountInBaseToken).div(_estMaxLoss).toFixed(1)
@@ -207,7 +209,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
         />
       </Box>
       <Box pt={2}>
-        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Trade Amount (in {isTradeLong ? quoteToken : baseToken})</Typography>
+        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Trade Amount (in {isTradeLong ? quoteToken.symbol : baseToken.symbol})</Typography>
         <TextField
           type="number"
           variant="outlined"
@@ -220,14 +222,14 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
         />
         <Typography variant="caption" color="#999" pb={1}>
           {/* trade amount in opposite token */}
-          &#8776; {formatNumber(invertAmount(tradeAmount, poolPrice, isTradeLong))} {isTradeLong ? baseToken : quoteToken}
+          &#8776; {formatNumber(invertAmount(tradeAmount, poolPrice, isTradeLong))} {isTradeLong ? baseToken.symbol : quoteToken.symbol}
         </Typography>
       </Box>
       <Stack direction={{ md: 'row' }} alignItems="center" justifyContent="space-between" pt={2} spacing={1}>
         <Box>
           <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Collateral (Max Loss)</Typography>
           <Typography variant="body1" fontWeight="bold">
-            {estMaxLoss ? `${formatNumber(estMaxLoss.toString())} ${isTradeLong ? baseToken : quoteToken}` : '-'}
+            {estMaxLoss ? `${formatNumber(estMaxLoss.toString())} ${isTradeLong ? baseToken.symbol : quoteToken.symbol}` : '-'}
           </Typography>
         </Box>
         <Box textAlign="right">
@@ -241,7 +243,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
         <Box>
           <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Interest</Typography>
           <Typography variant="body1" fontWeight="bold">
-            {estInterestRate ? `${formatNumber(estInterestRate)} ${isTradeLong ? baseToken : quoteToken}` : '-'}
+            {estInterestRate ? `${formatNumber(estInterestRate)} ${isTradeLong ? baseToken.symbol : quoteToken.symbol}` : '-'}
           </Typography>
         </Box>
         <Box textAlign="right">

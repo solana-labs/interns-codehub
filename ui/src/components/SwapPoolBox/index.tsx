@@ -3,21 +3,22 @@ import { Box, Button, Stack, TextField, Typography, styled } from '@mui/material
 import { Percentage } from '@orca-so/common-sdk'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
+import { Token } from '@solflare-wallet/utl-sdk'
 import { useCallback, useEffect, useState } from 'react'
 import BN from 'bn.js'
 import Decimal from 'decimal.js'
 
 import { CLAD_PROGRAM_ID, LOCALNET_CONNECTION } from '@/constants'
 import { useCladProgram } from '@/hooks'
-import { TOKEN_INFO, TokenE, getTokenAddress, swapPool } from '@/lib'
+import { swapPool } from '@/lib'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 import { formatNumber, numScaledFromDecimals, numScaledToDecimals } from '@/utils'
 import { swapQuoteByInputToken } from '@/utils/swap'
 
 interface SwapPoolBoxProps {
   globalpool: ExpirableGlobalpoolData | undefined
-  baseToken: TokenE
-  quoteToken: TokenE
+  baseToken: Token
+  quoteToken: Token
 }
 
 const ExchangeTokenReprButton = styled(Box)(() => ({
@@ -30,7 +31,7 @@ const ExchangeTokenReprButton = styled(Box)(() => ({
   }
 }))
 
-export default function SwapPoolBox(props: SwapPoolBoxProps) {
+export function SwapPoolBox(props: SwapPoolBoxProps) {
   const {
     globalpool,
     baseToken,
@@ -49,8 +50,8 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
   const [swapFeeAmount, setSwapFeeAmount] = useState<number>(0)
   const [maxSlippage, setMaxSlippage] = useState<Percentage>(new Percentage(new BN(1), new BN(100))) // 1%
 
-  const [swapInToken, setSwapInToken] = useState<TokenE>(baseToken)
-  const [swapOutToken, setSwapOutToken] = useState<TokenE>(quoteToken)
+  const [swapInToken, setSwapInToken] = useState<Token>(baseToken)
+  const [swapOutToken, setSwapOutToken] = useState<Token>(quoteToken)
 
   const [isExecutingSwap, setIsExecutingSwap] = useState<boolean>(false)
 
@@ -64,10 +65,6 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
 
     setIsExecutingSwap(true)
 
-    const inTokenInfo = TOKEN_INFO[swapInToken]
-    const outTokenInfo = TOKEN_INFO[swapOutToken]
-    const swapInputMint = new PublicKey(getTokenAddress(swapInToken))
-
     // scale to token decimals exponent (make sure to use Decimal for precision, then remove decimal places, then convert to BN)
     const swapInputAmount = new BN(swapInAmount.toString())
 
@@ -75,9 +72,9 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
       await swapPool({
         swapInputAmount,
         tokenAuthority: wallet.publicKey,
-        swapInputMint,
-        swapInputMintDecimals: inTokenInfo.decimals,
-        swapOutputMintDecimals: outTokenInfo.decimals,
+        swapInputMint: new PublicKey(swapInToken.address),
+        swapInputMintDecimals: swapInToken.decimals || 9,
+        swapOutputMintDecimals: swapOutToken.decimals || 9,
         maxSlippage,
         globalpool,
         program,
@@ -92,29 +89,26 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
   useEffect(() => {
     if (!globalpool || !connection) return
 
-    const inTokenInfo = TOKEN_INFO[swapInToken]
-    const outTokenInfo = TOKEN_INFO[swapOutToken]
-
-    const swapInTokenKey = new PublicKey(getTokenAddress(swapInToken))
-    const swapOutTokenKey = new PublicKey(getTokenAddress(swapOutToken))
+    const swapInputDecimals = swapInToken.decimals || 9
+    const swapOutputDecimals = swapOutToken.decimals || 9
 
     console.log('maxSlippage', maxSlippage.toString())
     console.log(swapInAmount)
 
     // scale to token decimals exponent (make sure to use Decimal for precision, then remove decimal places, then convert to BN)
-    const swapInAmountExpo = new BN(new Decimal(numScaledToDecimals(swapInAmount, inTokenInfo.decimals)).toFixed(0))
+    const swapInAmountExpo = new BN(new Decimal(numScaledToDecimals(swapInAmount, swapInputDecimals)).toFixed(0))
 
     swapQuoteByInputToken(
       new PublicKey(globalpool._pubkey),
-      swapInTokenKey,
+      new PublicKey(swapInToken.address),
       swapInAmountExpo,
       maxSlippage,
       connection,
       CLAD_PROGRAM_ID
     ).then((swapQuote) => {
       // scale from token decimals exponent
-      const estOutAmount = new Decimal(numScaledFromDecimals(swapQuote.estimatedAmountOut, outTokenInfo.decimals))
-      const estFeeAmount = new Decimal(numScaledFromDecimals(swapQuote.estimatedFeeAmount, inTokenInfo.decimals))
+      const estOutAmount = new Decimal(numScaledFromDecimals(swapQuote.estimatedAmountOut, swapOutputDecimals))
+      const estFeeAmount = new Decimal(numScaledFromDecimals(swapQuote.estimatedFeeAmount, swapInputDecimals))
 
       console.log(estOutAmount.toString(), estFeeAmount.toString())
       setSwapOutAmount(estOutAmount.toNumber())
@@ -125,7 +119,7 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
   return (
     <Stack alignItems="stretch" justifyContent="flex-start">
       <Box>
-        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>In ({swapInToken})</Typography>
+        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>In ({swapInToken.symbol})</Typography>
         <TextField
           type="number"
           variant="outlined"
@@ -144,7 +138,7 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
         </ExchangeTokenReprButton>
       </Box>
       <Box>
-        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Out ({swapOutToken})</Typography>
+        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Out ({swapOutToken.symbol})</Typography>
         <TextField
           type="number"
           variant="outlined"
@@ -164,7 +158,7 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
         </Box>
         <Box textAlign="right">
           <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Fee</Typography>
-          <Typography variant="body1" fontWeight="bold">{formatNumber(swapFeeAmount)} {swapOutToken}</Typography>
+          <Typography variant="body1" fontWeight="bold">{formatNumber(swapFeeAmount)} {swapOutToken.symbol}</Typography>
         </Box>
       </Stack>
       <Box pt={2}>

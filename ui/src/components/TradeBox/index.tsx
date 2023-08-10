@@ -1,49 +1,23 @@
 import { Box } from '@mui/material'
+import { Token } from '@solflare-wallet/utl-sdk'
 import { useState } from 'react'
 
-import ShadowedBox from '@/components/ShadowedBox'
-import SwapPoolBox from '@/components/SwapPoolBox'
+import { CustomTabPanel } from '@/components/CustomTabPanel'
+import { ShadowedBox } from '@/components/ShadowedBox'
+import { SwapPoolBox } from '@/components/SwapPoolBox'
 import { StyledTab, StyledTabs } from '@/components/StyledTab'
-import { useAppSelector } from '@/hooks'
-import { TokenE, getTokenAddress } from '@/lib/Token'
-import { selectGlobalpoolByMints } from '@/slices/globalpool'
-import LeverageTradeBox from '../LeverageTradeBox'
-
-interface TabPanelProps {
-  children?: React.ReactNode
-  index: number
-  value: number
-}
-
-function CustomTabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props
-
-  if (value !== index) return (<></>)
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      <Box sx={{ p: 3, mt: 1 }}>
-        {children}
-      </Box>
-    </div>
-  )
-}
+import { LeverageTradeBox } from '@/components/LeverageTradeBox'
+import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 
 interface TradeBoxProps {
-  baseToken: TokenE
-  quoteToken: TokenE
+  baseToken: Token
+  quoteToken: Token
+  globalpool: ExpirableGlobalpoolData
 }
 
-export default function TradeBox(props: TradeBoxProps) {
-  const { baseToken, quoteToken } = props
+export function TradeBox(props: TradeBoxProps) {
+  const { baseToken, quoteToken, globalpool } = props
 
-  const globalpool = useAppSelector(selectGlobalpoolByMints(getTokenAddress(baseToken), getTokenAddress(quoteToken)))
   const [tabValue, setTabValue] = useState(0)
 
   const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {

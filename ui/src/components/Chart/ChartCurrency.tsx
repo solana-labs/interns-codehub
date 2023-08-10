@@ -1,77 +1,70 @@
 import ChevronDownIcon from '@carbon/icons-react/lib/ChevronDown'
-import { useRouter } from 'next/router'
-import { cloneElement, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { Box, Stack, Typography } from '@mui/material'
+import { Token } from '@solflare-wallet/utl-sdk'
+import Image from 'next/image'
+import { useMemo, useState } from 'react'
 
 import TokenSelectorList from '@/components/TokenSelectorList'
-import { TokenE, getTokenIcon, getTokenLabel } from '@/lib/Token'
+import { useAppSelector } from '@/hooks'
+import { sortTokenByQuotePriority } from '@/lib'
+import { selectGlobalpools } from '@/slices/globalpool'
 
 interface ChartCurrencyProps {
-  className?: string
-  baseToken?: TokenE
-  quoteToken?: TokenE
+  baseToken: Token
+  quoteToken: Token
+  supportedTokens: Record<string, Token>
 }
 
-export default function ChartCurrency(props: ChartCurrencyProps) {
-  const { baseToken } = props
-
-  const tokenIcon = useMemo(() => {
-    if (!baseToken) return undefined
-    return getTokenIcon(baseToken)
-  }, [baseToken])
+export function ChartCurrency(props: ChartCurrencyProps) {
+  const { baseToken, quoteToken, supportedTokens } = props
 
   const [selectorOpen, setSelectorOpen] = useState(false)
-  const router = useRouter()
 
-  if (!baseToken || !tokenIcon) return (<></>)
+  const globalpools = useAppSelector(selectGlobalpools)
+
+  // Get token-pair of all globalpools
+  const tokenList = useMemo(() => {
+    if (!globalpools || !supportedTokens) return [] as { base: Token, quote: Token }[]
+
+    return Object.values(globalpools)
+      .map((globalpool) => {
+        const tokenA = supportedTokens[globalpool.tokenMintA.toString()]
+        const tokenB = supportedTokens[globalpool.tokenMintB.toString()]
+
+        if (!tokenA || !tokenB) return undefined // filtered out
+
+        // Need to order the pair
+        const [baseToken, quoteToken] = [tokenA, tokenB].sort(sortTokenByQuotePriority) as [Token, Token]
+        return { base: baseToken, quote: quoteToken }
+      })
+      .filter((x) => !!x) as { base: Token, quote: Token }[]
+  }, [globalpools, supportedTokens])
+
+  if (!baseToken || !quoteToken) return (<></>)
 
   return (
     <>
-      <button
-        className={twMerge(
-          'flex',
-          'group',
-          'items-center',
-          'space-x-2',
-          props.className
-        )}
-        onClick={() => setSelectorOpen((cur) => !cur)}
-      >
-        {cloneElement(tokenIcon, {
-          className: twMerge(tokenIcon.props.className, 'h-8', 'w-8'),
-        })}
-        <div className='flex items-baseline space-x-2'>
-          <div className='text-3xl font-bold'>{baseToken}</div>
-          <div className='text-sm font-medium text-zinc-500'>
-            {getTokenLabel(baseToken)}
-          </div>
-        </div>
-        <div className='pl-4'>
-          <div
-            className={twMerge(
-              'border-zinc-700',
-              'border',
-              'grid',
-              'h-6',
-              'place-items-center',
-              'rounded-full',
-              'transition-colors',
-              'w-6',
-              'group-hover:border-blue'
-            )}
-          >
-            <ChevronDownIcon className='h-4 w-4 fill-black' />
-          </div>
-        </div>
-      </button>
-      {selectorOpen && (
-        <TokenSelectorList
-          onClose={() => setSelectorOpen(false)}
-          onSelectToken={(baseToken, quoteToken) => {
-            router.push(`/trade/${baseToken}-${quoteToken}`)
-          }}
-        />
-      )}
+      <Box display="inline-block">
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="flex-start"
+          spacing={2}
+          onClick={() => setSelectorOpen((cur) => !cur)}
+          sx={{ cursor: 'pointer' }}
+        >
+          <Image src={baseToken.logoURI || '/'} alt={baseToken.symbol} width={50} height={50} />
+          <Typography variant="h5" fontWeight="bold">{baseToken.symbol}/{quoteToken.symbol}</Typography>
+          <Box p={1} border="1px solid #000" borderRadius="50%">
+            <ChevronDownIcon size={16} fill="#000" />
+          </Box>
+        </Stack>
+      </Box>
+      <TokenSelectorList
+        isSelectorOpen={selectorOpen}
+        setIsSelectorOpen={setSelectorOpen}
+        tokenList={tokenList}
+      />
     </>
   )
 }

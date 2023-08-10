@@ -1,33 +1,10 @@
-import { configureStore, combineReducers, createSerializableStateInvariantMiddleware } from '@reduxjs/toolkit'
+import { configureStore, combineReducers, createListenerMiddleware, createSerializableStateInvariantMiddleware, isAnyOf } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/dist/query'
-import {
-  persistStore,
-  persistReducer,
-  FLUSH,
-  REHYDRATE,
-  PAUSE,
-  PERSIST,
-  PURGE,
-  REGISTER,
-} from 'redux-persist'
-import storage from 'redux-persist/lib/storage'
 import thunk from 'redux-thunk'
 
 import { genericAppReducer, globalpoolReducer, liquidityPositionReducer, tradePositionReducer } from '@/slices'
-
-// const serializableMiddleware = createSerializableStateInvariantMiddleware({
-//   ignoredActions: ['globalpool/fetchAll'],
-// })
-
-// Strongly recommended to blacklist any api(s) that you have configured with RTK Query.
-// If the api slice reducer is not blacklisted, the api cache will be automatically persisted and
-// restored which could leave you with phantom subscriptions from components that do not exist any more.
-// const persistConfig = {
-//   key: 'root',
-//   version: 1,
-//   storage,
-//   blacklist: [],
-// }
+import { fetchGlobalpool, fetchAllGlobalpools, ExpirableGlobalpoolData } from '@/slices/globalpool'
+import { fetchTokens } from './slices/generic'
 
 const reducers = combineReducers({
   generic: genericAppReducer,
@@ -36,27 +13,45 @@ const reducers = combineReducers({
   tradePosition: tradePositionReducer,
 })
 
-// const persistedReducer = persistReducer(persistConfig, reducers)
+const listenerMiddleware = createListenerMiddleware()
+
+//
+// Fetch any token addresses in globalpools (if not cached)
+//
+listenerMiddleware.startListening({
+  matcher: isAnyOf(fetchAllGlobalpools.fulfilled, fetchGlobalpool.fulfilled),
+  effect: async (action, listenerApi) => {
+    // Can cancel other running this instance
+    listenerApi.cancelActiveListeners()
+
+    // Collect all to-fetch mint addresses
+    const mints = new Set<string>()
+    Object.values(action.payload as Record<string, ExpirableGlobalpoolData>).forEach((globalpool) => {
+      mints.add(globalpool.tokenMintA.toString())
+      mints.add(globalpool.tokenMintB.toString())
+    })
+
+    // Use the listener API methods to dispatch state updates
+    listenerApi.dispatch(fetchTokens({ mints: Array.from(mints) }))
+  }
+})
+
 
 const store = configureStore({
   reducer: reducers,
   devTools: process.env.NODE_ENV !== 'production',
+  // Prepend the `listenerMiddleware` before the serializable check middleware since
+  // it can receive actions with functions inside.
   middleware: (getDefaultMiddleware) => {
-    return getDefaultMiddleware({
-      // serializableCheck: {
-      //   ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-      // },
-    })
+    return getDefaultMiddleware()
+      .prepend(listenerMiddleware.middleware)
       .concat(thunk)
-      // .concat(serializableMiddleware)
   },
 })
 
 setupListeners(store.dispatch)
 
 export default store
-
-// export const persistor = persistStore(store)
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>

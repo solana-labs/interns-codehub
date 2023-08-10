@@ -4,7 +4,6 @@ import type { AppProps } from 'next/app'
 import { Inter } from 'next/font/google'
 import { Provider as StoreProvider } from 'react-redux'
 import { ToastContainer } from 'react-toastify'
-import { PersistGate } from 'redux-persist/integration/react'
 
 import '@solana/wallet-adapter-react-ui/styles.css'
 import 'react-toastify/dist/ReactToastify.css'

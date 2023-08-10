@@ -1,15 +1,21 @@
 import { Box, Container, Stack, Typography } from '@mui/material'
 import { useRouter } from 'next/router'
 import { useMemo } from 'react'
+import { Token } from '@solflare-wallet/utl-sdk'
 
-import CandlestickChart from '@/components/Chart/CandlestickChart'
-import TradeBox from '@/components/TradeBox'
-import { strAsToken } from '@/lib/Token'
+import { CandlestickChart, ChartCurrency, CurrencyStats } from '@/components/Chart'
+import { ProvideLiquidityBox } from '@/components/ProvideLiquidityBox'
+import { TradeBox } from '@/components/TradeBox'
+import { useAppSelector } from '@/hooks'
+import { selectTokens } from '@/slices/generic'
+import { selectGlobalpoolByMints } from '@/slices/globalpool'
 
 export default function TradePairPage() {
-
   const router = useRouter()
   const { pair: candidatePair } = router.query
+
+  const supportedTokens = useAppSelector(selectTokens)
+  // console.log(supportedTokens)
 
   // Get base & quote token from dynamic URL
   const [baseToken, quoteToken] = useMemo(() => {
@@ -22,10 +28,20 @@ export default function TradePairPage() {
     const split = pair.split('-')
     if (split.length !== 2 || split.filter((x) => !x).length) return [undefined, undefined]
 
-    return [strAsToken(split[0] as string), strAsToken(split[1] as string)]
-  }, [candidatePair])
+    // Find base & quote token from tokens list using the symbol (from URL)
+    let baseToken: Token | undefined 
+    let quoteToken: Token | undefined
+    Object.values(supportedTokens).forEach((token) => {
+      if (token.symbol === split[0]) baseToken = token
+      else if (token.symbol === split[1]) quoteToken = token
+    })
 
-  if (!baseToken || !quoteToken) {
+    return [baseToken, quoteToken]
+  }, [candidatePair, supportedTokens])
+
+  const globalpool = useAppSelector(selectGlobalpoolByMints(baseToken?.address, quoteToken?.address))
+
+  if (!baseToken || !quoteToken || !globalpool) {
     return (
       <Container maxWidth='lg'>
         <Typography variant='h6' fontWeight='bold'>Invalid Trade Pair</Typography>
@@ -36,33 +52,28 @@ export default function TradePairPage() {
   return (
     <Container maxWidth='lg'>
       <Stack direction={{ md: 'row' }} alignItems="stretch" justifyContent="space-between" spacing={{ xs: 3, md: 6 }}>
-        <CandlestickChart
-          baseToken={baseToken}
-          quoteToken={quoteToken}
-          sx={{ width: '100%' }}
-        />
-        <Stack justifyContent="flex-start" spacing={2}>
-          <TradeBox baseToken={baseToken} quoteToken={quoteToken} />
-          {/* <LeverageTradeBox
+        <Box width="100%">
+          <Stack direction="row" spacing={6} alignItems="center" justifyContent="space-between" mb={3}>
+            <ChartCurrency
+              baseToken={baseToken}
+              quoteToken={quoteToken}
+              supportedTokens={supportedTokens}
+            />
+            <CurrencyStats
+              baseToken={baseToken}
+              quoteToken={quoteToken}
+              globalpool={globalpool}
+            />
+          </Stack>
+          <CandlestickChart
             baseToken={baseToken}
             quoteToken={quoteToken}
+            sx={{ width: '100%' }}
           />
-          <SwapBox
-            baseToken={baseToken}
-            quoteToken={quoteToken}
-          /> */}
-        </Stack>
+        </Box>
+        <TradeBox baseToken={baseToken} quoteToken={quoteToken} globalpool={globalpool} />
       </Stack>
-      {/* <ProvideLiquidity> */}
+      <ProvideLiquidityBox sx={{ mt: 8 }} />
     </Container>
-    // <TradeLayout className='pt-11'>
-    //   <div>
-    //     <TradeSidebar />
-    //   </div>
-    //   <div>
-    //     <CandlestickChart comparisonCurrency={currency} token={token} />
-    //     <Positions className='mt-8 ' />
-    //   </div>
-    // </TradeLayout>
   )
 }

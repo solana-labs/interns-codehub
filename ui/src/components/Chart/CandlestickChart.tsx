@@ -1,10 +1,8 @@
-import { Box, Stack, SxProps } from '@mui/material'
+import { Box, SxProps } from '@mui/material'
+import { Token } from '@solflare-wallet/utl-sdk'
 import dynamic from 'next/dynamic'
 
-import ChartCurrency from '@/components/Chart/ChartCurrency'
-import DailyStats from '@/components/Chart/DailyStats'
-import { TokenE } from '@/lib/Token'
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 
 // @ts-ignore
 const TradingViewWidget = dynamic<any>(import('react-tradingview-widget'), {
@@ -12,52 +10,34 @@ const TradingViewWidget = dynamic<any>(import('react-tradingview-widget'), {
 })
 
 interface CandlestickChartProps {
-  className?: string
+  baseToken: Token
+  quoteToken: Token
   sx?: SxProps
-  baseToken?: TokenE
-  quoteToken?: TokenE
 }
 
-export default function CandlestickChart(props: CandlestickChartProps) {
+export function CandlestickChart(props: CandlestickChartProps) {
   const { baseToken, quoteToken } = props
-  const [pairSymbol, setPairSymbol] = useState<string | undefined>(undefined)
 
-  useEffect(() => {
-    if (!baseToken || !quoteToken) return
-
+  const pairSymbol = useMemo(() => {
     // TradingView likes USD for USDC (and no dash)
-    const _quoteToken = quoteToken === TokenE.USDC ? 'USD' : quoteToken
-    setPairSymbol(`${baseToken}${_quoteToken}`)
+    const _quoteToken = quoteToken.symbol === 'USDC' ? 'USD' : quoteToken.symbol
+    return `${baseToken.symbol}${_quoteToken}`
   }, [baseToken, quoteToken])
 
   if (!pairSymbol || pairSymbol.trim() === '') return (<></>)
 
   return (
-    <Box className={props.className} sx={props.sx}>
-      <Stack direction="column" spacing="4" justifyContent="center" mb={6}>
-        <ChartCurrency
-          baseToken={baseToken}
-          quoteToken={quoteToken}
-        />
-        <DailyStats
-          className="ml-12"
-          baseToken={baseToken}
-          quoteToken={quoteToken}
-        />
-      </Stack>
-      {/* <Box height="100%"> */}
-      <Box height={{ xs: 350, sm: 450, md: 500 }}>
-        <TradingViewWidget autosize symbol={pairSymbol} theme='Light' />
-        <Box>
-          <a
-            href={`https://www.tradingview.com/symbols/${pairSymbol}/?exchange=CRYPTO`}
-            className='text-xs underline'
-            target="_blank"
-          >
-            {baseToken} stock chart
-          </a>
-          <span className='text-xs'> by TradingView</span>
-        </Box>
+    <Box height={{ xs: 350, sm: 450, md: 500 }} width="100%" sx={props.sx}>
+      <TradingViewWidget autosize symbol={pairSymbol} theme='Light' />
+      <Box>
+        <a
+          href={`https://www.tradingview.com/symbols/${pairSymbol}/?exchange=CRYPTO`}
+          className='text-xs underline'
+          target="_blank"
+        >
+          {baseToken.symbol} stock chart
+        </a>
+        <span className='text-xs'> by TradingView</span>
       </Box>
     </Box>
   )
