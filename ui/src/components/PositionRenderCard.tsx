@@ -1,8 +1,9 @@
 import { PublicKey } from '@solana/web3.js'
+import { Token } from '@solflare-wallet/utl-sdk'
 import BN from 'bn.js'
 import { useMemo } from 'react'
 
-import { sortObjectByQuotePriority } from '@/lib/Token'
+import { sortTokenByQuotePriority } from '@/lib'
 
 export enum PositionRenderCardSize {
   BIG,
@@ -15,12 +16,6 @@ enum PositionStatus {
   SHORT,
   IN_RANGE,
   OUT_OF_RANGE,
-}
-
-export type PositionRenderToken = {
-  pubkey: PublicKey
-  symbol: string
-  decimals: number
 }
 
 export type PositionRenderBgCoord = {
@@ -54,8 +49,8 @@ export type PositionRenderCardProps = {
   tickCurrentIndex: number // current index of the globalpool
   tickSpacing: number
   amount: BN | number | string
-  tokenA?: PositionRenderToken
-  tokenB?: PositionRenderToken
+  tokenA?: Token | null
+  tokenB?: Token | null
   colors?: PositionRenderColors
   size?: PositionRenderCardSize
 }
@@ -79,7 +74,7 @@ export default function PositionRenderCustomizableCard(props: PositionRenderCard
 
   const [baseToken, quoteToken] = useMemo(() => {
     if (!tokenA || !tokenB) return [undefined, undefined]
-    return [tokenA, tokenB].sort(sortObjectByQuotePriority('pubkey'))
+    return [tokenA, tokenB].sort(sortTokenByQuotePriority)
   }, [tokenA, tokenB])
   const curve = useMemo(() => getCurve(tickLowerIndex, tickUpperIndex, tickSpacing), [tickLowerIndex, tickUpperIndex, tickSpacing])
   const overRange = tickLowerIndex > tickCurrentIndex ? 1 : tickUpperIndex < tickCurrentIndex ? -1 : 0
@@ -171,9 +166,9 @@ function generateSVGDefs(colors: PositionRenderColors, size: PositionRenderCardS
   )
 }
 
-function generateSVGBorderWithText(baseToken: PositionRenderToken, quoteToken: PositionRenderToken, colors: PositionRenderColors, size: PositionRenderCardSize) {
-  const baseTokenStr = `${baseToken.pubkey.toBase58()} • ${baseToken.symbol}`
-  const quoteTokenStr = `${quoteToken.pubkey.toBase58()} • ${quoteToken.symbol}`
+function generateSVGBorderWithText(baseToken: Token, quoteToken: Token, colors: PositionRenderColors, size: PositionRenderCardSize) {
+  const baseTokenStr = `${baseToken.address} • ${baseToken.symbol}`
+  const quoteTokenStr = `${quoteToken.address} • ${quoteToken.symbol}`
   const { WIDTH, HEIGHT } = parseSize(size)
   const ellipse = size === PositionRenderCardSize.BIG ? { rx: '180px', ry: '120px' } : { rx: '120px', ry: '80px' }
   const rectOffset = size === PositionRenderCardSize.BIG ? 42 : 32
@@ -213,7 +208,7 @@ function generateSVGBorderWithText(baseToken: PositionRenderToken, quoteToken: P
   )
 }
 
-function generateSVGCardMantle(baseToken: PositionRenderToken, quoteToken: PositionRenderToken, amount: BN | number | string, size: PositionRenderCardSize, pstat: PositionStatus) {
+function generateSVGCardMantle(baseToken: Token, quoteToken: Token, amount: BN | number | string, size: PositionRenderCardSize, pstat: PositionStatus) {
   const { WIDTH } = parseSize(size)
   const fadeHeight = size === PositionRenderCardSize.BIG ? '240px' : '160px'
   const fontSize = size === PositionRenderCardSize.BIG ? '36px' : '24px'

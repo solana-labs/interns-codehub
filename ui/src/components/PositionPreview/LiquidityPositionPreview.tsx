@@ -3,11 +3,9 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import PositionRenderCard, { PositionRenderCardSize } from '@/components/PositionRenderCard'
-import { useAppDispatch, useAppSelector } from '@/hooks'
-import { tokenAddressToToken } from '@/lib/Token'
+import { useAppDispatch, useAppSelector, useTokens } from '@/hooks'
 import { fetchGlobalpool, selectGlobalpool } from '@/slices/globalpool'
 import { UserLiquidityPosition } from '@/types/user'
-import { PublicKey } from '@solana/web3.js'
 
 type LiquidityPositionPreviewProps = {
 	position: UserLiquidityPosition
@@ -19,6 +17,8 @@ export default function LiquidityPositionPreview({ position }: LiquidityPosition
 
 	const [tickSpacing, setTickSpacing] = useState<number>(64)
 	const [currentPoolTick, setCurrentPoolTick] = useState<number>(0)
+
+	const [tokenMintA, tokenMintB] = useTokens([globalpool?.tokenMintA, globalpool?.tokenMintB])
 
 	useEffect(() => {
 		if (!position) return
@@ -41,16 +41,8 @@ export default function LiquidityPositionPreview({ position }: LiquidityPosition
 					tickCurrentIndex={currentPoolTick}
 					tickSpacing={tickSpacing}
 					amount={globalpool?.feeRate || 0}
-					tokenA={{
-						pubkey: globalpool?.tokenMintA || new PublicKey(''),
-						symbol: tokenAddressToToken(globalpool?.tokenMintA || '') || '',
-						decimals: 8, // HNT (hard-coded for now)
-					}}
-					tokenB={{
-						pubkey: globalpool?.tokenMintB || new PublicKey(''),
-						symbol: tokenAddressToToken(globalpool?.tokenMintB || '') || '',
-						decimals: 6 // USDC = 6
-					}}
+					tokenA={tokenMintA}
+					tokenB={tokenMintB}
 					size={PositionRenderCardSize.SMALL}
 				/>
 			</Link>

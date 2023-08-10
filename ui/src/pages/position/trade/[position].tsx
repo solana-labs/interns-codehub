@@ -1,8 +1,8 @@
-'use client'
-
 import { Box, Button, Container, Stack, Typography } from '@mui/material'
+import { styled } from '@mui/material/styles'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import BN from 'bn.js'
+import Decimal from 'decimal.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'react-toastify'
 import { useRouter } from 'next/router'
@@ -10,12 +10,18 @@ import { useRouter } from 'next/router'
 import PositionRenderCard, { PositionRenderCardSize } from '@/components/PositionRenderCard'
 import ShadowedBox from '@/components/ShadowedBox'
 import { LOCALNET_CONNECTION } from '@/constants'
-import { useAppDispatch, useAppSelector, useCladProgram } from '@/hooks'
-import closeTradePosition from '@/lib/closeTradePosition'
-import { sortObjectByQuotePriority, tokenAddressToToken } from '@/lib/Token'
+import { useAppDispatch, useAppSelector, useCladProgram, useTokens } from '@/hooks'
+import { closeTradePosition, sortTokenByQuotePriority } from '@/lib'
 import { fetchGlobalpool, selectGlobalpool } from '@/slices/globalpool'
 import { selectTradePosition } from '@/slices/tradePosition'
-import { isBase58, tickToPrice } from '@/utils'
+import { formatNumber, getTokenAmountsFromLiquidity, isBase58, numScaledFromDecimals, tickToPrice } from '@/utils'
+
+const StyledBox = styled(Box)(() => ({
+  padding: '14px 4px',
+  borderBottom: '1px solid #e3e4e5',
+}))
+
+type TokensOwed = { collateralToken: BN, loanToken: BN }
 
 export default function TradePosition() {
   const dispatch = useAppDispatch()
@@ -33,37 +39,40 @@ export default function TradePosition() {
   const position = useAppSelector(selectTradePosition(candidatePositionKey as string || ''))
   const globalpool = useAppSelector(selectGlobalpool(position ? position.data.globalpool : ''))
 
+  // We want two separate tracks of tokens, for collateral/loan and base/quote
+  const [tokenCollateral, tokenLoan] = useTokens([position?.data.tokenMintCollateral, position?.data.tokenMintLoan])
+
+  const [baseToken, quoteToken] = useMemo(() => {
+    if (!tokenCollateral || !tokenLoan) return [undefined, undefined]
+    return [tokenCollateral, tokenLoan].sort(sortTokenByQuotePriority)
+  }, [tokenCollateral, tokenLoan])
+
   const [tickSpacing, setTickSpacing] = useState<number>(64)
   const [currentPoolTick, setCurrentPoolTick] = useState<number>(0)
 
-  // Order doesn't matter because we sort (with priority for some quote tokens)
+  // tokensOwed: scaled to decimal exponent
+  const tokensOwed = useMemo(() => {
+    if (!position || !globalpool) return { collateralToken: new BN(0), loanToken: new BN(0) }
 
-  const [baseToken, quoteToken] = useMemo(() => {
-    if (!position) return [undefined, undefined]
+    const isBorrowA = globalpool.tokenMintA.equals(position.data.tokenMintLoan)
 
-    const tokenA = {
-      pubkey: position.data.tokenMintCollateral,
-      symbol: tokenAddressToToken(position.data.tokenMintCollateral) || '',
-      decimals: 8, // HNT (hard-coded for now)
-      fixedTo: 6,
-    }
+    const roundUp = !isBorrowA
+    const tokenAmountsToRepayExpo = getTokenAmountsFromLiquidity(
+      position.data.liquidityBorrowed,
+      globalpool.sqrtPrice,
+      position.data.tickLowerIndex,
+      position.data.tickUpperIndex,
+      roundUp,
+    )
 
-    const tokenB = {
-      pubkey: position.data.tokenMintLoan,
-      symbol: tokenAddressToToken(position.data.tokenMintLoan) || '',
-      decimals: 6, // USDC (hard-coded for now)
-      fixedTo: 2,
-    }
-
-    return [tokenA, tokenB].sort(sortObjectByQuotePriority('pubkey'))
-  }, [position])
+    return {
+      loanToken: isBorrowA ? tokenAmountsToRepayExpo.tokenA : tokenAmountsToRepayExpo.tokenB,
+      collateralToken: isBorrowA ? tokenAmountsToRepayExpo.tokenB : tokenAmountsToRepayExpo.tokenA,
+    } as TokensOwed
+  }, [position, globalpool])
 
   const closePositionHandler = useCallback(async () => {
     if (!connection || !position || !globalpool || !wallet || !program) return
-
-    // console.log('close position!')
-    // console.log('position authority', wallet.publicKey.toBase58())
-
     try {
       await closeTradePosition({
         position,
@@ -106,6 +115,35 @@ export default function TradePosition() {
     )
   }
 
+  //
+  // Todo: memoize
+  //
+  const poolPrice = tickToPrice(globalpool?.tickCurrentIndex || 0, baseToken?.decimals || 9, quoteToken?.decimals || 9)
+  const positionLoanValue = new Decimal(numScaledFromDecimals(position.data.loanTokenSwapped, tokenLoan?.decimals || 9))
+  const positionCurrentValue = new Decimal(numScaledFromDecimals(position.data.tradeTokenAmount, tokenCollateral?.decimals || 9)).mul(poolPrice)
+  const positionPnL = positionCurrentValue.sub(positionLoanValue)
+
+  // First, R = swapped amount + collateral - token collateral owned
+  let receivableCollateral = new Decimal(
+    numScaledFromDecimals(
+      position.data.tradeTokenAmount
+        .add(position.data.collateralAmount)
+        .sub(tokensOwed.collateralToken),
+      tokenCollateral?.decimals || 9
+    )
+  )
+  
+  // Then, R = R - (token loan owed / pool price) = R - token loan amount denominated in token collateral price
+  receivableCollateral = receivableCollateral.minus(
+    new Decimal(numScaledFromDecimals(
+      tokensOwed.loanToken,
+      tokenLoan?.decimals || 9
+    )).div(poolPrice)
+  )
+  // .sub(
+  //   new Decimal(numScaledFromDecimals(tokensOwed.loanToken, tokenLoan?.decimals || 9)).div(poolPrice)
+  // )
+
   return (
     <Container maxWidth="lg">
       <Stack direction="row" alignItems="center" spacing={{ xs: 4, sm: 6, md: 8 }}>
@@ -117,57 +155,116 @@ export default function TradePosition() {
           tickCurrentIndex={currentPoolTick}
           tickSpacing={tickSpacing}
           amount={position.data.loanTokenSwapped.div(new BN(10 ** 6)).toString()}
-          tokenA={baseToken}
-          tokenB={quoteToken}
+          tokenA={tokenCollateral}
+          tokenB={tokenLoan}
           size={PositionRenderCardSize.BIG}
         />
         <Stack spacing={3}>
           <ShadowedBox>
-            <Typography variant="h6" fontWeight="bold">Pool Stats</Typography>
-            <Stack direction="row" spacing={2}>
-              <Box>
-                <Typography variant="caption">Current Price</Typography>
-                <Typography variant="body1" fontWeight="bold">
-                  {tickToPrice(globalpool?.tickCurrentIndex || 0, baseToken?.decimals, quoteToken?.decimals).toFixed(quoteToken?.fixedTo)}
-                </Typography>
-              </Box>
-            </Stack>
-          </ShadowedBox>
-          <ShadowedBox>
             <Typography variant="h6" fontWeight="bold">Position Stats</Typography>
-            <Box py={1} borderBottom="1px solid #ccc">
+            <StyledBox>
               <Typography variant="body1" fontWeight="bold">Range</Typography>
-              <Stack direction="row" spacing={2}>
+              <Stack direction="row" justifyContent="flex-start" spacing={3}>
                 <Box>
                   <Typography variant="caption" fontWeight="bold">Open Price</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {tickToPrice(position.data.tickOpenIndex, baseToken?.decimals, quoteToken?.decimals).toFixed(quoteToken?.fixedTo)}
+                    {formatNumber(tickToPrice(position.data.tickOpenIndex, baseToken?.decimals || 9, quoteToken?.decimals || 9))}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption">Lower Price</Typography>
+                  <Typography variant="caption" color="#999">Lower Price</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {tickToPrice(position.data.tickLowerIndex, baseToken?.decimals, quoteToken?.decimals).toFixed(quoteToken?.fixedTo)}
+                    {formatNumber(tickToPrice(position.data.tickLowerIndex, baseToken?.decimals || 9, quoteToken?.decimals || 9))}
                   </Typography>
                 </Box>
                 <Box>
-                  <Typography variant="caption">Upper Price</Typography>
+                  <Typography variant="caption" color="#999">Upper Price</Typography>
                   <Typography variant="body1" fontWeight="bold">
-                    {tickToPrice(position.data.tickUpperIndex, baseToken?.decimals, quoteToken?.decimals).toFixed(quoteToken?.fixedTo)}
+                    {formatNumber(tickToPrice(position.data.tickUpperIndex, baseToken?.decimals || 9, quoteToken?.decimals || 9))}
                   </Typography>
                 </Box>
               </Stack>
-            </Box>
-            <Box py={1} borderBottom="1px solid #ccc">
-              <Typography variant="body1">Borrowed</Typography>
+
+              <Stack direction="row" spacing={4} pt={2}>
+                <Box>
+                  <Typography variant="caption" fontWeight="bold">Current Pool Price</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatNumber(poolPrice)}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="#999">Leverage</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatNumber(
+                      new Decimal(position.data.tradeTokenAmount.toString())
+                        .div(new Decimal(position.data.collateralAmount.toString())),
+                      0,
+                      1
+                    )}x
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Stack direction="row" spacing={4} pt={2}>
+                <Box>
+                  <Typography variant="body2" color="#999">Borrowed</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatNumber(positionLoanValue)}
+                    {` ${tokenLoan?.symbol}`}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="#999">Collateral locked</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatNumber(numScaledFromDecimals(position.data.collateralAmount, tokenCollateral?.decimals || 9))}
+                    {` ${tokenCollateral?.symbol}`}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body2" color="#999">Swapped to</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatNumber(numScaledFromDecimals(position.data.tradeTokenAmount, tokenCollateral?.decimals || 9))}
+                    {` ${tokenCollateral?.symbol}`}
+                  </Typography>
+                </Box>
+              </Stack>
+            </StyledBox>
+            <StyledBox>
+              <Typography variant="body1" pb={1}>Tokens owed</Typography>
               <Typography variant="body1" fontWeight="bold">
-                {position.data.loanTokenSwapped.div(new BN(10 ** (quoteToken?.decimals || 0))).toString()}
-                {` ${quoteToken?.symbol}`}
+                {`${formatNumber(numScaledFromDecimals(tokensOwed.loanToken, tokenLoan?.decimals || 9))} ${tokenLoan?.symbol}`}
               </Typography>
-            </Box>
-            <Box py={1}>
-              <Typography variant="body1">PnL</Typography>
-            </Box>
+              <Typography variant="body1" fontWeight="bold">
+                {`${formatNumber(numScaledFromDecimals(tokensOwed.collateralToken, tokenCollateral?.decimals || 9))} ${tokenCollateral?.symbol}`}
+              </Typography>
+            </StyledBox>
+            <StyledBox>
+              <Stack direction="row" spacing={4}>
+                <Box>
+                  <Typography variant="body1">Position Value</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {formatNumber(positionCurrentValue)}
+                    {` ${tokenLoan?.symbol}`}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="body1">Unrealized PnL</Typography>
+                  <Typography variant="body1" fontWeight="bold" color={positionPnL.gt(0) ? 'green' : 'red'}>
+                    {formatNumber(positionPnL)}
+                    {` ${tokenLoan?.symbol}`}
+                  </Typography>
+                </Box>
+              </Stack>
+            </StyledBox>
+            <StyledBox>
+              <Box>
+                <Typography variant="caption">Receivable Collateral on Closing</Typography>
+                <Typography variant="body1" fontWeight="bold">
+                  {formatNumber(receivableCollateral)}
+                  {` ${tokenCollateral?.symbol}`}
+                </Typography>
+              </Box>
+            </StyledBox>
           </ShadowedBox>
           <Button variant="outlined" color="error" onClick={closePositionHandler}>Close Position</Button>
         </Stack>

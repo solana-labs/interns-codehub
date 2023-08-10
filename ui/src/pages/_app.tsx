@@ -4,6 +4,7 @@ import type { AppProps } from 'next/app'
 import { Inter } from 'next/font/google'
 import { Provider as StoreProvider } from 'react-redux'
 import { ToastContainer } from 'react-toastify'
+import { PersistGate } from 'redux-persist/integration/react'
 
 import '@solana/wallet-adapter-react-ui/styles.css'
 import 'react-toastify/dist/ReactToastify.css'
@@ -41,27 +42,30 @@ function MainLayout({ children }: React.PropsWithChildren) {
 export default function CladApp({ Component, pageProps }: AppProps) {
   return (
     <StoreProvider store={store}>
-      <WalletContextProvider>
-        <ThemeProvider theme={customTheme}>
-          <ToastContainer
-            position="top-right"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            style={{ zIndex: 999999 }}
-          />
-          <Navbar />
-          {/* <StoreUpdater /> */}
-          <MainLayout>
-            <Component {...pageProps} />
-          </MainLayout>
-        </ThemeProvider>
-      </WalletContextProvider>
+      {/* Using redux-persist out-of-box breaks due to invalid de/serialization of BN, Decimal, and PublicKey */}
+      {/* <PersistGate loading={null} persistor={persistor}> */}
+        <WalletContextProvider>
+          <ThemeProvider theme={customTheme}>
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              style={{ zIndex: 999999 }}
+            />
+            <Navbar />
+            {/* <StoreUpdater /> */}
+            <MainLayout>
+              <Component {...pageProps} />
+            </MainLayout>
+          </ThemeProvider>
+        </WalletContextProvider>
+      {/* </PersistGate> */}
     </StoreProvider>
   )
 }

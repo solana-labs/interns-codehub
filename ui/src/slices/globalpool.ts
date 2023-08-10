@@ -7,6 +7,7 @@ import type { RootState } from '@/store'
 import { GlobalpoolData } from '@/types/accounts'
 import { CLAD_PROGRAM_ID } from '@/constants'
 import { ParsableGlobalpool } from '@/types/parsing'
+import { strOrPubkeyToPubkey } from '@/utils'
 
 export type ExpirableGlobalpoolData = GlobalpoolData & { _lastFetchTimestamp: number, _pubkey: string }
 
@@ -41,6 +42,7 @@ export const fetchGlobalpool = createAsyncThunk<
 
     const poolData = await getGlobalpool(globalpoolKey, new Connection(state.generic.rpc))
     if (!poolData) return rejectWithValue('Invalid globalpool address')
+
     return { ...poolData, _lastFetchTimestamp: Date.now(), _pubkey: globalpoolKeyStr }
   }
 )
@@ -135,7 +137,8 @@ export const selectGlobalpoolByMints = (mintA: PublicKey | string | undefined, m
   const _mintA = typeof mintA === 'string' ? new PublicKey(mintA) : mintA
   const _mintB = typeof mintB === 'string' ? new PublicKey(mintB) : mintB
 
-  const list = Object.values(state.globalpool.globalpools).filter((pool) => pool.tokenMintA.equals(_mintA) && pool.tokenMintB.equals(_mintB))
+  console.log(state.globalpool.globalpools)
+  const list = Object.values(state.globalpool.globalpools).filter((pool) => strOrPubkeyToPubkey(pool.tokenMintA).equals(_mintA) && strOrPubkeyToPubkey(pool.tokenMintB).equals(_mintB))
 
   const globalpool = feeTier ? list.find((pool) => pool.feeRate === feeTier) : list[0]
   return globalpool ?? undefined

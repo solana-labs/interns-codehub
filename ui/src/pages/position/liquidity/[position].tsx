@@ -158,9 +158,6 @@ export default function LiquidityPosition() {
                 {position.data.liquidity.toString()}
               </Typography>
             </Box>
-            <Box py={1}>
-              <Typography variant="body1">PnL</Typography>
-            </Box>
           </ShadowedBox>
           <Button variant="outlined" color="error" onClick={closePositionHandler}>Close Position</Button>
         </Stack>

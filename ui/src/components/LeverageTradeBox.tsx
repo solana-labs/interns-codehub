@@ -14,6 +14,8 @@ import {
   formatNumber,
   formatSecondsToDurationString,
   getTokenAmountsFromLiquidity,
+  numScaledFromDecimals,
+  numScaledToDecimals,
   priceToNearestTick,
   tickToPrice,
   toTokenAmount
@@ -126,7 +128,7 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
     // const isCollateralA = !isBorrowA
 
     // Trade amount with decimals scaled
-    const tradeAmountExpo = tradeAmount * (10 ** (isBorrowA ? baseDecimals : quoteDecimals))
+    const tradeAmountExpo = parseFloat(numScaledToDecimals(tradeAmount, isBorrowA ? baseDecimals : quoteDecimals))
     const tradeAmountInBaseToken = invertAmount(tradeAmount, poolPrice, isTradeLong)
 
     const borrowAmounts = toTokenAmount(
@@ -150,15 +152,12 @@ export default function LeverageTradeBox(props: LeverageTradeBoxProps) {
       roundUp,
     )
 
-    // console.log('token base', tokenAmountsToRepayExpo.tokenA.toNumber() / 10 ** baseDecimals)
-    // console.log('token quote', tokenAmountsToRepayExpo.tokenB.toNumber() / 10 ** quoteDecimals)
-
     // Scaled down from decimal exponent
     let repayAmount: Decimal // in base token
     if (isBorrowA) {
-      repayAmount = new Decimal(tokenAmountsToRepayExpo.tokenB.toString()).div(10 ** quoteDecimals)
+      repayAmount = new Decimal(numScaledFromDecimals(tokenAmountsToRepayExpo.tokenB, quoteDecimals))
     } else {
-      repayAmount = new Decimal(tokenAmountsToRepayExpo.tokenA.toString()).div(10 ** baseDecimals)
+      repayAmount = new Decimal(numScaledFromDecimals(tokenAmountsToRepayExpo.tokenA, quoteDecimals))
     }
 
     console.log('repayAmount', repayAmount.toString())

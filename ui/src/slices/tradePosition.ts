@@ -5,6 +5,7 @@ import { CLAD_PROGRAM_ID } from '@/constants'
 import { getUserTradePositions } from '@/lib/getPositions'
 import type { RootState } from '@/store'
 import { UserTradePosition } from '@/types/user'
+import { strOrPubkeyToString } from '@/utils'
 
 // Define a type for the slice state
 export interface TradePositionState {
@@ -62,7 +63,7 @@ export const selectTradePositions = (state: RootState) => state.tradePosition.po
 export const selectTradePosition = (positionKey: PublicKey | string | undefined) => (state: RootState) => {
   if (!positionKey) return undefined
   const pk = positionKey instanceof PublicKey ? positionKey.toString() : positionKey
-  return state.tradePosition.positions.find(position => position.key.toBase58() === pk)
+  return state.tradePosition.positions.find(position => strOrPubkeyToString(position.key) === pk)
 }
 
 export default tradePositionSlice.reducer

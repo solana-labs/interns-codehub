@@ -11,7 +11,7 @@ import { CLAD_PROGRAM_ID, LOCALNET_CONNECTION } from '@/constants'
 import { useCladProgram } from '@/hooks'
 import { TOKEN_INFO, TokenE, getTokenAddress, swapPool } from '@/lib'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
-import { formatNumber } from '@/utils'
+import { formatNumber, numScaledFromDecimals, numScaledToDecimals } from '@/utils'
 import { swapQuoteByInputToken } from '@/utils/swap'
 
 interface SwapPoolBoxProps {
@@ -69,7 +69,6 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
     const swapInputMint = new PublicKey(getTokenAddress(swapInToken))
 
     // scale to token decimals exponent (make sure to use Decimal for precision, then remove decimal places, then convert to BN)
-    // const swapInputAmount = new BN(new Decimal(swapInAmount).times(10 ** inTokenInfo.decimals).toFixed(0))
     const swapInputAmount = new BN(swapInAmount.toString())
 
     try {
@@ -100,9 +99,10 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
     const swapOutTokenKey = new PublicKey(getTokenAddress(swapOutToken))
 
     console.log('maxSlippage', maxSlippage.toString())
+    console.log(swapInAmount)
 
     // scale to token decimals exponent (make sure to use Decimal for precision, then remove decimal places, then convert to BN)
-    const swapInAmountExpo = new BN(new Decimal(swapInAmount).times(10 ** inTokenInfo.decimals).toFixed(0))
+    const swapInAmountExpo = new BN(new Decimal(numScaledToDecimals(swapInAmount, inTokenInfo.decimals)).toFixed(0))
 
     swapQuoteByInputToken(
       new PublicKey(globalpool._pubkey),
@@ -112,12 +112,9 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
       connection,
       CLAD_PROGRAM_ID
     ).then((swapQuote) => {
-      let estOutAmount = new Decimal(swapQuote.estimatedAmountOut.toString())
-      let estFeeAmount = new Decimal(swapQuote.estimatedFeeAmount.toString())
-
       // scale from token decimals exponent
-      estOutAmount = estOutAmount.dividedBy(10 ** outTokenInfo.decimals)
-      estFeeAmount = estFeeAmount.dividedBy(10 ** inTokenInfo.decimals)
+      const estOutAmount = new Decimal(numScaledFromDecimals(swapQuote.estimatedAmountOut, outTokenInfo.decimals))
+      const estFeeAmount = new Decimal(numScaledFromDecimals(swapQuote.estimatedFeeAmount, inTokenInfo.decimals))
 
       console.log(estOutAmount.toString(), estFeeAmount.toString())
       setSwapOutAmount(estOutAmount.toNumber())
@@ -134,7 +131,7 @@ export default function SwapPoolBox(props: SwapPoolBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={(e: any) => setSwapInAmount(parseFloat(e.target.value))}
+          onChange={(e: any) => setSwapInAmount(parseFloat(e.target.value) || 0)}
           value={swapInAmount}
           required
           fullWidth

@@ -3,6 +3,7 @@ import { PublicKey } from "@solana/web3.js";
 import SOLIconCircle from "@/components/Icons/SOLIconCircle";
 import USDCIconCircle from "@/components/Icons/USDCIconCircle";
 import BonkIconCircle from "@/components/Icons/BONKIconCircle";
+import { Token } from "@solflare-wallet/utl-sdk";
 
 export enum TokenE {
   SOL = "SOL",
@@ -162,6 +163,10 @@ export function getQuoteTokenPriority(mint: string): number {
 
 export function sortByQuotePriority(mintLeft: PublicKey, mintRight: PublicKey): number {
   return getQuoteTokenPriority(mintLeft.toString()) - getQuoteTokenPriority(mintRight.toString())
+}
+
+export function sortTokenByQuotePriority(tokenLeft: Token, tokenRight: Token): number {
+  return getQuoteTokenPriority(tokenLeft.address) - getQuoteTokenPriority(tokenRight.address)
 }
 
 // first-depth key access only

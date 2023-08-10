@@ -46,7 +46,7 @@ export type CloseTradePositionParams = {
 
 const jupiterConnection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_MAINNET as string)
 
-export default async function closeTradePosition(params: CloseTradePositionParams) {
+export async function closeTradePosition(params: CloseTradePositionParams) {
   const {
     position,
     positionAuthority,

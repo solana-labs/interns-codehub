@@ -6,7 +6,7 @@ import { useMemo } from 'react'
 import { CLAD_IDL, CLAD_PROGRAM_ID } from '@/constants'
 import { Clad } from '@/target/types/clad'
 
-export default function useCladProgram(connection?: Connection) {
+export function useCladProgram(connection?: Connection) {
 	const wallet = useAnchorWallet()
 	return useMemo(() => {
 		if (!connection || !wallet) return undefined

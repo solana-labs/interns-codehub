@@ -1,5 +1,6 @@
-export { default as useAutoConnect } from './useAutoConnect'
-export { default as useCladProgram } from './useCladProgram'
+export * from './useAutoConnect'
+export * from './useCladProgram'
+export * from './useTokens'
 
 //
 // React Redux Toolkit hooks
