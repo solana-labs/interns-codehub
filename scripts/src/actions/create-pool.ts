@@ -11,15 +11,18 @@ import {
   SYSVAR_RENT_PUBKEY,
   SystemProgram,
 } from '@solana/web3.js'
+import { TICK_ARRAY_SIZE, TickUtil } from '@orca-so/whirlpools-sdk'
 
 import { getConstantParams } from '../params'
 import { createTransactionChained } from '../utils/txix'
+import { initTickArrayRange } from '../utils/tick-arrays'
 
 async function main() {
   const {
     program,
     programId,
     connection,
+    provider,
     wallet,
     feeRate,
     tickSpacing,
@@ -128,7 +131,7 @@ async function main() {
     rent: SYSVAR_RENT_PUBKEY,
   }
 
-  const txIdCreatePool = await createTransactionChained(
+  await createTransactionChained(
     connection,
     wallet,
     program.instruction.createPool(createPoolParams, {
@@ -137,7 +140,40 @@ async function main() {
     []
   ).buildAndExecute()
 
-  console.log('Created Pool: ', txIdCreatePool)
+  console.log('Created Pool: ', globalpoolKey.toString())
+
+  //
+  // Initialize some tick arrays
+  //
+
+  const aToB = false // determines direction of tick array
+
+  const initArrayCount = 7 // 3 to left of, 3 to right of, and 1 array containing current tick
+  const currentTickArrayStartIndex = TickUtil.getStartTickIndex(
+    initTickIndex,
+    tickSpacing
+  )
+
+  // reverse direction of `aToB` because `initTickArrayRange` will init in the direction
+  // of `aToB` (left if false, right if true)
+  const startTickIndex =
+    currentTickArrayStartIndex +
+    (aToB ? 1 : -1) *
+    Math.floor(initArrayCount / 2) *
+    tickSpacing *
+    TICK_ARRAY_SIZE
+
+  await initTickArrayRange(
+    globalpoolKey,
+    startTickIndex,
+    initArrayCount,
+    tickSpacing,
+    aToB,
+    program,
+    provider
+  )
+
+  console.log('Initialized some Tick Arrays around the current tick')
 }
 
 main().catch((err) => {

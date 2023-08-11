@@ -8,6 +8,7 @@ export * from '@/lib/getGlobalpool'
 export * from '@/lib/getPositions'
 export * from '@/lib/interest'
 export * from '@/lib/openTradePosition'
+export * from '@/lib/openLiquidityPosition'
 export * from '@/lib/swapPool'
 
 

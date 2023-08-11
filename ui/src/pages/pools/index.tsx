@@ -1,47 +1,48 @@
 import { Box, Container, Typography } from '@mui/material'
-import { useEffect, useMemo } from 'react'
+import { Token } from '@solflare-wallet/utl-sdk'
+import { useMemo } from 'react'
 
 import { ShadowedBox } from '@/components/ShadowedBox'
 import { useAppSelector } from '@/hooks'
+import { sortTokenByQuotePriority } from '@/lib'
+import { selectTokens } from '@/slices/generic'
 import { ExpirableGlobalpoolData, selectGlobalpools } from '@/slices/globalpool'
 import { formatNumber, tickToPrice, truncatedAddress } from '@/utils'
-import { TOKEN_INFO, tokenAddressToToken } from '@/lib'
 
 interface PoolPreviewProps {
   globalpool: ExpirableGlobalpoolData
+  supportedTokens: Record<string, Token>
 }
 
 function PoolPreview(props: PoolPreviewProps) {
-  const { globalpool } = props
+  const { globalpool, supportedTokens } = props
   const globalpoolKey = globalpool._pubkey
 
-  const [
-    tokenMintA,
-    tokenMintB,
-    tokenMintInfoA,
-    tokenMintInfoB
-  ] = useMemo(() => {
-    const mintA = tokenAddressToToken(globalpool.tokenMintA)
-    const mintB = tokenAddressToToken(globalpool.tokenMintB)
-    const tokenInfoA = mintA ? TOKEN_INFO[mintA] : null
-    const tokenInfoB = mintB ? TOKEN_INFO[mintB] : null
+  const [baseToken, quoteToken] = useMemo(() => {
+    const tokenA = supportedTokens[globalpool.tokenMintA.toString()]
+    const tokenB = supportedTokens[globalpool.tokenMintB.toString()]
 
-    return [mintA, mintB, tokenInfoA, tokenInfoB]
-  }, [globalpool])
+    if (!tokenA || !tokenB) return [undefined, undefined]
 
-  if (!tokenMintA || !tokenMintB || !tokenMintInfoA || !tokenMintInfoB) return (<></>)
-  console.log('decimals', tokenMintInfoA.decimals, tokenMintInfoB.decimals)
+    // Need to order the pair as [base, quote]
+    return [tokenA, tokenB].sort(sortTokenByQuotePriority) as [Token, Token]
+  }, [globalpool, supportedTokens])
+
+  if (!baseToken || !quoteToken) return (<></>)
+
+  const baseDecimals = baseToken.decimals || 9
+  const quoteDecimals = quoteToken.decimals || 9
 
   return (
     <Box maxWidth={300} p={2}>
       <ShadowedBox>
         <Typography variant="h6" fontWeight="bold">{truncatedAddress(globalpoolKey)}</Typography>
         <Typography variant="body1" pt={1}>Fee: {globalpool.feeRate / 100}%</Typography>
-        <Typography variant="body1" pt={1}>Token A: {truncatedAddress(globalpool.tokenMintA.toString())}</Typography>
-        <Typography variant="body1" pt={1}>Token B: {truncatedAddress(globalpool.tokenMintB.toString())}</Typography>
+        <Typography variant="body1" pt={1}>Token A: {baseToken.symbol} ({truncatedAddress(baseToken.address)})</Typography>
+        <Typography variant="body1" pt={1}>Token B: {quoteToken.symbol} ({truncatedAddress(quoteToken.address)})</Typography>
         <Typography variant="body1" pt={1}>Tick Spacing: {globalpool.tickSpacing}</Typography>
         <Typography variant="body1" pt={1}>Current Tick: {globalpool.tickCurrentIndex}</Typography>
-        <Typography variant="body1" pt={1}>Current Price: {formatNumber(tickToPrice(globalpool.tickCurrentIndex, tokenMintInfoA.decimals, tokenMintInfoB.decimals))}</Typography>
+        <Typography variant="body1" pt={1}>Current Price: {formatNumber(tickToPrice(globalpool.tickCurrentIndex, baseDecimals, quoteDecimals))}</Typography>
         <Typography variant="body1" pt={1}>Liquidity Available: {formatNumber(globalpool.liquidityAvailable.toString())}</Typography>
         <Typography variant="body1" pt={1}>Liquidity Borrowed: {formatNumber(globalpool.liquidityBorrowed.toString())}</Typography>
       </ShadowedBox>
@@ -51,11 +52,14 @@ function PoolPreview(props: PoolPreviewProps) {
 
 export default function PoolsIndexPage() {
   const globalpools = useAppSelector(selectGlobalpools)
+  const tokens = useAppSelector(selectTokens)
 
   return (
     <Container maxWidth="lg">
       <Box>
-        {globalpools && Object.values(globalpools).map((globalpool) => <PoolPreview key={globalpool._pubkey} globalpool={globalpool} />)}
+        {Object.values(globalpools).map((globalpool) => (
+          <PoolPreview key={globalpool._pubkey} globalpool={globalpool} supportedTokens={tokens} />
+        ))}
       </Box>
     </Container>
   )

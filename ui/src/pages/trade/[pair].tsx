@@ -73,7 +73,12 @@ export default function TradePairPage() {
         </Box>
         <TradeBox baseToken={baseToken} quoteToken={quoteToken} globalpool={globalpool} />
       </Stack>
-      <ProvideLiquidityBox sx={{ mt: 8 }} />
+      <ProvideLiquidityBox
+        baseToken={baseToken}
+        quoteToken={quoteToken}
+        globalpool={globalpool}
+        sx={{ mt: 8 }}
+      />
     </Container>
   )
 }

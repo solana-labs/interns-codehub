@@ -17,7 +17,7 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 programs/clad/tests/anch
 
 # TODO: use tsconfig.json in `scripts` directory to use `@/` alias for `scripts/src` directory files
 1-create-pool = "ts-node -p scripts/src/actions/create-pool.ts"
-2-create-lp = "ts-node -p scripts/src/actions/create-liquidity-position.ts"
+2-create-lp = "ts-node -p scripts/src/actions/open-liquidity-position.ts"
 3-do-swap = "ts-node -p scripts/src/actions/do-swap.ts"
 4-open-trade = "ts-node -p scripts/src/actions/open-trade-position.ts"
 5-close-trade = "ts-node -p scripts/src/actions/close-trade-position.ts"

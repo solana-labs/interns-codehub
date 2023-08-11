@@ -127,6 +127,7 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
           label=""
           onChange={(e: any) => setSwapInAmount(parseFloat(e.target.value) || 0)}
           value={swapInAmount}
+          inputProps={{ min: 0 }}
           required
           fullWidth
         />
@@ -145,6 +146,7 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
           color="secondary"
           label=""
           value={swapOutAmount}
+          inputProps={{ min: 0 }}
           fullWidth
           disabled // only support custom swap-in amount for now
         />

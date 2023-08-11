@@ -19,6 +19,7 @@ import {
   TransactionInstruction,
   Signer,
 } from '@solana/web3.js'
+import { resolveOrCreateATAs } from '@orca-so/common-sdk'
 import BN from 'bn.js'
 
 import { CLAD_PROGRAM_ID, testJupiterAmmsToExclude } from '@/constants'
@@ -29,7 +30,6 @@ import {
   estimateLiquidityFromTokenAmounts,
   toTokenAmount,
 } from '@/utils'
-import { resolveOrCreateATAs } from '@orca-so/common-sdk'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 
 export type OpenTradePositionParams = {

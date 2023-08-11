@@ -46,7 +46,6 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
   // react-wallet doesn't connect to localnet despite changing the browser wallet RPC,
   // so we manually set it to localnet here (and other places where we use connection)
   const { connection } = process.env.NEXT_PUBLIC_SOLANA_TARGET === 'localnet' ? { connection: LOCALNET_CONNECTION } : useConnection()
-
   const wallet = useAnchorWallet()
   const program = useCladProgram(connection)
 
@@ -160,10 +159,10 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
       repayAmount = new Decimal(numScaledFromDecimals(tokenAmountsToRepayExpo.tokenA, baseDecimals))
     }
 
-    console.log('repayAmount', repayAmount.toString(), baseDecimals, quoteDecimals, isBorrowA)
-    console.log('tradeAmountInBaseToken', tradeAmountInBaseToken.toString())
-    console.log('tokenAmountsToRepayExpo.A', tokenAmountsToRepayExpo.tokenA.toString())
-    console.log('tokenAmountsToRepayExpo.B', tokenAmountsToRepayExpo.tokenB.toString())
+    // console.log('repayAmount', repayAmount.toString(), baseDecimals, quoteDecimals, isBorrowA)
+    // console.log('tradeAmountInBaseToken', tradeAmountInBaseToken.toString())
+    // console.log('tokenAmountsToRepayExpo.A', tokenAmountsToRepayExpo.tokenA.toString())
+    // console.log('tokenAmountsToRepayExpo.B', tokenAmountsToRepayExpo.tokenB.toString())
 
     const _estMaxLoss = repayAmount.sub(tradeAmountInBaseToken)
     const _estLeverage = new Decimal(tradeAmountInBaseToken).div(_estMaxLoss).toFixed(1)
@@ -189,8 +188,9 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={(e: any) => setTradeLowerPrice(parseFloat(e.target.value))}
+          onChange={(e: any) => setTradeLowerPrice(parseFloat(e.target.value) || 0)}
           value={tradeLowerPrice}
+          inputProps={{ min: 0 }}
           required
           fullWidth
         />
@@ -202,8 +202,9 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={(e: any) => setTradeUpperPrice(parseFloat(e.target.value))}
+          onChange={(e: any) => setTradeUpperPrice(parseFloat(e.target.value) || 0)}
           value={tradeUpperPrice}
+          inputProps={{ min: 0 }}
           required
           fullWidth
         />
@@ -215,8 +216,9 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={(e: any) => setTradeAmount(parseFloat(e.target.value))}
+          onChange={(e: any) => setTradeAmount(parseFloat(e.target.value) || 0)}
           value={tradeAmount}
+          inputProps={{ min: 0 }}
           required
           fullWidth
         />

@@ -1,4 +1,4 @@
-import { configureStore, combineReducers, createListenerMiddleware, createSerializableStateInvariantMiddleware, isAnyOf } from '@reduxjs/toolkit'
+import { configureStore, combineReducers, createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/dist/query'
 import thunk from 'redux-thunk'
 

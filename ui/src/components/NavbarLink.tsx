@@ -19,14 +19,15 @@ export default function NavbarLink(props: Props) {
     <Link
       href={props.href}
       className={twMerge(
-        'h-full',
-        'text-gray-500',
+        'py-2 px-2',
+        'text-gray-400',
         'transition-colors',
         'active:text-gray-200',
         'hover:text-white',
+        'hover:bg-zinc-800',
+        'rounded-lg',
         selected && 'text-white',
-        selected && 'border-b',
-        selected && 'border-purple-500',
+        selected && 'bg-zinc-800',
         props.className
       )}
     >
