@@ -56,7 +56,6 @@ async function main() {
       startTickIndex,
       programId
     )
-    //  PDAUtil.getTickArray(programId, whirlpoolPubkey, startTickIndex);
 
     const endTickIndex = startTickIndex + tickSpacing * TICK_ARRAY_SIZE
 

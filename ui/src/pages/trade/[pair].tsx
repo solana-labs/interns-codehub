@@ -1,12 +1,16 @@
 import { Box, Container, Stack, Typography } from '@mui/material'
 import { useRouter } from 'next/router'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useConnection } from '@solana/wallet-adapter-react'
 import { Token } from '@solflare-wallet/utl-sdk'
 
 import { CandlestickChart, ChartCurrency, CurrencyStats } from '@/components/Chart'
 import { ProvideLiquidityBox } from '@/components/ProvideLiquidityBox'
 import { TradeBox } from '@/components/TradeBox'
+import { TradableTicksBox } from '@/components/TradableTicksBox'
+import { LOCALNET_CONNECTION } from '@/constants'
 import { useAppSelector } from '@/hooks'
+import { TradableTick, getTradableTicks } from '@/lib'
 import { selectTokens } from '@/slices/generic'
 import { selectGlobalpoolByMints } from '@/slices/globalpool'
 
@@ -14,8 +18,11 @@ export default function TradePairPage() {
   const router = useRouter()
   const { pair: candidatePair } = router.query
 
+  const { connection } = process.env.NEXT_PUBLIC_SOLANA_TARGET === 'localnet' ? { connection: LOCALNET_CONNECTION } : useConnection()
+
   const supportedTokens = useAppSelector(selectTokens)
-  // console.log(supportedTokens)
+
+  const [tradableTicks, setTradableTicks] = useState<TradableTick[]>([])
 
   // Get base & quote token from dynamic URL
   const [baseToken, quoteToken] = useMemo(() => {
@@ -29,7 +36,7 @@ export default function TradePairPage() {
     if (split.length !== 2 || split.filter((x) => !x).length) return [undefined, undefined]
 
     // Find base & quote token from tokens list using the symbol (from URL)
-    let baseToken: Token | undefined 
+    let baseToken: Token | undefined
     let quoteToken: Token | undefined
     Object.values(supportedTokens).forEach((token) => {
       if (token.symbol === split[0]) baseToken = token
@@ -39,7 +46,19 @@ export default function TradePairPage() {
     return [baseToken, quoteToken]
   }, [candidatePair, supportedTokens])
 
+  getTradableTicks
+
   const globalpool = useAppSelector(selectGlobalpoolByMints(baseToken?.address, quoteToken?.address))
+
+  useEffect(() => {
+    if (!globalpool || !baseToken || !quoteToken) return
+
+    getTradableTicks({ globalpool, connection, baseToken, quoteToken })
+      .then((ticks) => {
+        console.log(ticks)
+        setTradableTicks(ticks)
+      })
+  }, [globalpool, connection, baseToken, quoteToken])
 
   if (!baseToken || !quoteToken || !globalpool) {
     return (
@@ -77,6 +96,13 @@ export default function TradePairPage() {
         baseToken={baseToken}
         quoteToken={quoteToken}
         globalpool={globalpool}
+        sx={{ mt: 8 }}
+      />
+      <TradableTicksBox
+        baseToken={baseToken}
+        quoteToken={quoteToken}
+        ticks={tradableTicks}
+        currentTick={globalpool.tickCurrentIndex}
         sx={{ mt: 8 }}
       />
     </Container>

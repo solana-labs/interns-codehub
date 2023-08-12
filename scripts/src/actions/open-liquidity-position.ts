@@ -16,7 +16,7 @@ import {
 import Decimal from 'decimal.js'
 
 import { TICK_ARRAY_SIZE } from '../constants'
-import { getConstantParams } from '../params'
+import { getPostPoolInitParams } from '../params'
 import { ParsableGlobalpool } from '../types/parsing'
 import {
   OpenPositionParams,
@@ -42,7 +42,7 @@ async function main() {
     tokenMintA,
     tokenMintB,
     cladKey,
-  } = await getConstantParams()
+  } = await getPostPoolInitParams()
 
   const mintAmount = new anchor.BN(100_000) // 100k of each tokens
   const positionAuthority = wallet.publicKey

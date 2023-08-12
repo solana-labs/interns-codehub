@@ -20,9 +20,17 @@ export function getPDA(
 }
 
 export async function getConstantParams() {
-  const desiredStartPrice = 1.915 // B/A (USDC/HNT)
-  const tickSpacing = 64
-  const feeRate = 3000 // per 1_000_000 (3000 => 0.3%)
+  const argv = require('minimist')(process.argv.slice(2))
+  console.log(argv)
+
+  // write code to get desired start price from argv as flag
+  // if (!argv.s) {
+  //   throw new Error('Please provide a initial price with -s flag')
+  // }
+
+  const desiredStartPrice = argv.s ? parseFloat(argv.s) : 1.85
+  const tickSpacing = argv.t ? parseInt(argv.t) : 64
+  const feeRate = argv.f ? parseInt(argv.f) : 3000 // per 1_000_000 (3000 => 0.3%)
 
   const provider = anchor.AnchorProvider.local('http://127.0.0.1:8899', {
     commitment: 'confirmed',

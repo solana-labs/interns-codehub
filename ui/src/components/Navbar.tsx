@@ -19,6 +19,7 @@ export default function Navbar() {
       left={0}
       right={0}
       zIndex={99999}
+      bgcolor="#eee"
       borderBottom="1px solid #ddd"
       boxShadow="0 0 10px 0 rgba(130,130,130,0.13)"
     >
