@@ -22,7 +22,7 @@ export default function LiquidityPositionPreview({ position }: LiquidityPosition
 
 	useEffect(() => {
 		if (!position) return
-		dispatch(fetchGlobalpool(position.data.globalpool))
+		dispatch(fetchGlobalpool({ key: position.data.globalpool }))
 	}, [position])
 
 	useEffect(() => {

@@ -4,10 +4,10 @@ import { Token } from '@solflare-wallet/utl-sdk'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
 
-import TokenSelectorList from '@/components/TokenSelectorList'
+import { TokenSelectorList } from '@/components/TokenSelectorList'
 import { useAppSelector } from '@/hooks'
-import { sortTokenByQuotePriority } from '@/lib'
 import { selectGlobalpools } from '@/slices/globalpool'
+import { parseAllTokensFromPools } from '@/utils/token'
 
 interface ChartCurrencyProps {
   baseToken: Token
@@ -25,19 +25,7 @@ export function ChartCurrency(props: ChartCurrencyProps) {
   // Get token-pair of all globalpools
   const tokenList = useMemo(() => {
     if (!globalpools || !supportedTokens) return [] as { base: Token, quote: Token }[]
-
-    return Object.values(globalpools)
-      .map((globalpool) => {
-        const tokenA = supportedTokens[globalpool.tokenMintA.toString()]
-        const tokenB = supportedTokens[globalpool.tokenMintB.toString()]
-
-        if (!tokenA || !tokenB) return undefined // filtered out
-
-        // Need to order the pair
-        const [baseToken, quoteToken] = [tokenA, tokenB].sort(sortTokenByQuotePriority) as [Token, Token]
-        return { base: baseToken, quote: quoteToken }
-      })
-      .filter((x) => !!x) as { base: Token, quote: Token }[]
+    return parseAllTokensFromPools(globalpools, supportedTokens)
   }, [globalpools, supportedTokens])
 
   if (!baseToken || !quoteToken) return (<></>)

@@ -20,15 +20,10 @@ export function getPDA(
 }
 
 export async function getConstantParams() {
-  // const dummyWallet = new DummyWallet()
-  // const provider = new anchor.AnchorProvider(
-  //   new Connection('http://127.0.0.1:8899'),
-  //   dummyWallet,
-  //   {
-  //     commitment: 'confirmed',
-  //     preflightCommitment: 'confirmed',
-  //   }
-  // )
+  const desiredStartPrice = 1.915 // B/A (USDC/HNT)
+  const tickSpacing = 64
+  const feeRate = 3000 // per 1_000_000 (3000 => 0.3%)
+
   const provider = anchor.AnchorProvider.local('http://127.0.0.1:8899', {
     commitment: 'confirmed',
     preflightCommitment: 'confirmed',
@@ -46,9 +41,6 @@ export async function getConstantParams() {
     await requestAirdrop(provider, { receiver: fundedSigner.publicKey })
   }
 
-  const tickSpacing = 64
-  const feeRate = 3000 // per 1_000_000 (3000 => 0.3%)
-
   // const tokenMintAKey = tokenMintSOL
   const tokenMintAKey = tokenMintHNT
   const tokenMintBKey = tokenMintUSDC
@@ -56,7 +48,6 @@ export async function getConstantParams() {
   const tokenMintA = await getMint(connection, tokenMintAKey)
   const tokenMintB = await getMint(connection, tokenMintBKey)
 
-  const desiredStartPrice = 2.02 // B/A (USDC/HNT)
 
   const decimalDiff = tokenMintB.decimals - tokenMintA.decimals
   const initTickIndex = Math.round((Math.log(desiredStartPrice * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing

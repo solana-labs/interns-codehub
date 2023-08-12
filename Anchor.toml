@@ -22,6 +22,8 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 programs/clad/tests/anch
 4-open-trade = "ts-node -p scripts/src/actions/open-trade-position.ts"
 5-close-trade = "ts-node -p scripts/src/actions/close-trade-position.ts"
 6-liquidate-trade = "ts-node -p scripts/src/actions/liquidate-trade-position.ts"
+7-close-lp = "ts-node -p scripts/src/actions/close-liquidity-position.ts"
+airdrop = "ts-node -p scripts/src/actions/airdrop.ts"
 
 # For cloning addresses
 [test.validator]

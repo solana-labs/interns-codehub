@@ -1,4 +1,4 @@
-import CloseIcon from '@carbon/icons-react/lib/Close'
+// import CloseIcon from '@carbon/icons-react/lib/Close'
 import { Box, Stack, Typography } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { Token } from '@solflare-wallet/utl-sdk'
@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 
 import { TransitionsModal } from '@/components/TransitionsModal'
+import { TokenClickStack } from '@/components/TokenClickStack'
 
 const TokenSelectorContent = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
@@ -19,23 +20,13 @@ const TokenSelectorContent = styled(Box)(({ theme }) => ({
   overflow: 'hidden',
 }))
 
-const TokenClickStack = styled(Stack)(({ theme }) => ({
-  cursor: 'pointer',
-  padding: theme.spacing(1, 2),
-  transition: 'background-color 0.2s ease-in-out',
-  borderRadius: 6,
-  '&:hover': {
-    backgroundColor: '#eee',
-  }
-}))
-
 interface TokenSelectorListProps {
   isSelectorOpen: boolean
   setIsSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>
   tokenList: { base: Token, quote: Token }[]
 }
 
-export default function TokenSelectorList(props: TokenSelectorListProps) {
+export function TokenSelectorList(props: TokenSelectorListProps) {
   const { isSelectorOpen, setIsSelectorOpen, tokenList } = props
 
   const router = useRouter()

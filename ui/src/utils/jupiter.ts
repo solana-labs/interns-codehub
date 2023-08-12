@@ -38,9 +38,9 @@ export async function getRoutesFromJupiter(
 
   const inputMint = a2b ? tokenA : tokenB
   const outputMint = a2b ? tokenB : tokenA
-  console.log(`Input mint: ${inputMint.toBase58()}`)
-  console.log(`Output mint: ${outputMint.toBase58()}`)
-  console.log(`Amount: ${amount}`)
+  console.log(`DEBUG(Jupiter): Input mint: ${inputMint.toBase58()}`)
+  console.log(`DEBUG(Jupiter): Output mint: ${outputMint.toBase58()}`)
+  console.log(`DEBUG(Jupiter): Amount: ${amount}`)
 
   return jupiter
     .computeRoutes({
@@ -59,7 +59,7 @@ export async function getRoutesFromJupiter(
     })
     .then((res) => res.routesInfos)
     .catch((error) => {
-      console.log('DEBUG: Failed to compute routes')
+      console.log('DEBUG(Jupiter): Failed to compute routes')
       console.error(error)
       return null
     })
@@ -89,39 +89,29 @@ export async function getRouteDataFromJupiterRoutes(
       )
     )
       return null
-    // consoleLogFull(route)
-    // console.log(route)
-    // console.log(route.marketInfos[0].amm.label, route.marketInfos[0].amm.id)
 
     const res = await jupiter
       .exchange({ routeInfo: route, userPublicKey: user })
       .catch((err) => {
-        console.log('DEBUG: Failed to set exchange')
+        console.log('DEBUG(Jupiter): Failed to set exchange')
         console.error(err)
         return null
       })
     if (!res) {
-      console.log('DEBUG: Skip route with no exchange info')
+      console.log('DEBUG(Jupiter): Skip route with no exchange info')
       continue
     }
 
     // console.log(res.transactions.swapTransaction)
     const swapTransaction = res.swapTransaction as Transaction
     if (!swapTransaction.instructions) {
-      console.log('DEBUG: Skipped route with no instructions')
+      console.log('DEBUG(Jupiter): Skipped route with no instructions')
       continue // skip VersionedTransaction
     }
 
-    // let preInstructions: TransactionInstruction[] =
-    //   swapTransaction.instructions.length > 1
-    //     ? swapTransaction.instructions.slice(0, -1)
-    //     : []
-
-    console.log('swap instructions')
-    console.log(swapTransaction.instructions)
     let swapInstruction = swapTransaction.instructions.at(-1)
     if (!swapInstruction) {
-      console.log('DEBUG: Skipped route with no swap instruction')
+      console.log('DEBUG(Jupiter): Skipped route with no swap instruction')
       continue
     }
 
@@ -129,26 +119,22 @@ export async function getRouteDataFromJupiterRoutes(
       if (key.isSigner) {
         if (!key.pubkey.equals(user)) {
           console.log(key.pubkey)
-          console.log('DEBUG: Skipped route with unexpected signer')
+          console.log('DEBUG(Jupiter): Skipped route with unexpected signer')
           continue
         }
         key.isSigner = false
       }
     }
-    console.log('swap instruction')
-    console.log(swapInstruction)
-
-    // let postInstructions: TransactionInstruction[] = []
 
     if (swapInstruction.programId.toString() !== JUPITER_PROGRAM_ID) {
       console.log(
-        `DEBUG: Skipped route with unexpected router ID: ${swapInstruction.programId.toString()}`
+        `DEBUG(Jupiter): Skipped route with unexpected router ID: ${swapInstruction.programId.toString()}`
       )
       continue
     }
 
     if (swapInstruction.programId.toString() !== JUPITER_PROGRAM_ID) {
-      console.log('DEBUG: Skipped route with unexpected router ID')
+      console.log('DEBUG(Jupiter): Skipped route with unexpected router ID')
       continue
     }
 

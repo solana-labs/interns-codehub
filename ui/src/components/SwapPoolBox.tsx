@@ -9,11 +9,12 @@ import BN from 'bn.js'
 import Decimal from 'decimal.js'
 
 import { CLAD_PROGRAM_ID, LOCALNET_CONNECTION } from '@/constants'
-import { useCladProgram } from '@/hooks'
+import { useAppDispatch, useCladProgram } from '@/hooks'
 import { swapPool } from '@/lib'
-import { ExpirableGlobalpoolData } from '@/slices/globalpool'
+import { ExpirableGlobalpoolData, fetchGlobalpool } from '@/slices/globalpool'
 import { formatNumber, numScaledFromDecimals, numScaledToDecimals } from '@/utils'
 import { swapQuoteByInputToken } from '@/utils/swap'
+import { getATABalance } from '@/utils/token'
 
 interface SwapPoolBoxProps {
   globalpool: ExpirableGlobalpoolData | undefined
@@ -38,6 +39,8 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
     quoteToken
   } = props
 
+  const dispatch = useAppDispatch()
+
   // react-wallet doesn't connect to localnet despite changing the browser wallet RPC,
   // so we manually set it to localnet here (and other places where we use connection)
   const { connection } = process.env.NEXT_PUBLIC_SOLANA_TARGET === 'localnet' ? { connection: LOCALNET_CONNECTION } : useConnection()
@@ -45,8 +48,8 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
   const wallet = useAnchorWallet()
   const program = useCladProgram(connection)
 
-  const [swapInAmount, setSwapInAmount] = useState<number>(100)
-  const [swapOutAmount, setSwapOutAmount] = useState<number>(0)
+  const [swapAmounts, setSwapAmounts] = useState({ in: 0, out: 0 })
+  const [swapMax, setSwapMax] = useState({ in: 0, out: 0 })
   const [swapFeeAmount, setSwapFeeAmount] = useState<number>(0)
   const [maxSlippage, setMaxSlippage] = useState<Percentage>(new Percentage(new BN(1), new BN(100))) // 1%
 
@@ -66,7 +69,7 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
     setIsExecutingSwap(true)
 
     // scale to token decimals exponent (make sure to use Decimal for precision, then remove decimal places, then convert to BN)
-    const swapInputAmount = new BN(swapInAmount.toString())
+    const swapInputAmount = new BN(swapAmounts.in.toString())
 
     try {
       await swapPool({
@@ -79,12 +82,29 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
         globalpool,
         program,
       })
+
+      dispatch(fetchGlobalpool({ key: globalpool._pubkey }))
     } catch (err) {
       console.error(err)
     } finally {
       setIsExecutingSwap(false)
     }
-  }, [globalpool, wallet, program, swapInAmount, swapInToken, swapOutToken, maxSlippage])
+  }, [globalpool, wallet, program, swapAmounts, swapInToken, swapOutToken, maxSlippage])
+
+  useEffect(() => {
+    if (!program || !wallet) return
+    Promise.all([
+      getATABalance(program.provider, new PublicKey(swapInToken.address), wallet.publicKey),
+      getATABalance(program.provider, new PublicKey(swapOutToken.address), wallet.publicKey)
+    ])
+      .then((maxAmounts) => {
+        setSwapMax({
+          in: maxAmounts[0] ? parseFloat(numScaledFromDecimals(maxAmounts[0], swapInToken.decimals || 9)) : 0,
+          out: maxAmounts[1] ? parseFloat(numScaledFromDecimals(maxAmounts[1], swapOutToken.decimals || 9)) : 0,
+        })
+      })
+      .catch(console.error)
+  }, [program, wallet, swapInToken, swapOutToken])
 
   useEffect(() => {
     if (!globalpool || !connection) return
@@ -93,10 +113,10 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
     const swapOutputDecimals = swapOutToken.decimals || 9
 
     console.log('maxSlippage', maxSlippage.toString())
-    console.log(swapInAmount)
+    console.log(swapAmounts.in)
 
     // scale to token decimals exponent (make sure to use Decimal for precision, then remove decimal places, then convert to BN)
-    const swapInAmountExpo = new BN(new Decimal(numScaledToDecimals(swapInAmount, swapInputDecimals)).toFixed(0))
+    const swapInAmountExpo = new BN(new Decimal(numScaledToDecimals(swapAmounts.in, swapInputDecimals)).toFixed(0))
 
     swapQuoteByInputToken(
       new PublicKey(globalpool._pubkey),
@@ -111,10 +131,10 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
       const estFeeAmount = new Decimal(numScaledFromDecimals(swapQuote.estimatedFeeAmount, swapInputDecimals))
 
       console.log(estOutAmount.toString(), estFeeAmount.toString())
-      setSwapOutAmount(estOutAmount.toNumber())
+      setSwapAmounts({ in: swapAmounts.in, out: estOutAmount.toNumber() })
       setSwapFeeAmount(estFeeAmount.toNumber())
     }).catch(console.error)
-  }, [globalpool, connection, swapInToken, swapOutToken, swapInAmount, maxSlippage])
+  }, [globalpool, connection, swapInToken, swapOutToken, swapAmounts.in, maxSlippage])
 
   return (
     <Stack alignItems="stretch" justifyContent="flex-start">
@@ -125,12 +145,13 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          onChange={(e: any) => setSwapInAmount(parseFloat(e.target.value) || 0)}
-          value={swapInAmount}
+          onChange={(e: any) => setSwapAmounts({ in: parseFloat(e.target.value) || 0, out: swapAmounts.out })}
+          value={swapAmounts.in}
           inputProps={{ min: 0 }}
           required
           fullWidth
         />
+        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Max: {formatNumber(swapMax.in)} {swapInToken.symbol}</Typography>
       </Box>
       <Box pt={2} lineHeight={0.5} textAlign="center">
         <ExchangeTokenReprButton onClick={handleExchangeTokenRepr}>
@@ -145,11 +166,12 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
           variant="outlined"
           color="secondary"
           label=""
-          value={swapOutAmount}
+          value={swapAmounts.out}
           inputProps={{ min: 0 }}
           fullWidth
           disabled // only support custom swap-in amount for now
         />
+        <Typography variant="caption" fontWeight="bold" color="#999" pb={1}>Max: {formatNumber(swapMax.out)} {swapOutToken.symbol}</Typography>
       </Box>
       <Stack direction={{ md: 'row' }} alignItems="center" justifyContent="space-between" spacing={1} pt={2}>
         <Box>

@@ -12,7 +12,6 @@ import {
   Keypair,
 } from '@solana/web3.js'
 import { DecimalUtil, Percentage } from '@orca-so/common-sdk'
-import BN from 'bn.js'
 import Decimal from 'decimal.js'
 
 import { CLAD_PROGRAM_ID } from '@/constants'
@@ -26,7 +25,7 @@ import { PositionStatus } from '@/utils/liquidity-position/types'
 export type OpenLiquidityPositionParams = {
   tickLowerIndex: number,
   tickUpperIndex: number,
-  liquidityAmount: BN,
+  inputTokenAmount: Decimal, // token amount scaled from decimal exponent, not liquidity amount
   positionAuthority: PublicKey
   globalpool: ExpirableGlobalpoolData
   program: Program<Clad>
@@ -37,7 +36,7 @@ export async function openLiquidityPosition(params: OpenLiquidityPositionParams)
     tickLowerIndex,
     tickUpperIndex,
     positionAuthority,
-    liquidityAmount,
+    inputTokenAmount,
     globalpool,
     program,
   } = params
@@ -106,12 +105,12 @@ export async function openLiquidityPosition(params: OpenLiquidityPositionParams)
     tickUpperIndex
   )
   const inputTokenMint =
-    positionStatus === PositionStatus.AboveRange ? tokenMintB : tokenMintA
+    positionStatus === PositionStatus.AboveRange ? tokenMintB : tokenMintA // incl in-range
 
   const quote = increaseLiquidityQuoteByInputToken(
     globalpool,
     inputTokenMint,
-    new Decimal(liquidityAmount.toString()),
+    inputTokenAmount,
     tickLowerIndex,
     tickUpperIndex,
     Percentage.fromFraction(10, 100) // (10/100)% slippage
@@ -149,7 +148,6 @@ export async function openLiquidityPosition(params: OpenLiquidityPositionParams)
   }
 
   const openLiquidityPositionParams = {
-    liquidityAmount,
     tickLowerIndex,
     tickUpperIndex,
   }

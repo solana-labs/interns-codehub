@@ -1,12 +1,13 @@
 import { Box } from '@mui/material'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import PositionRenderCard, { PositionRenderCardSize } from '@/components/PositionRenderCard'
 import { useAppDispatch, useAppSelector, useTokens } from '@/hooks'
 import { fetchGlobalpool, selectGlobalpool } from '@/slices/globalpool'
 import { UserTradePosition } from '@/types/user'
 import { numScaledFromDecimals, strOrPubkeyToPubkey, strOrPubkeyToString } from '@/utils'
+import { sortTokenByQuotePriority } from '@/lib'
 
 type TradePositionPreviewProps = {
   position: UserTradePosition
@@ -20,6 +21,11 @@ export default function TradePositionPreview({ position }: TradePositionPreviewP
   const [currentPoolTick, setCurrentPoolTick] = useState<number>(0)
 
   const [tokenCollateral, tokenLoan] = useTokens([position?.data.tokenMintCollateral, position?.data.tokenMintLoan])
+
+  const [baseToken, quoteToken] = useMemo(() => {
+    if (!tokenCollateral || !tokenLoan) return [undefined, undefined]
+    return [tokenCollateral, tokenLoan].sort(sortTokenByQuotePriority)
+  }, [tokenCollateral, tokenLoan])
 
   useEffect(() => {
     if (!position) return
@@ -43,8 +49,8 @@ export default function TradePositionPreview({ position }: TradePositionPreviewP
           tickCurrentIndex={currentPoolTick}
           tickSpacing={tickSpacing}
           amount={numScaledFromDecimals(position.data.loanTokenSwapped, tokenLoan?.decimals || 9)}
-          tokenA={tokenCollateral}
-          tokenB={tokenLoan}
+          tokenA={baseToken}
+          tokenB={quoteToken}
           size={PositionRenderCardSize.SMALL}
         />
       </Link>

@@ -230,12 +230,12 @@ function generateSVGCardMantle(baseToken: Token, quoteToken: Token, amount: BN |
     case PositionStatus.SHORT:
       directionText = 'SHORT'
       directionColor = 'rgba(239, 98, 81, 0.8)'
-      directionStrLen = directionText.length
+      directionStrLen = directionText.length + 1
       break
     case PositionStatus.IN_RANGE:
       directionText = 'IN RANGE'
       directionColor = 'rgba(81, 189, 68, 0.8)'
-      directionStrLen = directionText.length
+      directionStrLen = directionText.length + 2
       break
     case PositionStatus.OUT_OF_RANGE:
       directionText = 'OFF RANGE'

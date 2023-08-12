@@ -182,8 +182,6 @@ async function main() {
     const { tickLowerIndex, tickUpperIndex, liquidityAmount } =
       openLiquidityPositionParams
 
-    console.log(`tick range: [${tickLowerIndex}, ${tickUpperIndex})`)
-
     const positionMintKeypair = Keypair.generate()
     const [positionKey] = PublicKey.findProgramAddressSync(
       [
@@ -220,18 +218,6 @@ async function main() {
       tickUpperIndex,
       Percentage.fromFraction(10, 100) // (10/100)% slippage
     )
-
-    console.log(quote)
-
-    console.log(
-      'tokenA max input',
-      DecimalUtil.fromBN(quote.tokenMaxA, tokenMintA.decimals).toString()
-    )
-    console.log(
-      'tokenB max input',
-      DecimalUtil.fromBN(quote.tokenMaxB, tokenMintB.decimals).toString()
-    )
-    console.log('liquidity', quote.liquidityAmount.toString())
 
     const increaseLiquidityPositionParams = {
       liquidityAmount: quote.liquidityAmount,
@@ -283,6 +269,20 @@ async function main() {
     ).buildAndExecute()
 
     res[txId] = openLiquidityPositionAccounts
+
+    console.log(`txId: ${txId}`)
+    console.log('position:', positionKey.toString())
+    console.log('position mint:', positionMintKeypair.publicKey.toString())
+    console.log(`tick range [${tickLowerIndex}, ${tickUpperIndex})`)
+    console.log(
+      'tokenA max input',
+      DecimalUtil.fromBN(quote.tokenMaxA, tokenMintA.decimals).toString()
+    )
+    console.log(
+      'tokenB max input',
+      DecimalUtil.fromBN(quote.tokenMaxB, tokenMintB.decimals).toString()
+    )
+    console.log('liquidity', quote.liquidityAmount.toString())
   }
 
   // consoleLogFull(res)

@@ -6,9 +6,10 @@ import Decimal from 'decimal.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { LOCALNET_CONNECTION } from '@/constants'
-import { useCladProgram } from '@/hooks'
+import { useAppDispatch, useCladProgram } from '@/hooks'
 import { openTradePosition, calculateProratedInterestRate } from '@/lib'
-import { ExpirableGlobalpoolData } from '@/slices/globalpool'
+import { ExpirableGlobalpoolData, fetchGlobalpool } from '@/slices/globalpool'
+import { fetchTradePositionsByUser } from '@/slices/tradePosition'
 import {
   estimateLiquidityFromTokenAmounts,
   formatNumber,
@@ -48,10 +49,11 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
   const { connection } = process.env.NEXT_PUBLIC_SOLANA_TARGET === 'localnet' ? { connection: LOCALNET_CONNECTION } : useConnection()
   const wallet = useAnchorWallet()
   const program = useCladProgram(connection)
+  const dispatch = useAppDispatch()
 
-  const [tradeLowerPrice, setTradeLowerPrice] = useState<number>(1.8)
-  const [tradeUpperPrice, setTradeUpperPrice] = useState<number>(2)
-  const [tradeAmount, setTradeAmount] = useState<number>(100) // amount of base or quote token to borrow (to short or long)
+  const [tradeLowerPrice, setTradeLowerPrice] = useState<number>(0)
+  const [tradeUpperPrice, setTradeUpperPrice] = useState<number>(0)
+  const [tradeAmount, setTradeAmount] = useState<number>(0) // amount of base or quote token to borrow (to short or long)
 
   const [errorTickRange, setErrorTickRange] = useState<string | undefined>(undefined) // undefined => no error
   const [estMaxLoss, setEstMaxLoss] = useState<Decimal | undefined>(undefined)
@@ -69,7 +71,7 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
   }, [globalpool])
 
   const handleOpenPosition = useCallback(async () => {
-    if (!globalpool || !wallet || !program || !globalpool.tickCurrentIndex) return
+    if (!globalpool || !wallet || !program || !globalpool.tickCurrentIndex || !tradeLowerPrice || !tradeUpperPrice || !tradeAmount) return
     setIsOpeningPosition(true)
 
     const lowerPriceTick = priceToNearestTick(tradeLowerPrice, globalpool.tickSpacing, baseDecimals, quoteDecimals)
@@ -89,7 +91,9 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
     })
 
     setIsOpeningPosition(false)
-  }, [globalpool, tradeLowerPrice, tradeUpperPrice, wallet, program])
+    dispatch(fetchGlobalpool({ key: globalpool._pubkey, ignoreCache: true }))
+    dispatch(fetchTradePositionsByUser(wallet.publicKey))
+  }, [globalpool, tradeAmount, tradeLowerPrice, tradeUpperPrice, wallet, program])
 
   useEffect(() => {
     // console.log(globalpool, getTokenAddress(props.baseToken), getTokenAddress(props.quoteToken))
@@ -134,6 +138,7 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
       isBorrowA ? tradeAmountExpo : 0,
       isBorrowA ? 0 : tradeAmountExpo,
     )
+    console.log(tradeAmount, borrowAmounts.tokenA.toString(), borrowAmounts.tokenB.toString())
 
     const liquidityBorrow = estimateLiquidityFromTokenAmounts(
       globalpool.tickCurrentIndex,

@@ -23,13 +23,20 @@ const initialState: GlobalpoolState = {
 
 export const fetchGlobalpool = createAsyncThunk<
   ExpirableGlobalpoolData, // Return type of the payload creator
-  PublicKey // First argument to the payload creator
+  {
+    key: PublicKey | string,
+    ignoreCache?: boolean,
+  }
 >(
   'globalpool/fetch',
-  async (globalpoolKey: PublicKey, { getState, rejectWithValue }) => {
+  async (args, { getState, rejectWithValue }) => {
     const state = getState() as RootState
     if (!state.generic.rpc) return rejectWithValue('Invalid RPC')
 
+    const { key } = args
+    const ignoreCache = args.ignoreCache || false
+
+    const globalpoolKey = strOrPubkeyToPubkey(key)
     const globalpoolKeyStr = globalpoolKey.toBase58()
 
     // If globalpool is cached and not stale (<= `globalpoolStaleTimeMs` old, then use the cached data)
@@ -37,7 +44,7 @@ export const fetchGlobalpool = createAsyncThunk<
     if (cachedPool) {
       const lastFetchDiff = Date.now() - cachedPool._lastFetchTimestamp
       const needToFetch = lastFetchDiff > state.generic.globalpoolStaleTimeMs
-      if (!needToFetch) return { ...cachedPool, _pubkey: globalpoolKeyStr }
+      if (!needToFetch && !ignoreCache) return { ...cachedPool, _pubkey: globalpoolKeyStr }
     }
 
     const poolData = await getGlobalpool(globalpoolKey, new Connection(state.generic.rpc))
@@ -86,18 +93,7 @@ export const fetchAllGlobalpools = createAsyncThunk<
 export const globalpoolSlice = createSlice({
   name: 'globalpool',
   initialState,
-  reducers: {
-    // increment: (state) => {
-    //   state.value += 1
-    // },
-    // decrement: (state) => {
-    //   state.value -= 1
-    // },
-    // // Use the PayloadAction type to declare the contents of `action.payload`
-    // incrementByAmount: (state, action: PayloadAction<number>) => {
-    //   state.value += action.payload
-    // },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchGlobalpool.fulfilled, (state, action) => {
       state.globalpools[action.payload._pubkey] = action.payload as ExpirableGlobalpoolData
@@ -137,7 +133,6 @@ export const selectGlobalpoolByMints = (mintA: PublicKey | string | undefined, m
   const _mintA = typeof mintA === 'string' ? new PublicKey(mintA) : mintA
   const _mintB = typeof mintB === 'string' ? new PublicKey(mintB) : mintB
 
-  console.log(state.globalpool.globalpools)
   const list = Object.values(state.globalpool.globalpools).filter((pool) => strOrPubkeyToPubkey(pool.tokenMintA).equals(_mintA) && strOrPubkeyToPubkey(pool.tokenMintB).equals(_mintB))
 
   const globalpool = feeTier ? list.find((pool) => pool.feeRate === feeTier) : list[0]

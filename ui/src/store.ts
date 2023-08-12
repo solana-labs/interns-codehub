@@ -27,6 +27,7 @@ listenerMiddleware.startListening({
     // Collect all to-fetch mint addresses
     const mints = new Set<string>()
     Object.values(action.payload as Record<string, ExpirableGlobalpoolData>).forEach((globalpool) => {
+      if (!globalpool.tokenMintA || !globalpool.tokenMintB) return
       mints.add(globalpool.tokenMintA.toString())
       mints.add(globalpool.tokenMintB.toString())
     })

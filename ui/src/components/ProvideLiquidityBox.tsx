@@ -1,6 +1,7 @@
 import { Box, type SxProps, TextField, Typography, Stack, Button } from '@mui/material'
 import { useAnchorWallet, useConnection } from '@solana/wallet-adapter-react'
 import { Token } from '@solflare-wallet/utl-sdk'
+import Decimal from 'decimal.js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { ShadowedBox } from '@/components/ShadowedBox'
@@ -8,7 +9,9 @@ import { LOCALNET_CONNECTION } from '@/constants'
 import { useCladProgram } from '@/hooks'
 import { openLiquidityPosition } from '@/lib'
 import { ExpirableGlobalpoolData } from '@/slices/globalpool'
-import { estimateLiquidityFromTokenAmounts, priceToNearestTick, toTokenAmount } from '@/utils'
+import { priceToNearestTick } from '@/utils'
+import { PositionUtil } from '@/utils/liquidity-position/utils'
+import { PositionStatus } from '@/utils/liquidity-position/types'
 
 interface ProvideLiquidityBoxProps {
   baseToken: Token
@@ -52,19 +55,19 @@ export function ProvideLiquidityBox(props: ProvideLiquidityBoxProps) {
     const tickLowerIndex = priceToNearestTick(liqRangePrice.lower, tickSpacing, baseDecimals, quoteDecimals)
     const tickUpperIndex = priceToNearestTick(liqRangePrice.upper, tickSpacing, baseDecimals, quoteDecimals)
 
-    const liquidityAmount = estimateLiquidityFromTokenAmounts(
+    const positionStatus = PositionUtil.getPositionStatus(
       globalpool.tickCurrentIndex,
       tickLowerIndex,
       tickUpperIndex,
-      toTokenAmount(liqTokenAmount.base, liqTokenAmount.quote)
     )
-    console.log('liquidity position liquidityAmount', liquidityAmount.toString())
+
+    const inputTokenAmount = positionStatus === PositionStatus.AboveRange ? liqTokenAmount.quote : liqTokenAmount.base // incl in-range
 
     try {
       await openLiquidityPosition({
         tickLowerIndex,
         tickUpperIndex,
-        liquidityAmount,
+        inputTokenAmount: new Decimal(inputTokenAmount),
         positionAuthority: wallet.publicKey,
         globalpool,
         program,

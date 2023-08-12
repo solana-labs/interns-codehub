@@ -1,26 +1,16 @@
-import { AnchorProvider, web3 } from '@coral-xyz/anchor'
-import { Instruction, TokenUtil, TransactionBuilder } from '@orca-so/common-sdk'
+import { sortTokenByQuotePriority } from '@/lib'
+import { ExpirableGlobalpoolData } from '@/slices/globalpool'
+import { AnchorProvider, Provider, web3 } from '@coral-xyz/anchor'
+import { Instruction, TokenUtil } from '@orca-so/common-sdk'
 import {
-  AccountLayout,
   Mint,
-	NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
-	createCloseAccountInstruction,
-  createInitializeAccount3Instruction,
-	createInitializeAccountInstruction,
-  createInitializeMintInstruction,
   createMintToInstruction,
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token'
-import {
-  Connection,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  Signer,
-	SystemProgram,
-} from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
+import { Token } from '@solflare-wallet/utl-sdk'
 import BN from 'bn.js'
 
 export type ResolvedTokenAddressInstruction = {
@@ -151,11 +141,40 @@ export async function mintToDestination(
   return provider.sendAndConfirm(tx, [], { commitment: 'confirmed' })
 }
 
-
 export async function getTokenBalance(
-  provider: AnchorProvider,
+  provider: AnchorProvider | Provider,
   vault: web3.PublicKey
 ) {
   return (await provider.connection.getTokenAccountBalance(vault, 'confirmed'))
     .value.amount
+}
+
+export async function getATABalance(
+  provider: AnchorProvider | Provider,
+  mint: web3.PublicKey,
+  owner: web3.PublicKey
+) {
+  try {
+    const ataAddress = getAssociatedTokenAddressSync(mint, owner)
+    return getTokenBalance(provider, ataAddress)
+  } catch (err) {
+    return null
+  }
+}
+
+export function parseAllTokensFromPools(globalpools: Record<string, ExpirableGlobalpoolData>, knownTokens: Record<string, Token>) {
+  return Object.values(globalpools)
+    .map((globalpool) => {
+      if (!globalpool.tokenMintA || !globalpool.tokenMintB) return undefined // filtered out
+
+      const tokenA = knownTokens[globalpool.tokenMintA.toString()]
+      const tokenB = knownTokens[globalpool.tokenMintB.toString()]
+
+      if (!tokenA || !tokenB) return undefined // filtered out
+
+      // Need to order the pair
+      const [baseToken, quoteToken] = [tokenA, tokenB].sort(sortTokenByQuotePriority) as [Token, Token]
+      return { base: baseToken, quote: quoteToken }
+    })
+    .filter((x) => !!x) as { base: Token, quote: Token }[]
 }

@@ -1,7 +1,7 @@
 import { PublicKey } from '@solana/web3.js'
 import { Token } from '@solflare-wallet/utl-sdk'
 
-// export * from '@/lib/closeLiquidityPosition'
+export * from '@/lib/closeLiquidityPosition'
 export * from '@/lib/closeTradePosition'
 export * from '@/lib/getAccountData'
 export * from '@/lib/getGlobalpool'

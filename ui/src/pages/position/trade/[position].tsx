@@ -30,7 +30,6 @@ export default function TradePosition() {
   // react-wallet doesn't connect to localnet despite changing the browser wallet RPC,
   // so we manually set it to localnet here (and other places where we use connection)
   const { connection } = process.env.NEXT_PUBLIC_SOLANA_TARGET === 'localnet' ? { connection: LOCALNET_CONNECTION } : useConnection()
-
   const wallet = useAnchorWallet()
   const program = useCladProgram(connection)
 
@@ -90,7 +89,7 @@ export default function TradePosition() {
 
   useEffect(() => {
     if (!position) return
-    dispatch(fetchGlobalpool(position.data.globalpool))
+    dispatch(fetchGlobalpool({ key: position.data.globalpool }))
   }, [position])
 
   useEffect(() => {
@@ -118,9 +117,12 @@ export default function TradePosition() {
   //
   // Todo: memoize using useMemo
   //
+  const isBorrowA = globalpool?.tokenMintA.equals(position.data.tokenMintLoan) || false
   const poolPrice = tickToPrice(globalpool?.tickCurrentIndex || 0, baseToken?.decimals || 9, quoteToken?.decimals || 9)
   const positionLoanValue = new Decimal(numScaledFromDecimals(position.data.loanTokenSwapped, tokenLoan?.decimals || 9))
-  const positionCurrentValue = new Decimal(numScaledFromDecimals(position.data.tradeTokenAmount, tokenCollateral?.decimals || 9)).mul(poolPrice)
+  let positionCurrentValue = new Decimal(numScaledFromDecimals(position.data.tradeTokenAmount, tokenCollateral?.decimals || 9))
+  positionCurrentValue = isBorrowA ? positionCurrentValue.div(poolPrice) : positionCurrentValue.mul(poolPrice)
+
   const positionPnL = positionCurrentValue.sub(positionLoanValue)
 
   // First, R = swapped amount + collateral - token collateral owned
@@ -132,14 +134,15 @@ export default function TradePosition() {
       tokenCollateral?.decimals || 9
     )
   )
-  
+
   // Then, R = R - (token loan owed / pool price) = R - token loan amount denominated in token collateral price
-  receivableCollateral = receivableCollateral.minus(
-    new Decimal(numScaledFromDecimals(
-      tokensOwed.loanToken,
-      tokenLoan?.decimals || 9
-    )).div(poolPrice)
-  )
+  let receivableCollateralSub = new Decimal(numScaledFromDecimals(
+    tokensOwed.loanToken,
+    tokenLoan?.decimals || 9
+  ))
+  receivableCollateralSub = isBorrowA ? receivableCollateralSub.mul(poolPrice) : receivableCollateralSub.div(poolPrice)
+
+  receivableCollateral = receivableCollateral.minus(receivableCollateralSub)
   // .sub(
   //   new Decimal(numScaledFromDecimals(tokensOwed.loanToken, tokenLoan?.decimals || 9)).div(poolPrice)
   // )
@@ -161,7 +164,7 @@ export default function TradePosition() {
         />
         <Stack spacing={3}>
           <ShadowedBox>
-            <Typography variant="h6" fontWeight="bold">Position Stats</Typography>
+            <Typography variant="h6" fontWeight="bold">Trade Position Stats</Typography>
             <StyledBox>
               <Typography variant="body1" fontWeight="bold">Range</Typography>
               <Stack direction="row" justifyContent="flex-start" spacing={3}>
@@ -258,10 +261,14 @@ export default function TradePosition() {
             </StyledBox>
             <StyledBox>
               <Box>
-                <Typography variant="caption">Receivable Collateral on Closing</Typography>
-                <Typography variant="body1" fontWeight="bold">
+                <Typography variant="body1">Receivable on Closing</Typography>
+                <Typography variant="body1" fontWeight="bold" pt={1}>
                   {formatNumber(receivableCollateral)}
                   {` ${tokenCollateral?.symbol}`}
+                </Typography>
+                <Typography variant="body1" color="#999">
+                  &#8776; {formatNumber(isBorrowA ? receivableCollateral.div(poolPrice) : receivableCollateral.mul(poolPrice))}
+                  {` ${tokenLoan?.symbol}`}
                 </Typography>
               </Box>
             </StyledBox>

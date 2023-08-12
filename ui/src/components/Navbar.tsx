@@ -19,8 +19,8 @@ export default function Navbar() {
       left={0}
       right={0}
       zIndex={99999}
-      className="bg-zinc-900"
-      color="#fff"
+      borderBottom="1px solid #ddd"
+      boxShadow="0 0 10px 0 rgba(130,130,130,0.13)"
     >
       <Container maxWidth="lg">
         <Stack
@@ -30,7 +30,7 @@ export default function Navbar() {
           spacing={1}
         >
           <Link className="hidden items-center space-x-2 md:flex" href="/">
-            <Typography variant="h5" fontWeight="bold">Clad</Typography>
+            <Typography variant="h5" fontWeight="bold">CLAD</Typography>
           </Link>
           <Stack direction="row" alignItems="center" spacing={1}>
             <NavbarLink href="/trade" icon={<ChartCandlestick />}>
@@ -42,13 +42,15 @@ export default function Navbar() {
             <NavbarLink href="/position" icon={<StoragePool />}>
               Positions
             </NavbarLink>
-            <NavbarLink href="/airdrop" icon={<StoragePool />}>
+            <NavbarLink href="/airdrop" icon={<UserAdmin />}>
               Airdrop
             </NavbarLink>
           </Stack>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <p className="text-white">Connect to DEVNET!</p>
-            <WalletMultiButtonDynamic className="bg-transparent" />
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Typography variant="body2">Connect to DEVNET!</Typography>
+            <Box bgcolor="#333" borderRadius={1}>
+              <WalletMultiButtonDynamic style={{ margin: 0 }} />
+            </Box>
           </Stack>
         </Stack>
       </Container>

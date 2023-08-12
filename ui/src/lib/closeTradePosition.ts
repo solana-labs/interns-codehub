@@ -1,13 +1,9 @@
 import { Program } from '@coral-xyz/anchor'
 import { Jupiter, SwapMode } from '@jup-ag/core'
-import { Percentage, resolveOrCreateATAs } from '@orca-so/common-sdk'
 import { AnchorWallet } from '@solana/wallet-adapter-react'
 import {
-  AccountLayout,
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  NATIVE_MINT,
   TOKEN_PROGRAM_ID,
-  createInitializeAccountInstruction,
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token'
 import {
@@ -19,9 +15,6 @@ import {
   AccountMeta,
   VersionedTransaction,
   TransactionMessage,
-  TransactionInstruction,
-  Signer,
-  Keypair,
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
@@ -53,10 +46,7 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
     globalpoolKey,
     globalpool,
     program,
-    wallet,
   } = params
-
-  const { connection } = program.provider
 
   const {
     mint: positionMintPubkey,
@@ -284,7 +274,6 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
   const repayTradePositionAccounts = {
     owner: positionAuthority,
     globalpool: globalpoolKey,
-
     position: positionKey,
     positionTokenAccount,
 
@@ -304,92 +293,40 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
 
   const repayTradePositionParams = { swapInstructionData }
 
-  const repayTradePreInstructions: TransactionInstruction[] = []
-  const repayTradePostInstructions: TransactionInstruction[] = []
-  const repayTradeSigners: Signer[] = []
+  const closeTradePositionAccounts = {
+    owner: positionAuthority,
+    globalpool: globalpoolKey,
+    receiver: positionAuthority,
+    position: positionKey,
+    positionMint: positionMintPubkey,
+    positionTokenAccount,
 
-  // const resolveAtaIxs = await resolveOrCreateATAs(
-  //   connection,
-  //   positionAuthority,
-  //   [{ tokenMint: tokenMintAKey }, { tokenMint: tokenMintBKey }],
-  //   () => connection.getMinimumBalanceForRentExemption(AccountLayout.span),
-  // )
-  // console.log(resolveAtaIxs)
+    tokenOwnerAccountA,
+    tokenOwnerAccountB,
+    tokenVaultA,
+    tokenVaultB,
+    tokenMintA: tokenMintAKey,
+    tokenMintB: tokenMintBKey,
 
-  // const resolveAtaPreIxs = resolveAtaIxs.map((ix) => ix.instructions).flat()
-  // console.log('resolveAtaPreIxs', resolveAtaPreIxs)
-  // if (resolveAtaPreIxs) repayTradePreInstructions.push(...resolveAtaPreIxs)
-
-  // const resolveAtaPostIxs = resolveAtaIxs.map((ix) => ix.cleanupInstructions).flat()
-  // console.log('resolveAtaPostIxs', resolveAtaPostIxs)
-  // if (resolveAtaPostIxs) repayTradePostInstructions.push(...resolveAtaPostIxs)
-
-  // const resolveAtaSigners = resolveAtaIxs.map((ix) => ix.signers).flat()
-  // console.log('resolveAtaSigners', resolveAtaSigners)
-  // if (resolveAtaSigners) repayTradeSigners.push(...resolveAtaSigners)
-
-  //
-  // TODO: Dealing with SOL requires creating wrapped NATIVE_MINT account as pre-instruction,
-  //       then for post-ixs: unwrapped wSOL to SOL & closing it as post-instruction.
-  //
-
-  if (tokenMintAKey.equals(NATIVE_MINT) || tokenMintBKey.equals(NATIVE_MINT)) {
-    const newAccountKeypair = Keypair.generate()
-    const newAccountPubkey = newAccountKeypair.publicKey
-    console.log(newAccountPubkey.toBase58())
-
-    if (tokenMintAKey.equals(NATIVE_MINT)) tokenOwnerAccountA = newAccountPubkey
-    else tokenOwnerAccountB = newAccountPubkey
-
-    const createAccountInstruction = SystemProgram.createAccount({
-      fromPubkey: positionAuthority,
-      newAccountPubkey,
-      lamports: await connection.getMinimumBalanceForRentExemption(AccountLayout.span),
-      space: AccountLayout.span,
-      programId: TOKEN_PROGRAM_ID,
-    })
-
-    const initAccountInstruction = createInitializeAccountInstruction(
-      newAccountPubkey,
-      NATIVE_MINT,
-      positionAuthority
-    )
-
-    const instructions: TransactionInstruction[] = [createAccountInstruction, initAccountInstruction]
-
-    const blockhash = (await connection.getLatestBlockhash('confirmed')).blockhash
-    console.log('blockhash', blockhash)
-    const messageV0 = new TransactionMessage({
-      payerKey: positionAuthority,
-      recentBlockhash: blockhash,
-      instructions,
-    }).compileToV0Message()
-
-    // repayTradePreInstructions.push(createAccountInstruction, initAccountInstruction)
-    // repayTradeSigners.push(newAccountKeypair)
-    let transaction = new VersionedTransaction(messageV0)
-    transaction.sign([newAccountKeypair])
-    transaction = await wallet.signTransaction(transaction)
-
-    await connection.sendTransaction(transaction, { maxRetries: 5, skipPreflight: true })
+    tickArrayLower: tickArrayLowerKey,
+    tickArrayUpper: tickArrayUpperKey,
+    // sys
+    tokenProgram: TOKEN_PROGRAM_ID,
   }
-
-  // modify compute units (must come last)
-  repayTradePreInstructions.push(
-    ComputeBudgetProgram.setComputeUnitLimit({
-      units: 1_000_000,
-    })
-  )
-
-  console.log(repayTradePreInstructions)
-  console.log(tokenOwnerAccountA.toBase58())
 
   await program.methods
     .repayTradePosition(repayTradePositionParams)
     .accounts(repayTradePositionAccounts)
     .remainingAccounts(swapAccounts)
-    // .preInstructions(repayTradePreInstructions)
-    // .postInstructions(repayTradePostInstructions)
-    // .signers(repayTradeSigners)
+    .preInstructions([
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: 1_000_000,
+      })
+    ])
+    .rpc()
+
+  await program.methods
+    .closeTradePosition()
+    .accounts(closeTradePositionAccounts)
     .rpc()
 }

@@ -48,7 +48,7 @@ async function main() {
   const isTradeA2B = borrowA // swap USDC (B) to SOL (A)
 
   // const borrowAmount = new BN(100 * Math.pow(100, (borrowA ? mintA : mintB).decimals)) // 100 USDC
-  const borrowAmount = 25 // 100 USDC
+  const borrowAmount = 100 // 100 USDC
   const borrowAmountExpo = borrowAmount * Math.pow(10, mintB.decimals) // above scaled to decimal exponent
 
   const maxSlippage = Percentage.fromFraction(50, 100) // (50/100)% slippage
@@ -100,14 +100,10 @@ async function main() {
     positionAuthority
   )
 
-  // TODO: programatically find Ticks with enough liquidity for the trade
-  // const tickLowerIndex = -39104 // 20.03 USDC/SOL
-  // const tickUpperIndex = -37696 // 23.06 USDC/SOL
-
-  // RUN: ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze-ticks.ts
+  // RUN: yarn analyze:ticks
   // and find the ticks with enough liquidity_gross
-  const tickLowerIndex = -39616 // 1.90 USDC/HNT
-  const tickUpperIndex = -39104 // 2.00 USDC/HNT
+  const tickLowerIndex = -40960 // 1.74 USDC/HNT
+  const tickUpperIndex = -40192 // 1.83 USDC/HNT
 
   // NOTE: At the top end of the price range, tick calcuation is off therefore the results can be off
   const borrowAmountLiquidity = PoolUtil.estimateLiquidityFromTokenAmounts(

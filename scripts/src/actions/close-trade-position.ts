@@ -307,7 +307,7 @@ async function main() {
     // lower & upper tick index are retrieved from the position
   }
 
-  const closeLoanPositionAccounts = {
+  const closeTradePositionAccounts = {
     owner: positionAuthority,
     receiver: positionAuthority,
     globalpool: globalpoolKey,
@@ -349,16 +349,18 @@ async function main() {
     []
   ).buildAndExecute()
 
-//   await createTransactionChained(
-//     provider.connection,
-//     provider.wallet,
-//     [
-//       program.instruction.closeLoanPosition({
-//         accounts: closeLoanPositionAccounts,
-//       }),
-//     ],
-//     [] // positionMintKeypair
-//   ).buildAndExecute()
+  console.log(closeTradePositionAccounts)
+
+  await createTransactionChained(
+    provider.connection,
+    provider.wallet,
+    [
+      program.instruction.closeTradePosition({
+        accounts: closeTradePositionAccounts,
+      }),
+    ],
+    [] // positionMintKeypair
+  ).buildAndExecute()
 }
 
 main().catch((err) => {
