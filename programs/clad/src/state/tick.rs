@@ -35,12 +35,6 @@ impl Tick {
     /// # Parameters
     /// - `update` - An update object to update the values in this tick
     pub fn update(&mut self, update: &TickUpdate) {
-        msg!(
-            "updating tick with liquidity_net: {:?} / liquidity_gross: {:?} / liquidity_borrowed: {:?}",
-            update.liquidity_net,
-            update.liquidity_gross,
-            update.liquidity_borrowed,
-        );
         self.initialized = update.initialized;
         self.liquidity_net = update.liquidity_net;
         self.liquidity_gross = update.liquidity_gross;
@@ -284,11 +278,7 @@ impl TickArray {
         if offset < 0 {
             return Err(ErrorCode::TickNotFound.into());
         }
-        msg!(
-            "Updating tick {:?} (offset {:?})",
-            self.start_tick_index + (offset as i32 * tick_spacing as i32),
-            offset
-        );
+
         self.ticks.get_mut(offset as usize).unwrap().update(update);
 
         Ok(())

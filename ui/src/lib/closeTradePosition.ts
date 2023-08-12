@@ -76,13 +76,13 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
     positionAuthority
   )
 
-  let tokenOwnerAccountA = getAssociatedTokenAddressSync(
+  const tokenOwnerAccountA = getAssociatedTokenAddressSync(
     tokenMintAKey,
     positionAuthority,
     true
   )
 
-  let tokenOwnerAccountB = getAssociatedTokenAddressSync(
+  const tokenOwnerAccountB = getAssociatedTokenAddressSync(
     tokenMintBKey,
     positionAuthority,
     true
@@ -323,7 +323,9 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
         units: 1_000_000,
       })
     ])
-    .rpc()
+    .rpc({
+      commitment: 'processed',
+    })
 
   await program.methods
     .closeTradePosition()

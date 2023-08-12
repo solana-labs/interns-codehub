@@ -148,7 +148,7 @@ async function main() {
 
   const aToB = false // determines direction of tick array
 
-  const initArrayCount = 7 // 3 to left of, 3 to right of, and 1 array containing current tick
+  const initArrayCount = 17 // 8 to left of, 8 to right of, and 1 array containing current tick
   const currentTickArrayStartIndex = TickUtil.getStartTickIndex(
     initTickIndex,
     tickSpacing

@@ -83,7 +83,7 @@ export function SwapPoolBox(props: SwapPoolBoxProps) {
         program,
       })
 
-      dispatch(fetchGlobalpool({ key: globalpool._pubkey }))
+      dispatch(fetchGlobalpool({ key: globalpool._pubkey, ignoreCache: true })) // reload globalpool price
     } catch (err) {
       console.error(err)
     } finally {

@@ -147,9 +147,6 @@ pub fn repay_trade_position(
         (0, loan_token_swapped)
     };
 
-    // let outstanding_delta_a = repay_delta_a as i64 - borrowed_delta_a as i64;
-    // let outstanding_delta_b = repay_delta_b as i64 - borrowed_delta_b as i64;
-
     // This assumes the position has swapped all of loan token to the opposite (trade) token.
     let (mut available_delta_a, mut available_delta_b) = if is_borrow_a {
         (0, trade_token_amount + collateral_amount)
@@ -327,16 +324,20 @@ pub fn repay_trade_position(
         false, // doesn't matter since interest_amount = 0 (repaying, not borrowing)
     );
 
-    // NOTE: how should we update collateral amount left
-    // if is_borrow_a {
-    //     ctx.accounts
-    //         .position
-    //         .update_collateral_amount(leftover_token_b)?;
-    // } else {
-    //     ctx.accounts
-    //         .position
-    //         .update_collateral_amount(leftover_token_a)?;
-    // }
+    //
+    // Logic:
+    //
+    // Best case: trade position is in profit, and we give back the whole collateral.
+    //
+    // Worst case: trade position is in total loss, and we give back no collateral.
+
+    ctx.accounts
+        .position
+        .update_collateral_amount(if is_borrow_a {
+            leftover_token_b
+        } else {
+            leftover_token_a
+        });
 
     Ok(())
 }

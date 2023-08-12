@@ -54,11 +54,11 @@ pub fn calculate_modify_loan<'info>(
     // Note: Must check both the lower & upper tick's `liquidity_gross`.
     //
 
-    msg!("liquidity_delta: {}", liquidity_delta);
-    let lower = tick_lower.liquidity_gross;
-    let upper = tick_upper.liquidity_gross;
-    msg!("tick_lower.liquidity_gross: {}", lower);
-    msg!("tick_upper.liquidity_gross: {}", upper);
+    // msg!("liquidity_delta: {}", liquidity_delta);
+    // let lower = tick_lower.liquidity_gross;
+    // let upper = tick_upper.liquidity_gross;
+    // msg!("tick_lower.liquidity_gross: {}", lower);
+    // msg!("tick_upper.liquidity_gross: {}", upper);
     if liquidity_delta > 0 {
         let liquidity_delta_u128 = liquidity_delta.abs() as u128;
         if liquidity_delta_u128 > tick_lower.liquidity_gross

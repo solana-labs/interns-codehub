@@ -184,8 +184,6 @@ impl Globalpool {
         interest_amount: u64,
         is_token_fee_in_a: bool,
     ) {
-        msg!("update_after_loan liquidity_delta: {}", liquidity_delta);
-        msg!("update_after_loan interest_amount: {}", interest_amount);
         if interest_amount > 0 {
             let liquidity_available = if self.liquidity_available > 0 {
                 self.liquidity_available
@@ -214,6 +212,9 @@ impl Globalpool {
 
         // Update the amount AFTER interest amount modification (above)
         // liquidity_delta = borrowed (positive) or repaid (negative) amount of liquidity_u128
+        msg!("liquidity_delta: {}", liquidity_delta);
+        msg!("liquidity_available: {}", self.liquidity_available);
+        msg!("liquidity_borrowed: {}", self.liquidity_borrowed);
         self.liquidity_available =
             add_liquidity_delta(self.liquidity_available, -liquidity_delta).unwrap();
         self.liquidity_borrowed =

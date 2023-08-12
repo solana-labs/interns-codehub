@@ -1,11 +1,12 @@
 // Both trade & liquidity positions
 
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { AccountInfo, Connection, ParsedAccountData, PublicKey } from "@solana/web3.js"
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { AccountInfo, Connection, ParsedAccountData, PublicKey } from '@solana/web3.js'
 
-import { getAccountData } from "@/lib"
-import { UserLiquidityPosition, UserTradePosition } from "@/types/user"
-import { ParsableLiquidityPosition, ParsableTradePosition } from "@/types/parsing"
+import { getAccountData } from '@/lib'
+import { UserLiquidityPosition, UserTradePosition } from '@/types/user'
+import { ParsableLiquidityPosition, ParsableTradePosition } from '@/types/parsing'
+import { ZERO_BN } from '@/constants'
 
 enum PositionType {
   TRADE,
@@ -17,7 +18,11 @@ export async function getUserTradePositions(
   connection: Connection,
   programId: PublicKey,
 ) {
-  return getUserPositions<UserTradePosition>(user, PositionType.TRADE, connection, programId)
+  const tradePositions = getUserPositions<UserTradePosition>(user, PositionType.TRADE, connection, programId)
+  // skip trade positions with 0 collateral locked and 0 tokens swapped (ie. all withdrawn)
+  return (await tradePositions).filter((position) => {
+    return !position.data.collateralAmount.eq(ZERO_BN) || !position.data.loanTokenSwapped.eq(ZERO_BN)
+  })
 }
 
 export async function getUserLiquidityPositions(
