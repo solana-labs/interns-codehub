@@ -187,8 +187,17 @@ impl Globalpool {
         msg!("update_after_loan liquidity_delta: {}", liquidity_delta);
         msg!("update_after_loan interest_amount: {}", interest_amount);
         if interest_amount > 0 {
+            let liquidity_available = if self.liquidity_available > 0 {
+                self.liquidity_available
+            } else {
+                1 // If there's zero liquidity in the pool (or when there has been ZERO trade in the pool),
+                  // globalpool.liquidity_available is zero, so we need to set to 1 to avoid division by zero
+                  // when calculating the interest fee accrued from lending out.
+                  // This should never happen in practice (swaps happen), but we need to handle it just in case.
+            };
+
             let accrued_interest_fee =
-                ((interest_amount as u128) << Q64_RESOLUTION) / self.liquidity_available;
+                ((interest_amount as u128) << Q64_RESOLUTION) / liquidity_available;
 
             if is_token_fee_in_a {
                 self.fee_growth_global_a = self

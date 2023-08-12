@@ -113,6 +113,10 @@ pub mod clad {
         return instructions::repay_trade_position(ctx, &params);
     }
 
+    pub fn close_trade_position(ctx: Context<CloseTradePosition>) -> Result<()> {
+        return instructions::close_trade_position(ctx);
+    }
+
     pub fn liquidate_trade_position(
         ctx: Context<LiquidateTradePosition>,
         params: LiquidateTradePositionParams,
@@ -155,12 +159,12 @@ pub mod clad {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
-    // pub fn decrease_liquidity(
-    //     ctx: Context<ModifyLiquidity>,
-    //     params: DecreaseLiquidityParams,
-    // ) -> Result<()> {
-    //     return instructions::decrease_liquidity(ctx, &params);
-    // }
+    pub fn decrease_liquidity(
+        ctx: Context<ModifyLiquidity>,
+        params: DecreaseLiquidityParams,
+    ) -> Result<()> {
+        return instructions::decrease_liquidity(ctx, &params);
+    }
 
     /// Collect fees accrued for this position.
     ///

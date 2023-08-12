@@ -202,6 +202,7 @@ pub fn open_trade_position<'info>(
         &ctx.accounts.tick_array_upper,
         liquidity_delta,
         token_borrow_amount as i64,
+        true,
     )?;
 
     //
@@ -438,8 +439,8 @@ pub fn open_trade_position<'info>(
 
     ctx.accounts.globalpool.update_after_loan(
         liquidity_delta,
-        prorated_interest_amount, 
-        is_interest_fee_in_a
+        prorated_interest_amount,
+        is_interest_fee_in_a,
     );
 
     Ok(())

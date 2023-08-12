@@ -26,6 +26,7 @@ pub fn calculate_modify_loan<'info>(
     tick_array_upper: &AccountLoader<'info, TickArray>,
     liquidity_delta: i128,
     borrowed_amount: i64,
+    is_opening: bool,
 ) -> Result<ModifyLoanUpdate> {
     // Disallow only updating position fee growth when position has zero liquidity
     if borrowed_amount == 0 {
@@ -53,6 +54,11 @@ pub fn calculate_modify_loan<'info>(
     // Note: Must check both the lower & upper tick's `liquidity_gross`.
     //
 
+    msg!("liquidity_delta: {}", liquidity_delta);
+    let lower = tick_lower.liquidity_gross;
+    let upper = tick_upper.liquidity_gross;
+    msg!("tick_lower.liquidity_gross: {}", lower);
+    msg!("tick_upper.liquidity_gross: {}", upper);
     if liquidity_delta > 0 {
         let liquidity_delta_u128 = liquidity_delta.abs() as u128;
         if liquidity_delta_u128 > tick_lower.liquidity_gross
@@ -85,12 +91,17 @@ pub fn calculate_modify_loan<'info>(
         true,
     )?;
 
-    let loan_interest_annual_bps = _calculate_loan_interest_rate_annual(
-        tick_lower_update.liquidity_gross,
-        tick_upper_update.liquidity_gross,
-        liquidity_delta as u128,
-        liquidity_delta > 0, // ref `liquidity_manager.rs#L170`
-    )?;
+    let loan_interest_annual_bps: u16;
+    if is_opening {
+        loan_interest_annual_bps = _calculate_loan_interest_rate_annual(
+            tick_lower_update.liquidity_gross,
+            tick_upper_update.liquidity_gross,
+            liquidity_delta as u128,
+            liquidity_delta > 0, // ref `liquidity_manager.rs#L170`
+        )?;
+    } else {
+        loan_interest_annual_bps = 1;
+    }
 
     //
     // Build TradePositionUpdate
@@ -245,6 +256,8 @@ pub fn calculate_collateral(
         )
     }?;
 
+    msg!("worst_case_value: {}", worst_case_value);
+    msg!("swapped_amount_out: {}", swapped_amount_out);
     let collateral_amount = worst_case_value.checked_sub(swapped_amount_out).unwrap();
 
     Ok(collateral_amount)

@@ -12,6 +12,7 @@ use {
     anchor_lang::prelude::*,
 };
 
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct DecreaseLiquidityParams {
     liquidity_amount: u128,
     token_min_a: u64,

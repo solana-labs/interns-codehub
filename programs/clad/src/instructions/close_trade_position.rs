@@ -10,13 +10,16 @@ use {
     },
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Mint, Token, TokenAccount},
+    solana_program::program::invoke_signed,
+    spl_token::instruction::burn_checked,
 };
 
 #[derive(Accounts)]
-pub struct CloseLoanPosition<'info> {
+pub struct CloseTradePosition<'info> {
     #[account(mut)]
-    pub owner: Signer<'info>, // position_authority
+    pub owner: Signer<'info>,
 
+    #[account(mut)]
     pub globalpool: Box<Account<'info, Globalpool>>,
 
     /// CHECK: safe, for receiving rent only
@@ -71,7 +74,7 @@ pub struct CloseLoanPosition<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
+pub fn close_trade_position(ctx: Context<CloseTradePosition>) -> Result<()> {
     verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
 
     if !TradePosition::is_position_empty(&ctx.accounts.position) {
@@ -89,6 +92,7 @@ pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
         &ctx.accounts.tick_array_upper,
         -(liquidity_borrowed as i128),
         -(loan_token_available as i64),
+        false,
     )?;
 
     liquidity_manager::sync_modify_liquidity_values_for_loan(
@@ -123,15 +127,19 @@ pub fn close_loan_position(ctx: Context<CloseLoanPosition>) -> Result<()> {
         collateral_amount,
     )?;
 
+    ctx.accounts.position.collateral_amount = 0; // nothing left
+
     //
     // Burn loan position token
     //
 
-    burn_and_close_user_position_token(
-        &ctx.accounts.owner,
-        &ctx.accounts.receiver,
-        &ctx.accounts.position_mint,
-        &ctx.accounts.position_token_account,
-        &ctx.accounts.token_program,
-    )
+    // burn_and_close_user_position_token(
+    //     &ctx.accounts.owner,
+    //     &ctx.accounts.receiver,
+    //     &ctx.accounts.position_mint,
+    //     &ctx.accounts.position_token_account,
+    //     &ctx.accounts.token_program,
+    // )
+
+    Ok(())
 }
