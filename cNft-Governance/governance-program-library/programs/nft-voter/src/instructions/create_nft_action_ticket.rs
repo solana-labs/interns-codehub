@@ -74,13 +74,6 @@ pub fn create_nft_action_ticket<'info>(
             weight: nft_vote_weight,
             expiry: Some(Clock::get()?.slot + 10),
         };
-        // CHECK: if this is this should not be a function, but merge the code into this instruction
-        // make this instruction the only method that can serizlize the data
-        // so in cast_nft_vote can check if the data is all zero
-        // serialize_nft_action_ticket_account(
-        //     &serialized_data.try_to_vec()?,
-        //     &nft_action_ticket_info
-        // )?;
 
         nft_action_ticket_info.data.borrow_mut().copy_from_slice(&serialized_data.try_to_vec()?);
     }

@@ -6,19 +6,28 @@ use spl_governance_tools::account::{ get_account_data, AccountMaxSize };
 
 pub const NFT_ACTION_TICKET_SIZE: usize = DISCRIMINATOR_SIZE + 32 + 32 + 32 + 8 + 1 + 8;
 
-// maybe should moce the nft_owner as part of the seeds
-// so that if the owner transfer the nft to new owner, otherwise
-// require!(data.nft_owner == governing_token_owner, NftVoterError::InvalidNftTicket); will fail
-// and instead to store nft_owner or weight, perhaps should store to-be-verified data?
-// or maybe not? cuz the no-matter the sybil attack exist that nft-owner keep transfer and vot
-// nft_vote_record.data_is_empty() will still block the second vote with the same nft
+/// NFT ticket indicating the given NFT can be considered as a voting power
+/// The PDA of the record is ["nft-{action}-ticket",registrar,owner,nft_mint]
+/// Add expiry can ensure that the ticket is only valid in a period of time.
 #[derive(Clone, Debug, PartialEq, BorshDeserialize, BorshSerialize, BorshSchema)]
 pub struct NftActionTicket {
+    /// sha256("account:NftActionTicket")
     pub account_discriminator: [u8; 8],
+
+    /// NFT ticket for which registrar to use.
     pub registrar: Pubkey,
+
+    /// The voter who owns this ticket
     pub governing_token_owner: Pubkey,
+
+    /// The mint address of the NFT which pass verification
     pub nft_mint: Pubkey,
+
+    /// The weight for the NFT, which is configured in the registrar's collections.
     pub weight: u64,
+
+    /// The expiration time for the NFT, which is the created slot + 10.
+    /// Is 10 a good number?
     pub expiry: Option<u64>,
 }
 

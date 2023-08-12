@@ -8,6 +8,8 @@ use solana_program::program::invoke_signed;
 use solana_program::msg;
 use crate::state::*;
 
+/// create nft action ticket for given nft mint that pass the verification.
+/// The account address will be derived from the given seeds = [b"nft-{action}-ticket,  registrar, owner, nft_mint].
 pub fn create_nft_action_ticket_account<'a>(
     payer: &AccountInfo<'a>,
     account_info: &AccountInfo<'a>,
@@ -62,6 +64,9 @@ pub fn create_nft_action_ticket_account<'a>(
     Ok(())
 }
 
+/// this function will serialize the given nft action ticket data and store it in the given account.
+/// Should be removed? so the ticket can just be created w/o serialized from other programs?
+/// The we can check if the PDA is serialized correctly.
 pub fn serialize_nft_action_ticket_account(
     serialized_data: &Vec<u8>,
     account_info: &AccountInfo
@@ -70,6 +75,7 @@ pub fn serialize_nft_action_ticket_account(
     Ok(())
 }
 
+/// Burn the PDA ticket account after executing the action successfully.
 pub fn close_nft_action_ticket_account(
     account_info: &AccountInfo,
     beneficiary_info: &AccountInfo

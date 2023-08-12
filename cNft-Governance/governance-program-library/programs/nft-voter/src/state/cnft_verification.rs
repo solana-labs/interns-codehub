@@ -12,7 +12,12 @@ use spl_account_compression::cpi::accounts::VerifyLeaf;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
 pub struct Collection {
-    pub verified: bool,
+    /// the key to check if a NFT is verified by the collection.
+    /// maybe this should forced to be true on chain instead of providing by client.
+    /// TODO: fix it.
+    pub verified: bool, //
+
+    /// NFT collection address.
     pub key: Pubkey,
 }
 
@@ -26,13 +31,14 @@ impl Default for Collection {
 }
 
 impl Collection {
+    /// Convert the Collection to MetaplexCollection to match mpl-bubblegum program.
     pub fn to_bubblegum(&self) -> MetaplexCollection {
         MetaplexCollection {
             verified: self.verified,
             key: self.key,
         }
     }
-
+    /// Convert the MetaplexCollection to Collection.
     pub fn from_bubblegum(collection: &MetaplexCollection) -> Self {
         Self {
             verified: collection.verified,
@@ -76,6 +82,10 @@ impl Creator {
     }
 }
 
+/// CompressedNftAsset is the minimal data needed to verify a leaf in the merkle tree.
+/// These parameters is also the only data we can get from Helius DAS API.
+/// Why just not provide data_hash from client?
+/// Since by just given data_hash, we can verify the ownership but no the collection.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
 pub struct CompressedNftAsset {
     pub name: String,
@@ -96,6 +106,7 @@ pub struct CompressedNftAsset {
 }
 
 impl CompressedNftAsset {
+    /// Convert the CompressedNftAsset to MetadataArgs to match mpl-bubblegum program.
     pub fn to_metadata_args(&self) -> MetadataArgs {
         let mut creators = vec![];
         for creator in self.creators.clone().iter() {
@@ -118,6 +129,7 @@ impl CompressedNftAsset {
     }
 }
 
+/// Verify the given compressed nft asset with the given proofs.
 pub fn verify_compressed_nft<'info>(
     tree_account: &AccountInfo<'info>,
     asset_id: &Pubkey,

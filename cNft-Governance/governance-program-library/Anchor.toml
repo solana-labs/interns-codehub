@@ -6,7 +6,6 @@ solana_version = "1.14.16"
 seeds = false
 
 [programs.localnet]
-cnft-voter = "GcNftjiDYoAZpMRAQrYx51GJp7tEhSgMKqSfR4zeoCFV"
 nft-voter="GnFtjPodvrUFr2UYVFPUZUE6sMVoMWEJazd6NZZDkAXd"
 parallel-tree="pmtcFF8oVLWBK2EKuGSLJtRbePDNNYyvqhEJ6cKBhMH"
 
