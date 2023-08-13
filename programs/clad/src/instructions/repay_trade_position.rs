@@ -6,7 +6,7 @@ use {
             swap_manager::execute_jupiter_swap_for_globalpool,
         },
         state::*,
-        util::verify_position_authority,
+        util::{to_timestamp_u64, transfer_from_vault_to_owner, verify_position_authority},
     },
     anchor_lang::prelude::*,
     anchor_spl::{
@@ -19,7 +19,10 @@ use {
 #[instruction(params: RepayTradePositionParams)]
 pub struct RepayTradePosition<'info> {
     #[account(mut)]
-    pub owner: Signer<'info>,
+    pub liquidator: Signer<'info>,
+
+    /// CHECK: owner is the position's authority
+    pub owner: AccountInfo<'info>,
 
     #[account(mut)]
     pub globalpool: Box<Account<'info, Globalpool>>,
@@ -33,8 +36,19 @@ pub struct RepayTradePosition<'info> {
 	)]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_a.mint == globalpool.token_mint_a)]
+    #[account(
+        mut,
+        associated_token::mint = globalpool.token_mint_a,
+        associated_token::authority = owner,
+    )]
     pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        associated_token::mint = globalpool.token_mint_a,
+        associated_token::authority = liquidator,
+    )]
+    pub token_liquidator_account_a: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, address = globalpool.token_vault_a)]
     pub token_vault_a: Box<Account<'info, TokenAccount>>,
@@ -42,8 +56,19 @@ pub struct RepayTradePosition<'info> {
     #[account(address = globalpool.token_mint_a)]
     pub token_mint_a: Box<Account<'info, Mint>>,
 
-    #[account(mut, constraint = token_owner_account_b.mint == globalpool.token_mint_b)]
+    #[account(
+        mut,
+        associated_token::mint = globalpool.token_mint_b,
+        associated_token::authority = owner,
+    )]
     pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        associated_token::mint = globalpool.token_mint_b,
+        associated_token::authority = liquidator,
+    )]
+    pub token_liquidator_account_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, address = globalpool.token_vault_b)]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
@@ -55,7 +80,6 @@ pub struct RepayTradePosition<'info> {
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -67,7 +91,23 @@ pub fn repay_trade_position(
     ctx: Context<RepayTradePosition>,
     params: &RepayTradePositionParams,
 ) -> Result<()> {
+    let is_liquidating = ctx.accounts.liquidator.key != ctx.accounts.owner.key;
     verify_position_authority(&ctx.accounts.position_token_account, &ctx.accounts.owner)?;
+
+    // if is_liquidating, then make sure the position has matured
+    if is_liquidating {
+        let current_timestamp = to_timestamp_u64(Clock::get()?.unix_timestamp).unwrap();
+        let position_maturity_timestamp = ctx
+            .accounts
+            .position
+            .open_time
+            .checked_add(ctx.accounts.position.duration)
+            .unwrap();
+        require!(
+            current_timestamp >= position_maturity_timestamp,
+            errors::ErrorCode::LoanNotMatured
+        );
+    }
 
     //
     // WARNING:
@@ -325,19 +365,76 @@ pub fn repay_trade_position(
     );
 
     //
-    // Logic:
+    // Logic for calculating the amount of collateral to return to the trader & liquidator, if any,
+    // as well as profit for trader, if any.
     //
     // Best case: trade position is in profit, and we give back the whole collateral.
-    //
     // Worst case: trade position is in total loss, and we give back no collateral.
+    //
+    // Note: if liquidator is liquidating, then give 10% of the leftover collateral to the liquidator.
+
+    let mut collateral_to_return;
+    let mut collateral_to_liquidator = 0;
+    let profit_to_return;
+
+    if is_borrow_a {
+        collateral_to_return = leftover_token_b;
+        profit_to_return = leftover_token_a;
+    } else {
+        collateral_to_return = leftover_token_a;
+        profit_to_return = leftover_token_b;
+    }
+
+    if is_liquidating {
+        collateral_to_liquidator = collateral_to_return / 10;
+        collateral_to_return -= collateral_to_liquidator;
+    }
 
     ctx.accounts
         .position
-        .update_collateral_amount(if is_borrow_a {
-            leftover_token_b
+        .update_collateral_amount(collateral_to_return);
+
+    if collateral_to_liquidator > 0 {
+        let token_vault;
+        let liquidator_token_account;
+
+        if is_borrow_a {
+            token_vault = &ctx.accounts.token_vault_b;
+            liquidator_token_account = &ctx.accounts.token_liquidator_account_b;
         } else {
-            leftover_token_a
-        });
+            token_vault = &ctx.accounts.token_vault_a;
+            liquidator_token_account = &ctx.accounts.token_liquidator_account_a;
+        }
+
+        transfer_from_vault_to_owner(
+            &ctx.accounts.globalpool,
+            token_vault,
+            liquidator_token_account,
+            &ctx.accounts.token_program,
+            collateral_to_liquidator,
+        )?;
+    }
+
+    if profit_to_return > 0 {
+        let token_vault;
+        let owner_token_account;
+
+        if is_borrow_a {
+            token_vault = &ctx.accounts.token_vault_a;
+            owner_token_account = &ctx.accounts.token_owner_account_a;
+        } else {
+            token_vault = &ctx.accounts.token_vault_b;
+            owner_token_account = &ctx.accounts.token_owner_account_b;
+        }
+
+        transfer_from_vault_to_owner(
+            &ctx.accounts.globalpool,
+            token_vault,
+            owner_token_account,
+            &ctx.accounts.token_program,
+            profit_to_return,
+        )?;
+    }
 
     Ok(())
 }

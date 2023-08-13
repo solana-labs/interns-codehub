@@ -1,7 +1,7 @@
 use {
     crate::errors::ErrorCode,
     anchor_lang::{
-        prelude::{AccountInfo, Pubkey, Signer, *},
+        prelude::{AccountInfo, Pubkey, *},
         ToAccountInfo,
     },
     anchor_spl::token::TokenAccount,
@@ -17,7 +17,7 @@ use {
 /// * `position_authority`
 pub fn verify_position_authority<'info>(
     position_token_account: &TokenAccount,
-    position_authority: &Signer<'info>,
+    position_authority: &AccountInfo<'info>, // &Signer<'info>,
 ) -> Result<()> {
     // Check token authority using validate_owner method...
     match position_token_account.delegate {
@@ -64,10 +64,7 @@ pub fn sort_token_amount_for_loan<'info>(
     token_vault_b: &'info TokenAccount,
     is_borrow_a: bool,
 ) -> (u64, u64) {
-    let (borrowed_token_vault, collateral_token_vault) = sort_token_vault_for_loan(
-        token_vault_a,
-        token_vault_b,
-        is_borrow_a,
-    );
+    let (borrowed_token_vault, collateral_token_vault) =
+        sort_token_vault_for_loan(token_vault_a, token_vault_b, is_borrow_a);
     (borrowed_token_vault.amount, collateral_token_vault.amount)
 }

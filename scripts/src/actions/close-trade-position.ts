@@ -283,6 +283,7 @@ async function main() {
 
   const repayTradePositionAccounts = {
     owner: positionAuthority,
+    liquidator: positionAuthority, // closing self.
     globalpool: globalpoolKey,
 
     position: positionKey,
@@ -292,6 +293,8 @@ async function main() {
     tokenOwnerAccountB,
     tokenVaultA,
     tokenVaultB,
+    tokenLiquidatorAccountA: tokenOwnerAccountA, // closing self.
+    tokenLiquidatorAccountB: tokenOwnerAccountB, // closing self.
     tokenMintA: tokenMintAKey,
     tokenMintB: tokenMintBKey,
 
@@ -299,7 +302,6 @@ async function main() {
     tokenProgram: TOKEN_PROGRAM_ID,
     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
     systemProgram: SystemProgram.programId,
-    rent: SYSVAR_RENT_PUBKEY,
   }
 
   const repayTradePositionParams = {
@@ -335,6 +337,7 @@ async function main() {
   const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
     units: 1_000_000,
   })
+  console.log(repayTradePositionAccounts)
 
   await createTransactionChained(
     provider.connection,
@@ -348,8 +351,6 @@ async function main() {
     ],
     []
   ).buildAndExecute()
-
-  console.log(closeTradePositionAccounts)
 
   await createTransactionChained(
     provider.connection,

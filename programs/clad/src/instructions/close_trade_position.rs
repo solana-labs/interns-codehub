@@ -4,14 +4,13 @@ use {
         manager::{liquidity_manager, loan_manager},
         state::*,
         util::{
-            burn_and_close_user_position_token, transfer_from_vault_to_owner,
+            // burn_and_close_user_position_token,
+            transfer_from_vault_to_owner,
             verify_position_authority,
         },
     },
     anchor_lang::prelude::*,
     anchor_spl::token::{self, Mint, Token, TokenAccount},
-    solana_program::program::invoke_signed,
-    spl_token::instruction::burn_checked,
 };
 
 #[derive(Accounts)]
