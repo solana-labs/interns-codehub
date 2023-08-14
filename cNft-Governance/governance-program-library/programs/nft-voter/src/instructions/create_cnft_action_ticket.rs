@@ -68,15 +68,20 @@ pub fn create_cnft_action_ticket<'info>(
             compression_program
         )?;
 
-        create_nft_action_ticket_account(
-            payer,
-            &cnft_action_ticket_info,
-            &registrar.key().clone(),
-            &governing_token_owner,
-            &asset_id,
-            &ticket_type,
-            system_program
-        )?;
+        // if the ticket PDA account doesn't exist, create it
+        if cnft_action_ticket_info.data_is_empty() {
+            create_nft_action_ticket_account(
+                payer,
+                &cnft_action_ticket_info,
+                &registrar.key().clone(),
+                &governing_token_owner,
+                &asset_id,
+                &ticket_type,
+                system_program
+            )?;
+        }
+
+        // otherwise, update the ticket expiry to extend to the time usage of the ticket
         let serialized_data = NftActionTicket {
             account_discriminator: NftActionTicket::ACCOUNT_DISCRIMINATOR,
             registrar: registrar.key().clone(),
