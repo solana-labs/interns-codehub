@@ -273,6 +273,7 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
 
   const repayTradePositionAccounts = {
     owner: positionAuthority,
+    liquidator: positionAuthority, // self closing
     globalpool: globalpoolKey,
     position: positionKey,
     positionTokenAccount,
@@ -283,12 +284,13 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
     tokenVaultB,
     tokenMintA: tokenMintAKey,
     tokenMintB: tokenMintBKey,
+    tokenLiquidatorAccountA: tokenOwnerAccountA, // self closing
+    tokenLiquidatorAccountB: tokenOwnerAccountB, // self closing
 
     // sys
     tokenProgram: TOKEN_PROGRAM_ID,
     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
     systemProgram: SystemProgram.programId,
-    rent: SYSVAR_RENT_PUBKEY,
   }
 
   const repayTradePositionParams = { swapInstructionData }

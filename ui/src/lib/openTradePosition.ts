@@ -35,6 +35,7 @@ import { ExpirableGlobalpoolData } from '@/slices/globalpool'
 export type OpenTradePositionParams = {
   tickLowerIndex: number,
   tickUpperIndex: number,
+  maxSlippageBps: number,
   borrowAmount: number, // token amounts to borrow (either Token A or B; not liquidity amount)
   borrowTokenDecimals: number, // decimal exponent of borrow token
   loanDuration: number, // loan duration in seconds
@@ -49,6 +50,7 @@ export async function openTradePosition(params: OpenTradePositionParams) {
   const {
     tickLowerIndex,
     tickUpperIndex,
+    maxSlippageBps,
     borrowAmount,
     borrowTokenDecimals,
     loanDuration,
@@ -151,7 +153,7 @@ export async function openTradePosition(params: OpenTradePositionParams) {
       tokenA: tokenMintAKey,
       tokenB: tokenMintBKey,
       amount: borrowAmountExpo, // input token amount scaled to decimal exponent (& NOT in liquidity amount)
-      slippageBps: 30, // 0.3%
+      slippageBps: maxSlippageBps,
       feeBps: 0.0,
     },
     jupiter

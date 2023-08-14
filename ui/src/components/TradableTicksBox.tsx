@@ -51,8 +51,11 @@ export function TradableTicksBox(props: TradableTicksBoxProps) {
               const tickPrice = tickToPrice(tick.tickIndex, baseDecimals, quoteDecimals)
 
               const decimalExpo = new BN(10 ** (isTokenA ? baseDecimals : quoteDecimals))
-              const lowerTick = isTokenA ? currentTick : tick.tickIndex
-              const upperTick = isTokenA ? tick.tickIndex : currentTick
+              const lowerTick = isTokenA ? currentTick + 1 : tick.tickIndex
+              const upperTick = isTokenA ? tick.tickIndex : currentTick - 1
+              console.log('lowerTick', lowerTick)
+              console.log('currentTick', currentTick)
+              console.log('upperTick', upperTick)
 
               const calcGross = getTokenAmountsFromLiquidity(
                 tick.liquidityGross,

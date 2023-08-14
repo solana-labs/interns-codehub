@@ -25,6 +25,7 @@ export function getTokenAmountsFromLiquidity(
   const _upperPrice = new Decimal(upperSqrtPrice.toString())
 
   let tokenA, tokenB
+  console.log(lowerTick, upperTick, currentSqrtPrice.lt(lowerSqrtPrice), currentSqrtPrice.gte(upperSqrtPrice))
   if (currentSqrtPrice.lt(lowerSqrtPrice)) {
     // x = L * (pb - pa) / (pa * pb)
     tokenA = MathUtil.toX64_Decimal(_liquidity)

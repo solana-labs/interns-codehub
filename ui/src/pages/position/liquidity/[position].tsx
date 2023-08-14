@@ -13,7 +13,10 @@ import { useAppDispatch, useAppSelector, useCladProgram, useTokens } from '@/hoo
 import { closeLiquidityPosition, sortTokenByQuotePriority } from '@/lib'
 import { fetchGlobalpool, selectGlobalpool } from '@/slices/globalpool'
 import { selectLiquidityPosition } from '@/slices/liquidityPosition'
-import { formatNumber, isBase58, tickToPrice } from '@/utils'
+import { formatNumber, getTokenAmountsFromLiquidity, isBase58, numScaledFromDecimals, tickToPrice } from '@/utils'
+import { PriceMath } from '@orca-so/whirlpools-sdk'
+import { gl } from 'date-fns/locale'
+import Decimal from 'decimal.js'
 
 export default function LiquidityPosition() {
   const dispatch = useAppDispatch()
@@ -40,11 +43,26 @@ export default function LiquidityPosition() {
   const [tickSpacing, setTickSpacing] = useState<number>(64)
   const [currentPoolTick, setCurrentPoolTick] = useState<number>(0)
 
+  const tokenAmounts = useMemo(() => {
+    if (!position || !globalpool || !baseToken || !quoteToken) return ['0', '0']
+
+    const currentTick = globalpool.tickCurrentIndex
+
+    const amounts = getTokenAmountsFromLiquidity(
+      position.data.liquidity,
+      PriceMath.tickIndexToSqrtPriceX64(currentTick),
+      position.data.tickLowerIndex,
+      position.data.tickUpperIndex,
+      position.data.tickUpperIndex <= currentTick
+    )
+
+    const tokenAmountA = numScaledFromDecimals(amounts.tokenA, baseToken.decimals || 9)
+    const tokenAmountB = numScaledFromDecimals(amounts.tokenB, quoteToken.decimals || 9)
+    return [tokenAmountA, tokenAmountB]
+  }, [position, globalpool, baseToken, quoteToken])
+
   const closePositionHandler = useCallback(async () => {
     if (!connection || !position || !globalpool || !wallet || !program) return
-
-    console.log('close position!')
-    console.log('position authority', wallet.publicKey.toBase58())
 
     try {
       await closeLiquidityPosition({
@@ -82,9 +100,6 @@ export default function LiquidityPosition() {
     )
   }
 
-  console.log('position', position)
-  console.log('globalpool', globalpool)
-  console.log(baseToken, quoteToken)
   if (!globalpool || !position || !baseToken || !quoteToken) {
     console.error('position not found')
     // router.push('/position')
@@ -143,7 +158,16 @@ export default function LiquidityPosition() {
             <Box py={1} borderBottom="1px solid #ccc">
               <Typography variant="body1">Liquidity</Typography>
               <Typography variant="body1" fontWeight="bold">
-                {position.data.liquidity.toString()}
+                {formatNumber(position.data.liquidity.toString())}
+              </Typography>
+            </Box>
+            <Box py={1} borderBottom="1px solid #ccc">
+              <Typography variant="body1">Token Locked</Typography>
+              <Typography variant="body1" fontWeight="bold">
+                {formatNumber(tokenAmounts[0] || 0)} {baseToken.symbol}
+              </Typography>
+              <Typography variant="body1" fontWeight="bold">
+                {formatNumber(tokenAmounts[1] || 0)} {quoteToken.symbol}
               </Typography>
             </Box>
           </ShadowedBox>

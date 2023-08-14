@@ -53,10 +53,20 @@ filename = "scripts/accounts/fida.json"
 address = "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux"
 filename = "scripts/accounts/hnt.json"
 
-# Modified IOT (mint authority set to local user)
+# Modified RAY (mint authority set to local user)
 [[test.validator.account]]
-address = "iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns"
-filename = "scripts/accounts/iot.json"
+address = "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R"
+filename = "scripts/accounts/ray.json"
+
+# Modified MNGO (mint authority set to local user)
+[[test.validator.account]]
+address = "MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac"
+filename = "scripts/accounts/mngo.json"
+
+# Modified ORCA (mint authority set to local user)
+[[test.validator.account]]
+address = "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE"
+filename = "scripts/accounts/orca.json"
 
 # Pyth Oracle
 [[test.validator.clone]]

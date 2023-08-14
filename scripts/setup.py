@@ -22,7 +22,9 @@ list = {
 	'bonk': 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
 	'fida': 'EchesyfXePKdLtoiZSL8pBe8Myagyy8ZRqsACNCFGnvp', # Bonfida
 	'hnt': 'hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux', # Helium HNT
-	'iot': 'iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns', # Helium IOT
+	'ray': '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', # Raydium DAO token
+	'mngo': 'MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac', # Mango DAO token
+	'orca': 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE', # Orca DAO token
 }
 
 for symbol, address in list.items():

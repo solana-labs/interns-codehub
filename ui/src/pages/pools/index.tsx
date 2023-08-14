@@ -1,6 +1,7 @@
-import { Box, Container, Typography } from '@mui/material'
+import { Box, Container, Stack, Typography } from '@mui/material'
 import { Token } from '@solflare-wallet/utl-sdk'
 import { useMemo } from 'react'
+import Image from 'next/image'
 
 import { ShadowedBox } from '@/components/ShadowedBox'
 import { useAppSelector } from '@/hooks'
@@ -34,12 +35,21 @@ function PoolPreview(props: PoolPreviewProps) {
   const quoteDecimals = quoteToken.decimals || 9
 
   return (
-    <Box maxWidth={300} p={2}>
+    <Box width={{ xs: '100%', md: '33.3333%' }} p={2} display="inline-block">
       <ShadowedBox>
-        <Typography variant="h6" fontWeight="bold">{truncatedAddress(globalpoolKey)}</Typography>
-        <Typography variant="body1" pt={1}>Fee: {globalpool.feeRate / 100}%</Typography>
-        <Typography variant="body1" pt={1}>Token A: {baseToken.symbol} ({truncatedAddress(baseToken.address)})</Typography>
-        <Typography variant="body1" pt={1}>Token B: {quoteToken.symbol} ({truncatedAddress(quoteToken.address)})</Typography>
+        <Stack direction="row" spacing={2} pb={1}>
+          <Image src={baseToken.logoURI || ''} alt={baseToken.symbol} width={40} height={40} />
+          <Image src={quoteToken.logoURI || ''} alt={quoteToken.symbol} width={40} height={40} />
+        </Stack>
+        <Typography variant="h6" fontWeight="bold">{baseToken.symbol}/{quoteToken.symbol}</Typography>
+        <Typography variant="body1" pt={1}>Pool: {truncatedAddress(globalpoolKey)}</Typography>
+        <Typography variant="body1" pt={1}>Fee: {globalpool.feeRate / 10000}%</Typography>
+        <Box>
+          <Typography variant="body1" pt={1}>Token A: {baseToken.symbol} ({truncatedAddress(baseToken.address)})</Typography>
+        </Box>
+        <Box>
+          <Typography variant="body1" pt={1}>Token B: {quoteToken.symbol} ({truncatedAddress(quoteToken.address)})</Typography>
+        </Box>
         <Typography variant="body1" pt={1}>Tick Spacing: {globalpool.tickSpacing}</Typography>
         <Typography variant="body1" pt={1}>Current Tick: {globalpool.tickCurrentIndex}</Typography>
         <Typography variant="body1" pt={1}>Current Price: {formatNumber(tickToPrice(globalpool.tickCurrentIndex, baseDecimals, quoteDecimals))}</Typography>

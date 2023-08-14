@@ -1125,7 +1125,7 @@
   dependencies:
     buffer "^6.0.1"
 
-"@pythnetwork/client@^2.5.1", "@pythnetwork/client@^2.8.0":
+"@pythnetwork/client@^2.19.0", "@pythnetwork/client@^2.5.1", "@pythnetwork/client@^2.8.0":
   version "2.19.0"
   resolved "https://registry.yarnpkg.com/@pythnetwork/client/-/client-2.19.0.tgz#4b3b4fccb402d93ff00c01beec633e6f2bac94fe"
   integrity sha512-0VSQ0NqBOa5EtloXbOVYZ6Wpu8CLP3oaOKVTaUMSX/HXbB00S6G+xdwF7stxo6emgrAMopotx3icEVug5Lpomg==

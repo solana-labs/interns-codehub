@@ -215,10 +215,13 @@ impl Globalpool {
         msg!("liquidity_delta: {}", liquidity_delta);
         msg!("liquidity_available: {}", self.liquidity_available);
         msg!("liquidity_borrowed: {}", self.liquidity_borrowed);
-        self.liquidity_available =
-            add_liquidity_delta(self.liquidity_available, -liquidity_delta).unwrap();
-        self.liquidity_borrowed =
-            add_liquidity_delta(self.liquidity_borrowed, liquidity_delta).unwrap();
+
+        // TODO: Only add/sub delta if it's in the same tick array as the current tick index (where liquidity_available is calculated)
+
+        // self.liquidity_available =
+        //     add_liquidity_delta(self.liquidity_available, -liquidity_delta).unwrap();
+        // self.liquidity_borrowed =
+        //     add_liquidity_delta(self.liquidity_borrowed, liquidity_delta).unwrap();
     }
 
     pub fn reset_protocol_fees_owed(&mut self) {
