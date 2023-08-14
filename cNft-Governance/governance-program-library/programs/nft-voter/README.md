@@ -9,7 +9,6 @@ token_program_version: TokenProgramVersion::Original,
 token_standard: Some(TokenStandard::NonFungible),
 ```
 
-
 [slide](https://docs.google.com/presentation/d/1VWgNDAyS3RxijzVQWLZHpuxXdZ8YBMuZLIOCxHFEePU/edit?usp=sharing)
 
 ## Features 🌟
@@ -28,6 +27,9 @@ token_standard: Some(TokenStandard::NonFungible),
 4. *Execute Voter Action* ⚙️
 - Seamlessly execute actions based on the collective decisions of NFT holders.
 - From proposals to specific DAO functions, ensure a smooth execution process guided by the will of your community.
+![](https://hackmd.io/_uploads/HkUbTJun2.png)
+
+
 
 ## Installation 🛠️
 ```cmd
@@ -45,6 +47,4 @@ anchor build --arch sbf
 # deploy contract
 cargo program deploy <program file path> --program-id <keypair of program id file path>
 ```
-
-## Developers & Maintainers 🤖
 

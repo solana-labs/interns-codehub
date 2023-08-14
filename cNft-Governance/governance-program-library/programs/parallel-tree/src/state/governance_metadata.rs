@@ -15,6 +15,8 @@ pub struct CompressedNft {
     pub creator_hash: [u8; 32],
 }
 
+// Just an example for storing additional data for the parallel-tree.
+// It should be more customizable.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct GovernanceMetadata {
     pub realm: Realm,

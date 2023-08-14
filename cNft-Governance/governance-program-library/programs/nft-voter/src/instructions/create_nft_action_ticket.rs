@@ -55,6 +55,7 @@ pub fn create_nft_action_ticket<'info>(
             &mut unique_nft_mints
         )?;
 
+        // if the ticket PDA account doesn't exist, create it
         if nft_action_ticket_info.data_is_empty() {
             create_nft_action_ticket_account(
                 payer,
@@ -66,6 +67,8 @@ pub fn create_nft_action_ticket<'info>(
                 system_program
             )?;
         }
+
+        // otherwise, update the ticket expiry to extend to the time usage of the ticket
         let serialized_data = NftActionTicket {
             account_discriminator: NftActionTicket::ACCOUNT_DISCRIMINATOR,
             registrar: registrar.key().clone(),
