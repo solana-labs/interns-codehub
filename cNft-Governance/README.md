@@ -30,7 +30,7 @@ yarn demo ./src/main.ts
 yarn demo ./src/fetchNftsByOwner.ts
 ```
 
-### cnft-voter
+### nft-voter (V2)
 
 This project incorporates the cnft-voter plugin, designed specifically for governance tasks. The cnft-voter distinguishes itself from the standard nft-voter in terms of its verification mechanism for the ownership and legitimacy of the compressed Non-Fungible Tokens (cNFTs) within the registrar's collections.
 

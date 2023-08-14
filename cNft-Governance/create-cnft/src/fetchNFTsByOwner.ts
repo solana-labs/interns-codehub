@@ -7,11 +7,6 @@ import { Metaplex } from "@metaplex-foundation/js";
 dotenv.config();
 
 (async () => {
-  const client = Keypair.fromSecretKey(
-    Uint8Array.from(JSON.parse(process.env.PRIVATE_KEY ?? "[]"))
-  );
-  console.log("client: ", client.publicKey.toBase58());
-
   const RPC_URL = process.env.RPC_URL ?? clusterApiUrl("devnet");
   if (!RPC_URL) {
     return console.warn("Please set RPC_URL from Helius");
@@ -26,9 +21,9 @@ dotenv.config();
   const collectionMint = keys.collectionMint;
   console.log("Collection Address:", collectionMint.toBase58());
 
-  // TODO: filter out json_url === "https://supersweetcollection.notarealurl/token.json"
+  const owner = "J54szN8Y7H8QT7v6amC351S75Qu3xgU5puoiXgW6ke3L"; // replace to your owner address
   const rawAssets = await getAssetsByOwner(connection, {
-    ownerAddress: client.publicKey.toBase58(),
+    ownerAddress: owner,
   });
   const assets = rawAssets.items?.filter((asset) => {
     return (
@@ -39,15 +34,16 @@ dotenv.config();
       )
     );
   });
-  const nfts = assets.filter((asset) => !asset.compression.compressed);
-  const cnfts = assets.filter((asset) => asset.compression.compressed);
+  console.log(assets);
+  // const nfts = assets.filter((asset) => !asset.compression.compressed);
+  // const cnfts = assets.filter((asset) => asset.compression.compressed);
 
-  nfts.map((nft) => {
-    console.log("NFT Address: ", nft.id);
-  });
-  cnfts.map((cnft) => {
-    console.log("cNFT Asset ID: ", cnft.id);
-  });
+  // nfts.map((nft) => {
+  //   console.log("NFT Address: ", nft.id);
+  // });
+  // cnfts.map((cnft) => {
+  //   console.log("cNFT Asset ID: ", cnft.id);
+  // });
 
   // const metaplex = new Metaplex(connection);
   // const metadata = await metaplex
