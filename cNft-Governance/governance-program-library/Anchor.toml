@@ -6,7 +6,8 @@ solana_version = "1.14.16"
 seeds = false
 
 [programs.localnet]
-cnft-voter = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+nft-voter="GnFtjPodvrUFr2UYVFPUZUE6sMVoMWEJazd6NZZDkAXd"
+parallel-tree="pmtcFF8oVLWBK2EKuGSLJtRbePDNNYyvqhEJ6cKBhMH"
 
 [registry]
 url = "https://anchor.projectserum.com"
