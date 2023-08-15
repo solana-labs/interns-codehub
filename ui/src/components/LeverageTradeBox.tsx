@@ -61,8 +61,8 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
   // const [estInterest, setEstInterest] = useState<number | undefined>(undefined)
   const [estInterestRate, setEstInterestRate] = useState<Decimal | undefined>(undefined)
 
-  // const loanDuration = 604_800 // (= 1 week) TODO: make this dynamic
-  const loanDuration = 2419000
+  const loanDuration = 604_800 // (= 1 week) TODO: make this dynamic
+  // const loanDuration = 2419000
 
   const [isOpeningPosition, setIsOpeningPosition] = useState<boolean>(false)
 
@@ -82,7 +82,7 @@ export function LeverageTradeBox(props: LeverageTradeBoxProps) {
     await openTradePosition({
       tickLowerIndex: lowerPriceTick,
       tickUpperIndex: upperPriceTick,
-      maxSlippageBps: 1000, // 1% slippage
+      maxSlippageBps: 10000, // for test only
       borrowAmount: tradeAmount,
       borrowTokenDecimals: isBorrowA ? baseDecimals : quoteDecimals,
       loanDuration,

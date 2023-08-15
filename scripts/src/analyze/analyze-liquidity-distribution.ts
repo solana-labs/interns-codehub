@@ -124,7 +124,7 @@ async function main() {
         tokenMintA.decimals,
         tokenMintB.decimals
       )
-        .toFixed(tokenMintB.decimals - 4)
+        .toFixed(tokenMintB.decimals)
         .toString()
         .padStart(11, ' '),
       '/ liquidity:',

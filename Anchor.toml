@@ -117,6 +117,10 @@ address = "HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ"
 [[test.validator.clone]]
 address = "8JwS5zosnLFT84S1NebSp1HS6aeaxviXYS7jBh9PQ8vp"
 
+# Orca Whirlpool HNT-USDC (fee 10000, tickSpacing 128)
+[[test.validator.clone]]
+address = "5LnAsMfjG32kdUauAzEuzANT6YmM3TSRpL1rWsCUDKus"
+
 # Orca tick array
 [[test.validator.clone]]
 address = "8cSEbQP389xmezdqPZ5qLma7YeCeQa8tuSsT67PYfomr"
@@ -278,8 +282,28 @@ address = "9o6KpKUu3CwVUQmn9ZJsrzasxb3B9zbVj81GmaBKsdtS"
 address = "DGUvjnGMsoJWttH431JXTA4KKceJfSUxHyeWcdJdM6ya"
 
 # Orca tick array
-#[[test.validator.clone]]
-#address = ""
+[[test.validator.clone]]
+address = "FNhGkmevsHyLjZfmBQJ85s3eie7j4HhbPJUWvkVchr31"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "6mgF5o14yLKGuzPAGfMdoCMDzCWXduQZcGpkP6e8cvqe"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "6YV4wfBGirnNk3HXRGXMdMApDguJ9XffzYHXe3pNr31D"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "DLbQr9wPKkWhpsx6qvNE7rub3jqASsnG9gk6SUJRbXMH"
+
+# Orca tick array
+[[test.validator.clone]]
+address = "4xFo7Ly3sACWyKfkNG6J8saEuS327D3KAUnShmmp15yt"
+
+# Orca tick array
+# [[test.validator.clone]]
+# address = ""
 
 # Orca token vault
 [[test.validator.clone]]
@@ -324,6 +348,14 @@ address = "A2NbZNsWsyq9R5p24jsc1R9qN3EdmYpxJKVvspEQgdwN"
 # Orca token vault
 [[test.validator.clone]]
 address = "BG4VRBYAqn55EeMXzovERBjmpgyANNEyw3foaRAYZBFF"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "GZ59qHjsLexKtWReg6uFFMwecZ8WpGkc84TpmtdSvaCt"
+
+# Orca token vault
+[[test.validator.clone]]
+address = "4G9SeNjoFT8rdhy94Q9w7Mre5B595rFo6RtVRr8ogMD3"
 
 # Orca config
 [[test.validator.clone]]

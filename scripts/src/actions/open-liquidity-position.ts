@@ -1,6 +1,6 @@
 import * as anchor from '@coral-xyz/anchor'
 import { DecimalUtil, Percentage } from '@orca-so/common-sdk'
-import { TickUtil } from '@orca-so/whirlpools-sdk'
+import { PriceMath, TickUtil } from '@orca-so/whirlpools-sdk'
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
@@ -22,13 +22,13 @@ import {
   OpenPositionParams,
   OpenLiquidityPositionAccounts,
 } from '../types/instructions'
-import { consoleLogFull, getAccountData } from '../utils'
+import { getAccountData, priceToTickIndex } from '../utils'
 import { increaseLiquidityQuoteByInputToken } from '../utils/liquidity-position/quote'
 import { PositionStatus } from '../utils/liquidity-position/types'
 import { PositionUtil } from '../utils/liquidity-position/utils'
 import { createAndMintToManyATAs } from '../utils/token'
 import { createTransactionChained } from '../utils/txix'
-import { getTickArrayKeyFromTickIndex, initTickArrayRange } from '../utils/tick-arrays'
+import { getTickArrayKeyFromTickIndex } from '../utils/tick-arrays'
 
 async function main() {
   const {
@@ -89,76 +89,41 @@ async function main() {
   console.log(`Token Vault B: ${tokenVaultB.toBase58()}`)
 
   //
-  // Init Tick Array Range
-  //
-
-  const aToB = false // determines direction of tick array
-
-  const initArrayCount = 7 // 3 to left of, 3 to right of, and 1 array containing current tick
-  const currentTickArrayStartIndex = TickUtil.getStartTickIndex(
-    tickCurrentIndex,
-    tickSpacing
-  )
-
-  // reverse direction of `aToB` because `initTickArrayRange` will init in the direction
-  // of `aToB` (left if false, right if true)
-  const startTickIndex =
-    currentTickArrayStartIndex +
-    (aToB ? 1 : -1) *
-    Math.floor(initArrayCount / 2) *
-    tickSpacing *
-    TICK_ARRAY_SIZE
-
-  await initTickArrayRange(
-    globalpoolKey,
-    startTickIndex,
-    initArrayCount,
-    tickSpacing,
-    aToB,
-    program,
-    provider
-  )
-
-  //
   // Create Liquidity Position
   //
 
-  const lower = 1.8 // B/A (USDC/HNT)
-  const upper = 1.9
-
-  const decimalDiff = tokenMintB.decimals - tokenMintA.decimals
-  const lowerTickIndex = Math.round((Math.log(lower * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing
-  const upperTickIndex = Math.round((Math.log(upper * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing
-
-  // Liquidity POositions to create
   // Deposit both Token A and B (X & USDC)
   const preparedLiquiditiyPositions: OpenPositionParams[] = [
-    {
-      tickLowerIndex: tickCurrentIndex,
-      tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE / 2) * tickSpacing,
-      liquidityAmount: new anchor.BN(1000), // 1000 X
-    },
-    {
-      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 2) * tickSpacing,
-      tickUpperIndex: tickCurrentIndex,
-      liquidityAmount: new anchor.BN(1000), // 1000 USDC
-    },
-    {
-      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE) * tickSpacing,
-      tickUpperIndex: tickCurrentIndex - 2 * tickSpacing,
-      liquidityAmount: new anchor.BN(1000), // 1000 USDC
-    },
-    {
-      tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing,
-      tickUpperIndex: tickCurrentIndex + tickSpacing,
-      liquidityAmount: new anchor.BN(1000), // 1000 X worth
-    },
-    {
-      tickLowerIndex: lowerTickIndex,
-      tickUpperIndex: upperTickIndex,
-      liquidityAmount: new anchor.BN(1000), // 1000 X worth
-    }
+    // {
+    //   tickLowerIndex: tickCurrentIndex,
+    //   tickUpperIndex: tickCurrentIndex + (TICK_ARRAY_SIZE / 2) * tickSpacing,
+    //   liquidityAmount: new anchor.BN(1000), // 1000 X
+    // },
+    // {
+    //   tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 2) * tickSpacing,
+    //   tickUpperIndex: tickCurrentIndex,
+    //   liquidityAmount: new anchor.BN(1000), // 1000 USDC
+    // },
+    // {
+    //   tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE) * tickSpacing,
+    //   tickUpperIndex: tickCurrentIndex - 2 * tickSpacing,
+    //   liquidityAmount: new anchor.BN(1000), // 1000 USDC
+    // },
+    // {
+    //   tickLowerIndex: tickCurrentIndex - (TICK_ARRAY_SIZE / 4) * tickSpacing,
+    //   tickUpperIndex: tickCurrentIndex + tickSpacing,
+    //   liquidityAmount: new anchor.BN(1000), // 1000 X worth
+    // },
   ]
+
+  const additional = [[1.8, 1.9], [1.7, 1.8], [1.6, 1.8], [1.6, 2.2], [1.9, 2.3]]
+  for (const [lower, upper] of additional) {
+    preparedLiquiditiyPositions.push({
+      tickLowerIndex: priceToTickIndex(lower, tickSpacing, tokenMintA.decimals, tokenMintB.decimals),
+      tickUpperIndex: priceToTickIndex(upper, tickSpacing, tokenMintA.decimals, tokenMintB.decimals),
+      liquidityAmount: new anchor.BN(10_000), // 10k X worth
+    })
+  }
 
   const defaultOpenLiquidityPositionAccounts: Omit<
     OpenLiquidityPositionAccounts,

@@ -33,3 +33,8 @@ export function truncatedAddress(str: string) {
   // Truncate middle
   return str.substring(0, 6) + '...' + str.substring(str.length-6, str.length);
 }
+
+export function priceToTickIndex(price: number, tickSpacing: number, decimalsA: number, decimalsB: number) {
+  const decimalDiff = decimalsB - decimalsA
+  return Math.round((Math.log(price * Math.pow(10, decimalDiff)) / Math.log(1.0001)) / tickSpacing) * tickSpacing
+}

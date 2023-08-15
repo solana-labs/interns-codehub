@@ -19,10 +19,11 @@ import {
 } from '@solana/web3.js'
 import BN from 'bn.js'
 
+import { testJupiterAmmsToExclude } from '../constants'
 import envVars from '../constants/env-vars'
 import { getPostPoolInitParams } from '../params'
 import { ParsableGlobalpool } from '../types/parsing'
-import { consoleLogFull, getAccountData, getTokenBalance } from '../utils'
+import { consoleLogFull, getAccountData, priceToTickIndex } from '../utils'
 import { getRoutesFromJupiter } from '../utils/jupiter'
 import { getTickArrayKeyFromTickIndex } from '../utils/tick-arrays'
 import { createTransactionChained } from '../utils/txix'
@@ -46,8 +47,8 @@ async function main() {
 
   // RUN: `yarn analyze:ticks`
   // and find the ticks with enough liquidity_gross
-  const tickLowerIndex = -41352 // 1.74 USDC/HNT
-  const tickUpperIndex = -40744 // 1.83 USDC/HNT
+  const tickLowerIndex = priceToTickIndex(1.7, tickSpacing, mintA.decimals, mintB.decimals)
+  const tickUpperIndex = priceToTickIndex(1.8, tickSpacing, mintA.decimals, mintB.decimals)
 
   const borrowA = false // borrow USDC (B)
   const isTradeA2B = borrowA // swap USDC (B) to SOL (A)
@@ -57,8 +58,7 @@ async function main() {
   const borrowAmountExpo = borrowAmount * Math.pow(10, mintB.decimals) // above scaled to decimal exponent
 
   const loanDuration = new BN(3600) // min duration is 1 hour
-  const maxSlippage = Percentage.fromFraction(500, 100) // (50/100)% slippage
-  const maxJupiterPlatformSlippage = 0
+  const maxSlippage = Percentage.fromFraction(5000, 100) // (50/100)% slippage
 
   const globalpoolInfo = await getAccountData(
     globalpoolKey,
@@ -134,41 +134,7 @@ async function main() {
     user: positionAuthority,
     wrapUnwrapSOL: false,
     routeCacheDuration: 0,
-    // For testing only, only cloned Orca accounts on localnet
-    ammsToExclude: {
-      Aldrin: true,
-      Crema: true,
-      Cropper: true,
-      Cykura: true,
-      DeltaFi: true,
-      GooseFX: true,
-      Invariant: true,
-      Lifinity: true,
-      'Lifinity V2': true,
-      Marinade: true,
-      Mercurial: true,
-      Meteora: true,
-      Orca: false,
-      'Orca (Whirlpools)': false,
-      Raydium: true,
-      'Raydium CLMM': true,
-      Saber: true,
-      Serum: true,
-      Step: true,
-      Penguin: true,
-      Saros: true,
-      Stepn: true,
-      Sencha: true,
-      'Saber (Decimals)': true,
-      Dradex: true,
-      Balansol: true,
-      Openbook: true,
-      Oasis: true,
-      BonkSwap: true,
-      Phoenix: true,
-      Symmetry: true,
-      Unknown: true,
-    },
+    ammsToExclude: testJupiterAmmsToExclude,
   })
 
   // Gets best route

@@ -31,6 +31,7 @@ import {
 export type CloseTradePositionParams = {
   position: UserTradePosition
   positionAuthority: PublicKey
+  maxSlippageBps: number
   globalpoolKey: PublicKey
   globalpool: GlobalpoolData
   program: Program<Clad>
@@ -43,6 +44,7 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
   const {
     position,
     positionAuthority,
+    maxSlippageBps,
     globalpoolKey,
     globalpool,
     program,
@@ -202,7 +204,7 @@ export async function closeTradePosition(params: CloseTradePositionParams) {
         tokenA: tokenMintAKey,
         tokenB: tokenMintBKey,
         amount: swapOutNeeded.toNumber(), // input token amount scaled to decimal exponent (& NOT in liquidity amount)
-        slippageBps: 100, // 1%
+        slippageBps: maxSlippageBps, // 1%
         feeBps: 0.0,
         swapMode: SwapMode.ExactOut,
       },

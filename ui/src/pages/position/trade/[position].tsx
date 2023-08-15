@@ -76,6 +76,7 @@ export default function TradePosition() {
       await closeTradePosition({
         position,
         positionAuthority: wallet.publicKey,
+        maxSlippageBps: 10000, // for test only
         globalpool,
         globalpoolKey: position.data.globalpool,
         program,
