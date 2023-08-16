@@ -116,7 +116,7 @@ async function main() {
     // },
   ]
 
-  const additional = [[1.8, 1.9], [1.7, 1.8], [1.6, 1.8], [1.6, 2.2], [1.9, 2.3]]
+  const additional = [[1.8, 1.9], [1.7, 1.8], [1.6, 1.8], [1.6, 2.2], [2.1, 2.3]]
   for (const [lower, upper] of additional) {
     preparedLiquiditiyPositions.push({
       tickLowerIndex: priceToTickIndex(lower, tickSpacing, tokenMintA.decimals, tokenMintB.decimals),

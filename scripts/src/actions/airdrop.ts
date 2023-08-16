@@ -12,7 +12,7 @@ async function main() {
     wallet,
   } = await getConstantParams()
 
-  const mintAmount = new anchor.BN(100_000) // 100k of each tokens
+  const mintAmount = new anchor.BN(10_000_000) // 100k of each tokens
   const positionAuthority = wallet.publicKey
 
   const symbolSets = new Set<string>()
