@@ -1,0 +1,24 @@
+{
+	"singleQuote": true,
+	"printWidth": 120,
+	"editor.formatOnSave": true,
+	"proseWrap": "always",
+	"requireConfig": false,
+	"trailingComma": "none",
+	"bracketSpacing": true,
+	"jsxBracketSameLine": false,
+  "overrides": [
+    {
+      "files": "**/*.rs",
+      "options": {
+				"tabWidth": 4,
+				"useTabs": false,
+				"semi": true
+			}
+    },
+    {
+      "files": "*.{cmp,page,component}",
+      "options": { "parser": "html" }
+    }
+  ]
+}

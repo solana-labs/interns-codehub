@@ -1,3 +1,25 @@
+
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+
+**/yarn.lock
+**/*.log
+
+**/.next
+
+.env*
+**/.env
+!.env.example
+
+/app-ref
+/sdk
+/ui-ref
+/scripts/accounts/*.json
+
 lib-cov
 *.seed
 *.log
@@ -70,3 +92,4 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 .DS_Store
+

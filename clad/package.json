@@ -1,0 +1,14 @@
+{
+  "name": "clad",
+  "private": true,
+  "workspaces": [
+    "scripts",
+    "sdk"
+  ],
+  "dependencies": {
+    "@solana/spl-token": "^0.3.8"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.8"
+  }
+}

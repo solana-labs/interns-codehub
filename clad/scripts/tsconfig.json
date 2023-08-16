@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "target": "es6",
+    "module": "commonjs",
+    "allowJs": false,
+    "declaration": true,
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "experimentalDecorators": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      // Need the manual mapping to @solana/spl-token, otherwise
+      // stupid @jup-ag/core breaks the package resolution and uses 0.1.8
+      //
+      // If you still see the error persist, make sure to run `yarn install`
+      // in the root `clad` directory to override the jup-ag's solana dependency
+      "@solana/spl-token": ["../node_modules/@solana/spl-token"]
+    }
+  },
+  "exclude": ["node_modules"],
+  "include": ["src/**/*", "src/**/*.json"]
+}
