@@ -16,7 +16,7 @@ pub struct CompressedNft {
 }
 
 // Just an example for storing additional data for the parallel-tree.
-// It should be more customizable.
+// It should be more customizable or depends on the use case.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct GovernanceMetadata {
     pub realm: Realm,

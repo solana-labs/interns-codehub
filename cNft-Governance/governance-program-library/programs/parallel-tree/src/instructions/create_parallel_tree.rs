@@ -10,9 +10,17 @@ use crate::error::ParallelTreeError;
 use crate::utils::allocate_account::*;
 use crate::id;
 
+/// `CreateParallelTree`: This instruction initializes a parallel Merkle tree that mirrors a given main tree.
+/// The new tree's size matches that of the provided main tree. Only the creator of the main tree is authorized
+/// to invoke this instruction. Additionally, the public flag for the parallel tree should align with
+/// the main tree's flag.
+///
+/// The parallel tree's address is a PDA using seeds = [b"spl-governance", main_tree.as_ref()].
+///
 #[derive(Accounts)]
 #[instruction(canopy_depth: u32, public: Option<bool>)]
 pub struct CreateParallelTree<'info> {
+    /// The configuration account for the parallel tree with PDA-based authority.
     #[account(
         init,
         seeds = [parallel_tree.key().as_ref()],
@@ -26,7 +34,9 @@ pub struct CreateParallelTree<'info> {
     /// CHECK: This account should be empty
     pub parallel_tree: UncheckedAccount<'info>,
 
+    /// The authority for the main tree.
     pub main_tree_authority: Account<'info, BubblegumTreeConfig>,
+
     /// CHECK: This account is checked in the instruction
     pub main_tree: UncheckedAccount<'info>,
 
@@ -34,7 +44,11 @@ pub struct CreateParallelTree<'info> {
     pub payer: Signer<'info>,
     pub tree_creator: Signer<'info>,
     pub system_program: Program<'info, System>,
+
+    /// spl-noop program
     pub log_wrapper: Program<'info, Noop>,
+
+    /// spl-account-compression program
     pub compression_program: Program<'info, SplAccountCompression>,
 }
 

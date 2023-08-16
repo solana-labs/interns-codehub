@@ -6,6 +6,10 @@ use anchor_lang::solana_program::keccak;
 use spl_account_compression::{ Node, Noop, program::SplAccountCompression };
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 
+/// `MintGovernanceMetadata`: An instruction to mint governance metadata into a parallel Merkle tree.
+/// The Merkle tree in context is expected to align with the given root. Only tree delegates or creators can mint
+/// into a private parallel tree. This instruction validates the emptiness of the leaf where the new data will be inserted.
+///
 #[derive(Accounts)]
 pub struct MintGovernanceMetadata<'info> {
     #[account(seeds = [parallel_tree.key().as_ref()], bump)]

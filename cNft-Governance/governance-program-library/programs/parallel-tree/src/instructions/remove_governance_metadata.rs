@@ -5,6 +5,10 @@ use spl_account_compression::{ Node, Noop, program::SplAccountCompression };
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 use crate::state::*;
 
+/// `RemoveGovernanceMetadata`: An instruction to remove or "clear" existing governance metadata in a parallel Merkle tree.
+/// This instruction is used to reset the content of a leaf within the Merkle tree. It first verifies that the existing
+/// content of the leaf matches the provided metadata and then replaces that content with a default (empty) node.
+///
 #[derive(Accounts)]
 pub struct RemoveGovernanceMetadata<'info> {
     #[account(seeds = [parallel_tree.key().as_ref()], bump)]

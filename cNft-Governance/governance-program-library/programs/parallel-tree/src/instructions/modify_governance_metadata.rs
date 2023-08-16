@@ -6,6 +6,12 @@ use spl_account_compression::{ Noop, program::SplAccountCompression };
 use spl_account_compression::cpi::accounts::VerifyLeaf;
 use crate::state::*;
 
+/// `ModifyGovernanceMetadata`: An instruction to modify existing governance metadata in a parallel Merkle tree.
+/// This instruction facilitates updating the content of an existing leaf within the Merkle tree, ensuring the
+/// provided root aligns and the authority is valid. The update requires verifying the previous content of the leaf
+/// before replacing it with the new metadata. If the tree is private, modifications can only be made by the tree
+/// creator or its delegate.
+///
 #[derive(Accounts)]
 pub struct ModifyGovernanceMetadata<'info> {
     #[account(seeds = [parallel_tree.key().as_ref()], bump)]
