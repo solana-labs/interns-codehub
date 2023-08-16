@@ -1,0 +1,40 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "scripts": {
+    "analyze:pools": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-pool.ts",
+    "analyze:trades": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-trade-positions.ts",
+    "analyze:ticks": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-ticks.ts",
+    "analyze:liquidity": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-liquidity-positions.ts",
+    "analyze:distribution": "ANCHOR_WALLET=~/.config/solana/id.json ts-node src/analyze/analyze-liquidity-distribution.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.28.1-beta.1",
+    "@jup-ag/core": "^4.0.0-beta.18",
+    "@metaplex-foundation/mpl-token-metadata": "^2.13.0",
+    "@orca-so/common-sdk": "0.3.0",
+    "@orca-so/whirlpools-sdk": "^0.11.1",
+    "@pythnetwork/client": "^2.19.0",
+    "@solana/spl-token": "^0.3.8",
+    "@solana/web3.js": "^1.78.0",
+    "bn.js": "^5.2.1",
+    "decimal.js": "^10.4.3",
+    "joi": "^17.9.2",
+    "jsbi": "^4.3.0",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.1",
+    "@types/mocha": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "chai": "^4.3.7",
+    "eslint": "^8.0.1",
+    "eslint-config-standard-with-typescript": "^36.0.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.1.6"
+  }
+}

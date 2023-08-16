@@ -1,0 +1,58 @@
+{
+	"HNT/USDC": {
+		"tickSpacing": 8,
+		"feeRate": 3000,
+		"baseToken": {
+			"address": "hntyVP6YFm1Hg25TN9WGLqM12b8TQmcknKrdu1oxWux",
+			"symbol": "HNT",
+			"decimals": 8
+		},
+		"quoteToken": {
+			"address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+			"symbol": "USDC",
+			"decimals": 6
+		}
+	},
+	"ORCA/USDC": {
+		"tickSpacing": 8,
+		"feeRate": 3000,
+		"baseToken": {
+			"address": "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+			"symbol": "ORCA",
+			"decimals": 6
+		},
+		"quoteToken": {
+			"address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+			"symbol": "USDC",
+			"decimals": 6
+		}
+	},
+	"MNGO/USDC": {
+		"tickSpacing": 8,
+		"feeRate": 3000,
+		"baseToken": {
+			"address": "MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac",
+			"symbol": "MNGO",
+			"decimals": 6
+		},
+		"quoteToken": {
+			"address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+			"symbol": "USDC",
+			"decimals": 6
+		}
+	},
+	"RAY/USDC": {
+		"tickSpacing": 8,
+		"feeRate": 3000,
+		"baseToken": {
+			"address": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+			"symbol": "RAY",
+			"decimals": 6
+		},
+		"quoteToken": {
+			"address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+			"symbol": "USDC",
+			"decimals": 6
+		}
+	}
+}
