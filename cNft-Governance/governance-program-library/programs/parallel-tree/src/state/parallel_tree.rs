@@ -41,6 +41,9 @@ pub fn get_authority_address(merkle_tree: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(&get_authority_seeds(merkle_tree), &crate::id()).0
 }
 
+/// This table is same as the spl-account-compression crate.
+/// https://github.com/solana-labs/solana-program-library/blob/e63e718a04e1b71a0808a460ffebe7dd3feda799/account-compression/programs/account-compression/src/state/concurrent_merkle_tree_header.rs#L160
+/// only these tree configurations are allowed to be used in parallel tree
 pub fn merkle_tree_get_size(max_depth: usize, max_buffer_size: usize) -> Result<usize> {
     // Note: max_buffer_size MUST be a power of 2
     match (max_depth, max_buffer_size) {
@@ -83,6 +86,7 @@ pub fn merkle_tree_get_size(max_depth: usize, max_buffer_size: usize) -> Result<
 
 pub const TREE_AUTHORITY_SIZE: usize = 32 + 32 + 8 + 8 + 1 + 15; // 15 bytes padding
 
+/// TreeConfig is the same structure as mpl-bubblegum program.
 #[account]
 #[derive(Copy, Debug, PartialEq, Eq)]
 pub struct TreeConfig {
