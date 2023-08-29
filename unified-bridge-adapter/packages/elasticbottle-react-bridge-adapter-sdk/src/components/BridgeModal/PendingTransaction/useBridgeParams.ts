@@ -1,9 +1,16 @@
-import type { SolanaOrEvmAccount } from "@elasticbottle/core-bridge-adapter-sdk";
+import type {
+  SolanaOrEvmAccount,
+  SwapInformation,
+} from "@elasticbottle/core-bridge-adapter-sdk";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletClient } from "wagmi";
 import { useBridgeModalStore } from "../../../providers/BridgeModalContext";
 
-export function useBridgeParams() {
+export function useBridgeParams(): {
+  sourceAccount: SolanaOrEvmAccount | undefined;
+  targetAccount: SolanaOrEvmAccount | undefined;
+  swapInformation: SwapInformation;
+} {
   const swapInformation = useBridgeModalStore.use.swapInformation();
   if (!swapInformation) {
     throw new Error("No swap information found");

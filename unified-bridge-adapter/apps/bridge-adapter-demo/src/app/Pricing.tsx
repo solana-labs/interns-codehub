@@ -116,7 +116,7 @@ export default function Pricing() {
                             <Button
                               size="sm"
                               type="button"
-                              className="mt-8 w-full hover:bg-zinc-400"
+                              className="mt-8 w-full bg-primary hover:bg-zinc-400"
                             >
                               Subscribe
                             </Button>

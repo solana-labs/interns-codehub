@@ -1,6 +1,6 @@
 {
   "name": "@elasticbottle/core-bridge-adapter-sdk",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "sideEffects": false,
   "license": "MIT",
   "type": "module",
@@ -35,6 +35,7 @@
     "viem": "^1.4.1"
   },
   "dependencies": {
+    "@allbridge/bridge-core-sdk": "^3.0.0",
     "@certusone/wormhole-sdk": "^0.9.22",
     "@mayanfinance/swap-sdk": "^4.2.3",
     "@solana/spl-token": "^0.3.8",
