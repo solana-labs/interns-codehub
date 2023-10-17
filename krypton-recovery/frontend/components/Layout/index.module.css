@@ -1,0 +1,67 @@
+.container {
+  min-height: 100vh;
+  padding: 0 4rem;
+  height: 100vh;
+}
+
+.main {
+  padding: 3rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.header {
+  max-width: 1000px;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.top {
+  margin: auto 0;
+  padding: 0 1rem;
+  color: black;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.logo:hover {
+  cursor: pointer;
+  color: #0070f3;
+}
+
+.nav {
+  width: 100%;
+  justify-content: right;
+}
+
+a.back {
+  color: #aaa;
+  margin-top: 2rem;
+}
+
+a.back:hover,
+a.back:focus,
+a.back:active {
+  color: #0070f3;
+}
+
+.footerHome {
+  margin: 1rem 0;
+}
+
+.footerLink {
+  color: #999;
+}
+
+.footerLink:hover,
+.footerLink:focus,
+.footerLink:active {
+  color: #0070f3;
+}

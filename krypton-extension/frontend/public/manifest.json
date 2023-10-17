@@ -1,0 +1,42 @@
+{
+    "name": "Krypton",
+    "description": "Next generation smart contract wallet",
+    "version": "0.0.1",
+    "manifest_version": 3,
+    "permissions": [
+      "storage",
+      "scripting",
+      "nativeMessaging"
+    ],
+    "action": {
+      "default_title": "Krypton Wallet",
+      "default_popup": "index.html"
+    },
+    "icons": {
+      "48": "./static/icons/krypton_logo.png",
+      "128": "./static/icons/krypton_logo.png"
+    },
+    "content_scripts": [
+      {
+          "matches": ["*://*/*"],
+          "js": ["content.js"],
+          "run_at": "document_start",
+          "all_frames": true
+      }
+    ],
+    "background": {
+      "service_worker": "background.js",
+      "type": "module"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "script.js"
+        ],
+        "matches": ["*://*/*"]
+      }
+    ],
+    "content_security_policy": {
+      "extension_pages": "script-src 'self'; object-src 'self'"
+    }
+  }

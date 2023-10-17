@@ -1,0 +1,52 @@
+{
+  "name": "solana-stealth",
+  "version": "1.1.1",
+  "description": "Stealth support for solana",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "lint": "tslint -p tsconfig.json",
+    "prepare": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doomymike/solana-stealth.git"
+  },
+  "keywords": [],
+  "author": "Michael Oren",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/doomymike/solana-stealth/issues"
+  },
+  "homepage": "https://github.com/doomymike/solana-stealth#readme",
+  "devDependencies": {
+    "@types/bn.js": "^5.1.1",
+    "@types/node-fetch": "^2.6.2",
+    "prettier": "^2.8.4",
+    "tslint": "^6.1.3",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "@csquare/random-bytes-seed": "^0.1.3",
+    "@noble/ed25519": "^1.7.3",
+    "@solana/spl-token": "^0.3.7",
+    "@solana/web3.js": "^1.73.3",
+    "bigint-conversion": "^2.3.0",
+    "bigint-mod-arith": "^3.1.2",
+    "bn.js": "^5.2.1",
+    "bs58": "^5.0.0",
+    "crypto": "^1.0.1",
+    "js-sha512": "^0.8.0",
+    "random-bytes-seed": "^1.0.3",
+    "seedrandom": "^3.0.5",
+    "sha512-crypt-ts": "^0.1.27",
+    "typescript": "^5.0.1"
+  },
+  "files": [
+    "lib/**/*"
+  ]
+}

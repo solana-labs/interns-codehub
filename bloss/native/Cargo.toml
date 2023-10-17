@@ -1,0 +1,23 @@
+[package]
+name = "bloss-native"
+description = "Native messaging host for OpenPGP smart card signing"
+version = "0.2.0"
+license = "MIT"
+authors = ["Harris Luo"]
+edition = "2021"
+readme = "README.md"
+repository = "https://github.com/harrisluo/bloss"
+keywords = ["openpgp", "chrome", "native", "signature", "signing"]
+exclude = ["target", "testin"]
+
+[dependencies]
+byteorder = "1.4.3"
+openpgp-card = "0.3.4"
+openpgp-card-pcsc = "0.3.0"
+serde = { version = "1.0.156", features = ["derive"] }
+serde_json = "1.0.94"
+thiserror = "1.0.39"
+
+[[bin]]
+name = "bloss-native"
+path = "src/main.rs"
