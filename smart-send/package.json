@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@solana/web3.js": "^1.73.0",
+    "bs58": "^5.0.0"
+  }
+}

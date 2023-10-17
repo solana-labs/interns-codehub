@@ -1,0 +1,47 @@
+{
+	"name": "solana-data-program",
+	"version": "1.0.4",
+	"description": "Solana Data Program SDK",
+	"main": "lib/index.js",
+	"types": "lib/index.d.ts",
+	"directories": {
+		"example": "examples"
+	},
+	"scripts": {
+		"format": "prettier --write \"src/*.ts\" \"test/**/*.ts\"",
+		"build": "tsc",
+		"lint": "tslint -p tsconfig.json",
+		"test": "npx ts-node test/index.ts"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nvsriram/solana-data-program.git"
+	},
+	"files": [
+		"lib/**/*"
+	],
+	"keywords": [
+		"blockchain",
+		"solana"
+	],
+	"author": "Sriram Nurani Viswanathan <nuranisri01@gmail.com>",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/nvsriram/solana-data-program/issues"
+	},
+	"homepage": "https://github.com/nvsriram/solana-data-program#readme",
+	"devDependencies": {
+		"@types/bn.js": "^5.1.1",
+		"@types/bs58": "^4.0.1",
+		"bs58": "^5.0.0",
+		"dotenv": "^16.0.3",
+		"prettier": "^2.8.7",
+		"tslint": "^6.1.3",
+		"tslint-config-prettier": "^1.18.0",
+		"typescript": "^5.0.4"
+	},
+	"dependencies": {
+		"@solana/web3.js": "^1.75.0",
+		"bn.js": "^5.2.1"
+	}
+}

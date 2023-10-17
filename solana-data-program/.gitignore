@@ -1,0 +1,11 @@
+**/target
+**/Cargo.lock
+**/node_modules
+**/lib
+**/package-lock.json
+**/__pycache__
+.vscode
+**/.DS_Store
+**/*checkpoint.ipynb
+**/test-ledger
+.env

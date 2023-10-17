@@ -1,0 +1,321 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  min-width: 420px;
+  min-height: 600px;
+  background-color: rgb(34, 34, 34);
+  color: #fff;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+p {
+  color: #fff;
+}
+
+.gradient-text {
+  background-color: #f3ec78;
+  background-image: linear-gradient(270deg, rgb(171, 102, 255) 0%, rgb(20, 241, 149) 101.39%);
+  background-size: 100%;
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  -webkit-text-fill-color: transparent; 
+  -moz-text-fill-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.title {
+  margin-top: 2rem;
+  text-align: center;
+  color: #fff;
+}
+
+.ant-divider-horizontal {
+  width: 55%;
+  min-width: 800px;
+}
+
+/* button */
+.ant-btn, .ant-btn:active, .ant-btn:focus {
+  color: #fff;
+  border-color: #fff;
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-btn-primary:active, .ant-btn-primary:focus {
+  background-color: #415bf5;
+  border-color: transparent;
+}
+
+.ant-btn:hover {
+  color: #fff;
+  border-color: #fff;
+  background-color: #415bf5;
+}
+
+.more-button, .more-button:active, .more-button:focus, .more-button:hover {
+  border-color: transparent;
+}
+
+.more-button:hover {
+  background-color: rgb(34, 34, 34);
+}
+
+.edit-btn:hover, .edit-btn:focus {
+  background-color: #ff4d4f;
+}
+
+/* dropdown */
+.ant-dropdown-menu {
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-dropdown-menu-item:hover {
+  background-color: #415bf5;
+}
+
+.ant-dropdown-menu-item, .ant-dropdown-menu-submenu-title {
+  color: #fff;
+}
+
+.ant-dropdown-link:hover {
+  color: #415bf5;
+}
+
+.ant-dropdown-link:hover[disabled] {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+/* menu */
+.ant-menu-horizontal {
+  border-bottom: none;
+  align-items: center;
+  background-color: rgb(34, 34, 34);
+  color: #fff;
+}
+
+.ant-menu-title-content {
+  display: none;
+}
+
+.ant-menu-dark.ant-menu-horizontal>.ant-menu-item {
+  padding: 0 27px;
+}
+
+.ant-menu-dark.ant-menu-horizontal>.ant-menu-item:hover {
+  background-color: #415bf5;
+}
+
+.ant-menu-item-selected {
+  color: #415bf5 !important;
+  background-color: transparent !important;
+}
+.ant-menu-item-selected::after {
+  border-top: 10px solid #415bf5 !important;
+}
+
+.ant-menu-item-selected > span > a {
+  color: #415bf5 !important;
+}
+
+.ant-alert-warning {
+  max-width: 800px;
+  width: 80%;
+  margin-bottom: 3rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* token list */
+.tokenlist {
+  margin-left: 1rem;
+  margin-right: 1rem;
+  width: 100%;
+  padding: 0.2rem 0.7rem;
+  background-color: rgb(42, 42, 42);
+  overflow: auto;
+}
+
+.ant-list-item {
+  padding: 10px 10px
+}
+
+.ant-list-item:hover {
+  background-color: rgb(70, 70, 70);
+  cursor: pointer;
+}
+
+.ant-list-item-meta {
+  align-items: center;
+}
+
+.ant-list-item-meta-description {
+  color: #d3d3d3;
+}
+
+.ant-list-item-meta-title {
+  color: #fff;
+}
+
+.ant-list-split .ant-list-item {
+  border-bottom: 0;
+}
+
+.ant-typography {
+  color: #fff;
+}
+
+.ant-empty-description {
+  color: #fff;
+}
+
+/* antd modal */
+.ant-modal-header { background-color: rgb(34, 34, 34) } 
+.ant-modal-body { background-color:rgb(34, 34, 34) } 
+.ant-modal-footer { background-color: rgb(34, 34, 34) } 
+
+.ant-form-item-required {
+  color: #fff;
+}
+
+.ant-input {
+  min-width: 246px;
+  background-color: rgb(34, 34, 34);
+  color: #d3d3d3;
+  border: 1px solid #d3d3d3
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px rgb(42, 42, 42) inset !important;
+    -webkit-text-fill-color: white !important;
+}
+
+.ant-form-item {
+  margin: 30px 0 0 0;
+}
+
+.ant-form-item-label>label {
+  color: #fff;
+}
+
+.ant-modal-title {
+  color: #fff;
+}
+
+.ant-radio-wrapper {
+  color: #fff;
+}
+
+.ant-modal-close {
+  color: #fff;
+}
+
+/* btn */
+.ant-btn-primary {
+  background-color: #415bf5;
+  border-color: #415bf5;
+}
+
+/* select */
+.ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-select-arrow {
+  color: #fff;
+}
+
+.ant-select-dropdown {
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-select-item-option-content {
+  color: #fff;
+}
+
+.ant-select-selection-item {
+  color: #fff;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: #415bf5;
+}
+
+.ant-select-item-option-active:hover {
+  background-color: #415bf5;
+}
+
+/* result */
+.ant-result-title {
+  color: #fff;
+}
+
+.ant-result-subtitle {
+  color: #fff;
+}
+
+.ant-result-content {
+  background-color: rgb(42, 42, 42);
+}
+
+.ant-result {
+  padding: 15px 32px;
+}
+
+/* typography */
+.ant-typography-edit-content, .ant-typography-div {
+  margin-left: 63px;
+}
+
+/* switch */
+.ant-switch-disabled {
+  opacity: 1;
+}
+
+.ant-switch-checked {
+  background-color: #415bf5;
+}
+
+/* alert */
+.ant-alert-message {
+  font-size: 12px;
+}
+
+/* ===== Scrollbar CSS ===== */
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #b3b3b3 #1a1a1a;
+  }
+
+  /* Chrome, Edge, and Safari */
+  *::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #1a1a1a;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #b3b3b3;
+    border-radius: 10px;
+    border: 3px solid #bababa;
+  }
+
+  .ant-image-mask {
+    margin-top: 15px;
+    border-radius: 50%;
+  }

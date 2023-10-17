@@ -1,0 +1,7 @@
+{
+    "name": "com.harrisluo.bloss_native",
+    "description": "Native messaging host for OpenPGP smart card signing",
+    "path": "HOST_PATH",
+    "type": "stdio",
+    "allowed_origins": ["chrome-extension://EXTENSION_ID/"]
+}

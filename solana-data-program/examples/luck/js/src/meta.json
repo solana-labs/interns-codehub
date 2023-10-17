@@ -1,0 +1,22 @@
+{
+  "name": "Solana Lucky Number",
+  "symbol": "",
+  "description": "50/50 chance for number to go up by 1 or get reset to 0",
+  "image": "https://sold-website.vercel.app/api/data/<REPLACE WITH LUCK.HTML DATA ACCOUNT PUBKEY>?cluster=Devnet",
+  "external_url": "https://sold-website.vercel.app",
+  "attributes": [
+    {
+      "trait_type": "I'm Feeling Lucky",
+      "value": ":)"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://sold-website.vercel.app/api/data/<REPLACE WITH LUCK.HTML DATA ACCOUNT PUBKEY>?cluster=Devnet",
+        "type": "image/svg+xml"
+      }
+    ],
+    "category": "image"
+  }
+}

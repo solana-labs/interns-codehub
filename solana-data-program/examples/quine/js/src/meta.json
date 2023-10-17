@@ -1,0 +1,22 @@
+{
+  "name": "Quine NFT",
+  "symbol": "",
+  "description": "Quine NFT that changes colours based on when you interact with it",
+  "image": "https://sold-website.vercel.app/api/data/<REPLACE WITH QUINE.HTML DATA ACCOUNT PUBKEY>?cluster=Devnet",
+  "external_url": "https://sold-website.vercel.app",
+  "attributes": [
+    {
+      "trait_type": "Dynamic?",
+      "value": "no"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://sold-website.vercel.app/api/data/<REPLACE WITH QUINE.HTML DATA ACCOUNT PUBKEY>?cluster=Devnet",
+        "type": "image/svg+xml"
+      }
+    ],
+    "category": "image"
+  }
+}
